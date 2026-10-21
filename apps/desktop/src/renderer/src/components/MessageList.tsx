@@ -34,7 +34,7 @@ const Message = memo(function Message({ entry }: { entry: TranscriptEntry }): Re
   }
 
   if (entry.role === 'tool') {
-    return <ToolCall name={entry.text} />;
+    return <ToolCall name={entry.text} status={readStatus(entry.metadata)} />;
   }
 
   if (entry.kind === 'error') {
@@ -65,11 +65,24 @@ const Message = memo(function Message({ entry }: { entry: TranscriptEntry }): Re
   return <MarkdownText text={entry.text} />;
 });
 
-function ToolCall({ name }: { name: string }): React.JSX.Element {
+function readStatus(metadata: Record<string, unknown> | undefined): 'ok' | 'error' | null {
+  const value = metadata?.['status'];
+  return value === 'ok' || value === 'error' ? value : null;
+}
+
+function ToolCall({
+  name,
+  status,
+}: {
+  name: string;
+  status: 'ok' | 'error' | null;
+}): React.JSX.Element {
+  const dot = status === 'error' ? 'bg-danger' : status === 'ok' ? 'bg-success' : 'bg-accent';
   return (
     <div className="flex items-center gap-2 text-[12px] text-ink-subtle">
-      <span className="inline-block size-1.5 rounded-full bg-accent" />
+      <span className={`inline-block size-1.5 rounded-full ${dot}`} />
       <span className="font-mono">{name}</span>
+      {status === 'error' && <span className="text-danger">失败</span>}
     </div>
   );
 }

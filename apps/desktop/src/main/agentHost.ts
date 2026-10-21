@@ -299,6 +299,28 @@ export class AgentHost {
       return;
     }
 
+    if (event.type === 'tool.result') {
+      // Without this the transcript says "Write" and nothing else: the user
+      // cannot tell whether the tool ran, failed, or was denied.
+      const toolCallId = 'toolCallId' in event ? String(event.toolCallId) : '';
+      if (toolCallId === '') return;
+      const failed = 'isError' in event && event.isError === true;
+      const entries = this.transcripts.get(sessionId);
+      const existing = entries?.find((entry) => entry.id === toolCallId);
+      const name = existing?.text ?? 'tool';
+      this.sink?.onDelta({
+        sessionId,
+        entryId: toolCallId,
+        role: 'tool',
+        kind: 'tool-call',
+        text: name,
+        done: true,
+        status: failed ? 'error' : 'ok',
+        replace: true,
+      });
+      return;
+    }
+
     if (event.type === 'turn.step.retrying') {
       // The engine retries a failed model call up to ten times with exponential
       // backoff, which can look like a silent hang from two minutes out. Say so

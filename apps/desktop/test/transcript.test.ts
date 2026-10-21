@@ -39,6 +39,37 @@ describe('applyDelta', () => {
     expect(entries[0]).toMatchObject({ id: 'e1', role: 'assistant', text: 'hello' });
   });
 
+  it('records a status on a brand-new entry', () => {
+    const entries = applyDelta([], delta({ entryId: 't1', role: 'tool', status: 'ok' }));
+
+    expect(entries[0]?.metadata).toEqual({ status: 'ok' });
+  });
+
+  it('replaces the text and records a status when a tool result arrives', () => {
+    const started = applyDelta([], delta({ entryId: 't1', role: 'tool', kind: 'tool-call', text: 'Write' }));
+    const settled = applyDelta(
+      started,
+      delta({ entryId: 't1', role: 'tool', kind: 'tool-call', text: 'Write', status: 'error', replace: true }),
+    );
+
+    expect(settled).toHaveLength(1);
+    expect(settled[0]).toMatchObject({ text: 'Write', metadata: { status: 'error' } });
+  });
+
+  it('does not duplicate the tool name when the result carries no text', () => {
+    const started = applyDelta([], delta({ entryId: 't1', role: 'tool', kind: 'tool-call', text: 'Write' }));
+    const settled = applyDelta(started, delta({ entryId: 't1', role: 'tool', text: '', status: 'ok' }));
+
+    expect(settled[0]?.text).toBe('Write');
+  });
+
+  it('keeps appending for a plain delta on a tool entry', () => {
+    const started = applyDelta([], delta({ entryId: 't1', role: 'tool', text: 'Write' }));
+    const appended = applyDelta(started, delta({ entryId: 't1', role: 'tool', text: ' ok' }));
+
+    expect(appended[0]?.text).toBe('Write ok');
+  });
+
   it('appends to the matching entry by id', () => {
     let entries = applyDelta([], delta({ entryId: 'e1', text: 'hel' }));
     entries = applyDelta(entries, delta({ entryId: 'e1', text: 'lo' }));

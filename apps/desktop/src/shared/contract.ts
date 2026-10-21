@@ -156,6 +156,13 @@ export const StreamDeltaSchema = z.object({
   kind: z.string(),
   text: z.string(),
   done: z.boolean(),
+  /**
+   * Set on a tool-call entry once its result arrives, so the row can show
+   * whether the tool actually worked. A delta carrying a status replaces the
+   * entry's text and status instead of appending.
+   */
+  status: z.enum(['ok', 'error']).optional(),
+  replace: z.boolean().optional(),
 });
 export type StreamDelta = z.infer<typeof StreamDeltaSchema>;
 

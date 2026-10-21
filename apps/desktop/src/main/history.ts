@@ -15,13 +15,21 @@ export function projectHistory(history: readonly ContextMessage[]): TranscriptEn
   let sequence = 0;
   const nextId = (prefix: string): string => `${prefix}-${(sequence += 1)}`;
 
+  // A tool call and its result are separate messages sharing a toolCallId, and
+  // the result may arrive before or after the call in the replayed history.
+  // Collect outcomes first so the call entry can carry its final status.
+  const outcomes = new Map<string, 'ok' | 'error'>();
+  for (const message of history) {
+    if (message.role !== 'tool' || message.toolCallId === undefined) continue;
+    outcomes.set(message.toolCallId, message.isError === true ? 'error' : 'ok');
+  }
+
   for (const message of history) {
     const injection = message.origin?.kind === 'injection';
     if (injection || message.role === 'system') continue;
 
-    // Tool results are machine-facing: they carry the engine's markup
-    // (<mcp-result-extras> and friends) and are not something the user wrote
-    // or read. The tool call itself is shown from `message.toolCalls` below.
+    // The tool result text itself is machine-facing (it can carry engine markup),
+    // and its outcome is already folded into the call entry above.
     if (message.role === 'tool') continue;
 
     const text = message.content
@@ -40,12 +48,14 @@ export function projectHistory(history: readonly ContextMessage[]): TranscriptEn
     }
 
     for (const call of message.toolCalls ?? []) {
+      const status = outcomes.get(call.id);
       entries.push({
         id: call.id === '' ? nextId('tool') : call.id,
         role: 'tool',
         kind: 'tool-call',
         text: call.name,
         createdAt: 0,
+        ...(status === undefined ? {} : { metadata: { status } }),
       });
     }
   }

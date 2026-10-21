@@ -131,4 +131,86 @@ describe('projectHistory', () => {
   it('returns an empty list for an empty history', () => {
     expect(projectHistory([])).toEqual([]);
   });
+
+  it('marks a tool call as failed when its result is an error', () => {
+    const entries = projectHistory([
+      message({
+        role: 'assistant',
+        id: 'm1',
+        content: [],
+        toolCalls: [{ type: 'function', id: 'call_1', name: 'Read', arguments: '{}' }],
+      }),
+      message({
+        role: 'tool',
+        toolCallId: 'call_1',
+        isError: true,
+        content: text('"/nope.txt" does not exist.'),
+      }),
+    ]);
+
+    expect(entries).toHaveLength(1);
+    expect(entries[0]?.metadata).toEqual({ status: 'error' });
+  });
+
+  it('marks a tool call as ok when its result succeeded', () => {
+    const entries = projectHistory([
+      message({
+        role: 'assistant',
+        id: 'm1',
+        content: [],
+        toolCalls: [{ type: 'function', id: 'call_1', name: 'Read', arguments: '{}' }],
+      }),
+      message({ role: 'tool', toolCallId: 'call_1', content: text('file contents') }),
+    ]);
+
+    expect(entries[0]?.metadata).toEqual({ status: 'ok' });
+  });
+
+  it('leaves a call without a result unmarked', () => {
+    const entries = projectHistory([
+      message({
+        role: 'assistant',
+        id: 'm1',
+        content: [],
+        toolCalls: [{ type: 'function', id: 'call_1', name: 'Read', arguments: '{}' }],
+      }),
+    ]);
+
+    expect(entries[0]?.metadata).toBeUndefined();
+  });
+
+  it('matches a result that appears before its call', () => {
+    const entries = projectHistory([
+      message({ role: 'tool', toolCallId: 'call_1', isError: true, content: text('boom') }),
+      message({
+        role: 'assistant',
+        id: 'm1',
+        content: [],
+        toolCalls: [{ type: 'function', id: 'call_1', name: 'Read', arguments: '{}' }],
+      }),
+    ]);
+
+    expect(entries[0]?.metadata).toEqual({ status: 'error' });
+  });
+
+  it('pairs results with the right call when several are present', () => {
+    const entries = projectHistory([
+      message({
+        role: 'assistant',
+        id: 'm1',
+        content: [],
+        toolCalls: [
+          { type: 'function', id: 'call_1', name: 'Read', arguments: '{}' },
+          { type: 'function', id: 'call_2', name: 'Write', arguments: '{}' },
+        ],
+      }),
+      message({ role: 'tool', toolCallId: 'call_1', content: text('ok') }),
+      message({ role: 'tool', toolCallId: 'call_2', isError: true, content: text('denied') }),
+    ]);
+
+    expect(entries.map((entry) => entry.metadata)).toEqual([
+      { status: 'ok' },
+      { status: 'error' },
+    ]);
+  });
 });

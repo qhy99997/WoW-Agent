@@ -18,12 +18,25 @@ export function applyDelta(current: TranscriptEntry[], delta: StreamDelta): Tran
         kind: delta.kind,
         text: delta.text,
         createdAt: Date.now(),
+        ...(delta.status === undefined ? {} : { metadata: { status: delta.status } }),
       },
     ];
   }
   const existing = current[index];
   if (existing === undefined) return current;
   const next = [...current];
+  // A tool result settles an existing call: it replaces the text and records
+  // the outcome rather than appending a second line.
+  if (delta.replace === true || delta.status !== undefined) {
+    next[index] = {
+      ...existing,
+      text: delta.text === '' ? existing.text : delta.text,
+      ...(delta.status === undefined
+        ? {}
+        : { metadata: { ...existing.metadata, status: delta.status } }),
+    };
+    return next;
+  }
   next[index] = { ...existing, text: existing.text + delta.text };
   return next;
 }
