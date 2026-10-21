@@ -35,9 +35,18 @@ function createWindow(): void {
     mainWindow?.show();
   });
 
+  // Model output can contain links. Only hand http(s) to the OS browser; never
+  // let a renderer navigation reach file:// or a custom protocol handler.
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    void shell.openExternal(url);
+    if (/^https?:\/\//i.test(url)) void shell.openExternal(url);
     return { action: 'deny' };
+  });
+
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    const devUrl = process.env['ELECTRON_RENDERER_URL'];
+    if (devUrl !== undefined && url.startsWith(devUrl)) return;
+    event.preventDefault();
+    if (/^https?:\/\//i.test(url)) void shell.openExternal(url);
   });
 
   const devUrl = process.env['ELECTRON_RENDERER_URL'];

@@ -271,7 +271,20 @@ export class AgentHost {
     }
 
     if (event.type === 'turn.ended') {
-      this.sink?.onSessionChanged();
+      // Re-read the engine's canonical history once the turn settles, so the
+      // local streaming cache is reconciled with what actually persisted
+      // (tool calls, injected context, anything a delta stream cannot express).
+      void this.resync(sessionId).finally(() => {
+        this.sink?.onSessionChanged();
+      });
+    }
+  }
+
+  private async resync(sessionId: string): Promise<void> {
+    try {
+      await this.transcript(sessionId);
+    } catch {
+      // A closed session mid-teardown is not worth surfacing.
     }
   }
 
@@ -322,12 +335,12 @@ export class AgentHost {
 
   async sendPrompt(sessionId: string, text: string): Promise<void> {
     const session = await this.ensureSession(sessionId);
-    const entries = this.transcripts.get(sessionId) ?? [];
-    entries.push({ id: randomUUID(), role: 'user', kind: 'text', text, createdAt: Date.now() });
-    this.transcripts.set(sessionId, entries);
+    // Echo the user's own message immediately so the composer feels responsive.
+    // The engine's replayed context replaces the cache when the turn ends, so
+    // this entry is transient by design and must not be appended to the cache.
     this.sink?.onDelta({
       sessionId,
-      entryId: entries[entries.length - 1]?.id ?? randomUUID(),
+      entryId: `pending-${randomUUID()}`,
       role: 'user',
       kind: 'text',
       text,
@@ -374,7 +387,9 @@ export class AgentHost {
 
   async settingsSnapshot(): Promise<SettingsSnapshot> {
     const harness = await this.ensureStarted();
-    const config = await harness.getConfig();
+    // The engine snapshots config.toml at boot; reload so a file edited outside
+    // this process (or a previous run) is reflected instead of stale state.
+    const config = await harness.getConfig({ reload: true });
     const models = config.models ?? {};
     const providers: ProviderSummary[] = Object.entries(config.providers ?? {}).map(
       ([name, entry]) => ({

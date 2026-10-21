@@ -30,6 +30,7 @@ export function App(): React.JSX.Element {
   const [models, setModels] = useState<ModelOption[]>([]);
   const [activeModel, setActiveModel] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [ready, setReady] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const refreshSessions = useCallback(async () => {
@@ -56,13 +57,19 @@ export function App(): React.JSX.Element {
     void (async () => {
       const report = await bridge().doctor.run();
       setDoctor(report);
-      if (!report.ok) return;
+      if (!report.ok) {
+        setReady(true);
+        return;
+      }
       setWorkspaces(await bridge().workspace.list());
       const snapshot = await refreshModels();
       const rows = await refreshSessions();
       const first = rows[0];
       if (first !== undefined) await selectSession(first.id);
-      if (snapshot.models.length === 0) setShowSettings(true);
+      // Land on the settings gate only when there is nothing to chat with;
+      // otherwise stay on the chat view.
+      setShowSettings(snapshot.models.length === 0);
+      setReady(true);
     })();
   }, [refreshSessions, refreshModels, selectSession]);
 
@@ -80,6 +87,9 @@ export function App(): React.JSX.Element {
     const offChanged = bridge().on.sessionChanged(() => {
       setStreaming(false);
       void refreshSessions();
+      // The turn settled: reload the canonical history so the transcript matches
+      // what the engine persisted (tool calls, injected context, exact text).
+      if (activeSession !== null) void selectSession(activeSession);
     });
     return () => {
       offDelta();
@@ -87,7 +97,7 @@ export function App(): React.JSX.Element {
       offQuestion();
       offChanged();
     };
-  }, [refreshSessions]);
+  }, [refreshSessions, activeSession, selectSession]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ block: 'end' });
@@ -131,6 +141,12 @@ export function App(): React.JSX.Element {
 
   if (doctor !== null && !doctor.ok) {
     return <Onboarding report={doctor} onRetry={() => void bridge().doctor.run().then(setDoctor)} />;
+  }
+
+  // Hold the shell until boot data has landed: mounting Settings early makes it
+  // snapshot an empty config and render "no providers" for a moment.
+  if (!ready) {
+    return <div className="h-full bg-canvas" />;
   }
 
   return (
