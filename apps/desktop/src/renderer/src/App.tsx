@@ -112,6 +112,31 @@ export function App(): React.JSX.Element {
     await selectSession(session.id);
   }, [refreshSessions, selectSession]);
 
+  const newSession = useCallback(
+    async (workDir: string) => {
+      const session = await bridge().session.create(workDir);
+      await refreshSessions();
+      await selectSession(session.id);
+    },
+    [refreshSessions, selectSession],
+  );
+
+  const deleteSession = useCallback(
+    async (sessionId: string) => {
+      await bridge().session.delete(sessionId);
+      const rows = await refreshSessions();
+      if (activeSession !== sessionId) return;
+      const next = rows[0];
+      if (next !== undefined) {
+        await selectSession(next.id);
+        return;
+      }
+      setActiveSession(null);
+      setEntries([]);
+    },
+    [activeSession, refreshSessions, selectSession],
+  );
+
   const send = useCallback(
     async (text: string) => {
       if (activeSession === null) return;
@@ -171,6 +196,8 @@ export function App(): React.JSX.Element {
           activeWorkspaceId={activeWorkspace?.id ?? null}
           onSelect={(id) => void selectSession(id)}
           onPickWorkspace={() => void pickWorkspace()}
+          onNewSession={(workDir) => void newSession(workDir)}
+          onDeleteSession={(id) => void deleteSession(id)}
         />
         <main className="flex min-w-0 flex-1 flex-col">
           {showSettings ? (
