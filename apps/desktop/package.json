@@ -11,12 +11,12 @@
     "build": "electron-vite build",
     "start": "electron-vite preview",
     "typecheck": "tsc -p tsconfig.node.json --noEmit && tsc -p tsconfig.web.json --noEmit",
+    "test": "vitest run",
     "dist": "electron-vite build && electron-builder --win --x64",
     "clean": "node -e \"require('node:fs').rmSync('out',{recursive:true,force:true})\""
   },
   "dependencies": {
-    "@moonshot-ai/kimi-code-sdk": "workspace:^",
-    "@moonshot-ai/transcript": "workspace:^"
+    "@moonshot-ai/kimi-code-sdk": "workspace:^"
   },
   "devDependencies": {
     "@tailwindcss/vite": "4.3.3",

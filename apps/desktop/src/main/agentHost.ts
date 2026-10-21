@@ -6,7 +6,6 @@ import { join } from 'node:path';
 import type {
   ApprovalHandler,
   ApprovalResponse,
-  ContextMessage,
   Event as AgentEvent,
   KimiHarness,
   QuestionHandler,
@@ -15,6 +14,7 @@ import type {
   SessionSummary as SdkSessionSummary,
 } from '@moonshot-ai/kimi-code-sdk';
 
+import { projectHistory } from './history';
 import type {
   AddModelInput,
   ApprovalRequest,
@@ -45,50 +45,6 @@ const WINDOWS_GIT_BASH = [
 
 function stripAnsi(text: string): string {
   return text.replace(ANSI, '');
-}
-
-/**
- * The engine stores the whole conversation (including permission-mode notices
- * and other injected context) and hands it back through `getContext()`. This
- * turns that into the flat entries the renderer draws.
- *
- * Injected system-reminders are dropped: they are engine bookkeeping, not
- * something the user typed or the model said.
- */
-function projectContext(history: readonly ContextMessage[]): TranscriptEntry[] {
-  const entries: TranscriptEntry[] = [];
-
-  for (const message of history) {
-    const origin = message.origin as { kind?: string } | undefined;
-    if (origin?.kind === 'injection' || message.role === 'system') continue;
-
-    const text = message.content
-      .filter((part): part is { type: 'text'; text: string } => part.type === 'text')
-      .map((part) => part.text)
-      .join('');
-
-    if (text !== '') {
-      entries.push({
-        id: message.id ?? randomUUID(),
-        role: message.role === 'user' ? 'user' : 'assistant',
-        kind: 'text',
-        text,
-        createdAt: Date.now(),
-      });
-    }
-
-    for (const call of message.toolCalls ?? []) {
-      entries.push({
-        id: call.id,
-        role: 'tool',
-        kind: 'tool-call',
-        text: call.name,
-        createdAt: Date.now(),
-      });
-    }
-  }
-
-  return entries;
 }
 
 /**
@@ -377,7 +333,7 @@ export class AgentHost {
   async transcript(sessionId: string): Promise<TranscriptEntry[]> {
     const session = await this.ensureSession(sessionId);
     const context = await session.getContext();
-    const rebuilt = projectContext(context.history);
+    const rebuilt = projectHistory(context.history);
     this.transcripts.set(sessionId, rebuilt);
     return [...rebuilt];
   }

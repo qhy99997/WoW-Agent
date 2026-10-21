@@ -1,0 +1,108 @@
+import { describe, expect, it } from 'vitest';
+
+import type { ContextMessage } from '@moonshot-ai/kimi-code-sdk';
+
+import { projectHistory } from '../src/main/history';
+
+function message(overrides: Partial<ContextMessage> & { role: ContextMessage['role'] }): ContextMessage {
+  return {
+    content: [],
+    toolCalls: [],
+    ...overrides,
+  } as ContextMessage;
+}
+
+function text(value: string): ContextMessage['content'] {
+  return [{ type: 'text', text: value }];
+}
+
+describe('projectHistory', () => {
+  it('maps a user prompt and an assistant reply to two entries', () => {
+    const entries = projectHistory([
+      message({ role: 'user', id: 'm1', content: text('hello') }),
+      message({ role: 'assistant', id: 'm2', content: text('hi there') }),
+    ]);
+
+    expect(entries.map((entry) => [entry.role, entry.text])).toEqual([
+      ['user', 'hello'],
+      ['assistant', 'hi there'],
+    ]);
+    expect(entries.map((entry) => entry.id)).toEqual(['m1', 'm2']);
+  });
+
+  it('drops injected context so permission-mode notices never reach the UI', () => {
+    const entries = projectHistory([
+      message({ role: 'user', id: 'm1', content: text('do the thing') }),
+      message({
+        role: 'user',
+        content: text('<system-reminder>auto mode</system-reminder>'),
+        origin: { kind: 'injection' } as ContextMessage['origin'],
+      }),
+      message({ role: 'assistant', id: 'm3', content: text('done') }),
+    ]);
+
+    expect(entries).toHaveLength(2);
+    expect(entries.map((entry) => entry.text)).toEqual(['do the thing', 'done']);
+  });
+
+  it('drops system messages', () => {
+    const entries = projectHistory([
+      message({ role: 'system', content: text('system prompt') }),
+      message({ role: 'user', id: 'm1', content: text('hi') }),
+    ]);
+
+    expect(entries.map((entry) => entry.text)).toEqual(['hi']);
+  });
+
+  it('expands tool calls into their own entries', () => {
+    const entries = projectHistory([
+      message({ role: 'user', id: 'm1', content: text('read a file') }),
+      message({
+        role: 'assistant',
+        id: 'm2',
+        content: text('reading'),
+        toolCalls: [
+          { type: 'function', id: 'call_1', name: 'Read', arguments: '{}' },
+          { type: 'function', id: 'call_2', name: 'Bash', arguments: '{}' },
+        ],
+      }),
+    ]);
+
+    expect(entries.map((entry) => [entry.role, entry.kind, entry.text])).toEqual([
+      ['user', 'text', 'read a file'],
+      ['assistant', 'text', 'reading'],
+      ['tool', 'tool-call', 'Read'],
+      ['tool', 'tool-call', 'Bash'],
+    ]);
+  });
+
+  it('joins multiple text parts into one entry', () => {
+    const entries = projectHistory([
+      message({
+        role: 'assistant',
+        id: 'm1',
+        content: [
+          { type: 'text', text: 'part one ' },
+          { type: 'text', text: 'part two' },
+        ],
+      }),
+    ]);
+
+    expect(entries[0]?.text).toBe('part one part two');
+  });
+
+  it('synthesises unique ids when the engine omits them', () => {
+    const entries = projectHistory([
+      message({ role: 'assistant', content: text('a') }),
+      message({ role: 'assistant', content: text('b') }),
+    ]);
+
+    expect(entries).toHaveLength(2);
+    expect(entries[0]?.id).not.toBe(entries[1]?.id);
+    expect(entries.every((entry) => entry.id !== '')).toBe(true);
+  });
+
+  it('returns an empty list for an empty history', () => {
+    expect(projectHistory([])).toEqual([]);
+  });
+});
