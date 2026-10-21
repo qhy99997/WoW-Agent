@@ -39,6 +39,7 @@ const bridge: WowBridge = {
     delete: async (sessionId) => await call(IPC.sessionDelete, sessionId),
     rename: async (sessionId, title) => await call(IPC.sessionRename, sessionId, title),
     transcript: async (sessionId) => await call(IPC.sessionTranscript, sessionId),
+    setModel: async (sessionId, alias) => await call(IPC.sessionSetModel, sessionId, alias),
   },
   prompt: {
     send: async (sessionId, text) => await call(IPC.promptSend, sessionId, text),
@@ -50,11 +51,18 @@ const bridge: WowBridge = {
   question: {
     respond: async (questionId, answer) => await call(IPC.questionRespond, questionId, answer),
   },
+  settings: {
+    snapshot: async () => await call(IPC.settingsSnapshot),
+  },
   models: {
     list: async () => await call(IPC.modelsList),
+    add: async (input) => await call(IPC.modelAdd, input),
+    remove: async (alias) => await call(IPC.modelRemove, alias),
+    setDefault: async (alias) => await call(IPC.defaultModelSet, alias),
   },
   provider: {
     upsert: async (config) => await call(IPC.providerUpsert, config),
+    remove: async (name) => await call(IPC.providerRemove, name),
     test: async (config) => await call(IPC.providerTest, config),
   },
   on: {

@@ -458,6 +458,15 @@ export class KimiHarness {
     return this.rpc.setConfig(patch);
   }
 
+  /**
+   * Replace one config domain wholesale. `setConfig` deep-merges, so it cannot
+   * express "drop this key"; this is the escape hatch for deletions (removing a
+   * model alias, clearing a section). `undefined` deletes the domain.
+   */
+  async replaceConfigSection(domain: string, value: unknown): Promise<KimiConfig> {
+    return this.rpc.replaceConfigSection(domain, value);
+  }
+
   async removeProvider(providerId: string): Promise<KimiConfig> {
     return this.rpc.removeProvider(providerId);
   }

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type {
   ApprovalRequest,
   DoctorReport,
+  ModelOption,
   QuestionRequest,
   SessionSummary,
   StreamDelta,
@@ -13,6 +14,7 @@ import { bridge } from './bridge.js';
 import { Composer } from './components/Composer.js';
 import { MessageList } from './components/MessageList.js';
 import { Onboarding } from './components/Onboarding.js';
+import { Settings } from './components/Settings.js';
 import { Sidebar } from './components/Sidebar.js';
 import { ApprovalCard } from './components/ApprovalCard.js';
 
@@ -25,12 +27,23 @@ export function App(): React.JSX.Element {
   const [approval, setApproval] = useState<ApprovalRequest | null>(null);
   const [streaming, setStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [models, setModels] = useState<ModelOption[]>([]);
+  const [activeModel, setActiveModel] = useState<string | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const refreshSessions = useCallback(async () => {
     const rows = await bridge().session.list();
     setSessions(rows);
     return rows;
+  }, []);
+
+  const refreshModels = useCallback(async () => {
+    const snapshot = await bridge().settings.snapshot();
+    setModels(snapshot.models);
+    const preferred = snapshot.defaultModel ?? snapshot.models[0]?.alias ?? null;
+    setActiveModel((current) => current ?? preferred);
+    return snapshot;
   }, []);
 
   const selectSession = useCallback(async (sessionId: string) => {
@@ -45,11 +58,13 @@ export function App(): React.JSX.Element {
       setDoctor(report);
       if (!report.ok) return;
       setWorkspaces(await bridge().workspace.list());
+      const snapshot = await refreshModels();
       const rows = await refreshSessions();
       const first = rows[0];
       if (first !== undefined) await selectSession(first.id);
+      if (snapshot.models.length === 0) setShowSettings(true);
     })();
-  }, [refreshSessions, selectSession]);
+  }, [refreshSessions, refreshModels, selectSession]);
 
   useEffect(() => {
     const offDelta = bridge().on.streamDelta((delta: StreamDelta) => {
@@ -120,8 +135,17 @@ export function App(): React.JSX.Element {
 
   return (
     <div className="flex h-full flex-col">
-      <header className="wow-drag flex h-10 shrink-0 items-center justify-end border-b border-hairline px-4">
+      <header className="wow-drag flex h-10 shrink-0 items-center justify-between border-b border-hairline px-4">
         <span className="text-[11px] tracking-[0.14em] text-ink-subtle uppercase">WoW</span>
+        <button
+          type="button"
+          onClick={() => {
+            setShowSettings(true);
+          }}
+          className="wow-no-drag rounded-control px-2 py-1 text-[11px] text-ink-muted transition-colors hover:bg-surface hover:text-ink"
+        >
+          设置
+        </button>
       </header>
       <div className="flex min-h-0 flex-1">
         <Sidebar
@@ -133,8 +157,21 @@ export function App(): React.JSX.Element {
           onPickWorkspace={() => void pickWorkspace()}
         />
         <main className="flex min-w-0 flex-1 flex-col">
-          {activeSession === null ? (
-            <EmptyState onPickWorkspace={() => void pickWorkspace()} />
+          {showSettings ? (
+            <Settings
+              onClose={() => {
+                setShowSettings(false);
+                void refreshModels();
+              }}
+            />
+          ) : activeSession === null ? (
+            <EmptyState
+              hasModel={models.length > 0}
+              onPickWorkspace={() => void pickWorkspace()}
+              onOpenSettings={() => {
+                setShowSettings(true);
+              }}
+            />
           ) : (
             <>
               <MessageList entries={entries} bottomRef={bottomRef} />
@@ -150,6 +187,12 @@ export function App(): React.JSX.Element {
               )}
               <Composer
                 disabled={streaming}
+                models={models}
+                activeModel={activeModel}
+                onModelChange={(alias) => {
+                  setActiveModel(alias);
+                  void bridge().session.setModel(activeSession, alias).catch(() => undefined);
+                }}
                 onSubmit={(text) => void send(text)}
                 onCancel={() => void bridge().prompt.cancel(activeSession)}
                 workspaceName={activeWorkspace?.name ?? ''}
@@ -188,7 +231,34 @@ function applyDelta(current: TranscriptEntry[], delta: StreamDelta): TranscriptE
   return next;
 }
 
-function EmptyState({ onPickWorkspace }: { onPickWorkspace: () => void }): React.JSX.Element {
+function EmptyState({
+  hasModel,
+  onPickWorkspace,
+  onOpenSettings,
+}: {
+  hasModel: boolean;
+  onPickWorkspace: () => void;
+  onOpenSettings: () => void;
+}): React.JSX.Element {
+  if (!hasModel) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
+        <h1 className="text-[22px] font-medium tracking-tight">先配置一个模型</h1>
+        <p className="max-w-md text-[13px] text-ink-muted">
+          WoW 不要求登录账号。填一个兼容 OpenAI / Anthropic 的 Base URL 和 API Key
+          就可以开始。
+        </p>
+        <button
+          type="button"
+          onClick={onOpenSettings}
+          className="wow-no-drag rounded-control bg-accent px-4 py-2 text-[13px] font-medium text-canvas transition-colors hover:brightness-110"
+        >
+          打开设置
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
       <h1 className="text-[22px] font-medium tracking-tight">开始一个会话</h1>

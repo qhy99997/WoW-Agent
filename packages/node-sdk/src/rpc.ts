@@ -219,6 +219,8 @@ export abstract class SDKRpcClientBase {
 
   abstract setConfig(input: KimiConfigPatch): Promise<KimiConfig>;
 
+  abstract replaceConfigSection(domain: string, value: unknown): Promise<KimiConfig>;
+
   abstract removeProvider(providerId: string): Promise<KimiConfig>;
 
   abstract importCustomRegistry(

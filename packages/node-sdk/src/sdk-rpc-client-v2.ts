@@ -767,6 +767,17 @@ export class SDKRpcClientV2 extends SDKRpcClientBase {
   }
 
   /**
+   * Replace a whole config domain instead of deep-merging into it. Needed for
+   * deletions: `setConfig` merges, so a key removed from the patch survives in
+   * the effective config forever. `undefined` clears the domain.
+   */
+  async replaceConfigSection(domain: string, value: unknown): Promise<KimiConfig> {
+    await this.configReady;
+    await this.klient.global.config.replace({ domain, value: value ?? null });
+    return this.getConfig();
+  }
+
+  /**
    * v1's removal cascades: the provider entry, every model pointing at it,
    * and the default pointers when they dangle. The engine's own
    * `kosong.removeProvider` only clears the default-provider pointer, so the

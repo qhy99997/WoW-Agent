@@ -42,12 +42,36 @@ export type DoctorReport = z.infer<typeof DoctorReportSchema>;
 
 export const ProviderConfigSchema = z.object({
   name: z.string().min(1),
-  wireType: z.string().min(1),
+  wireType: z.enum(['openai', 'anthropic', 'kimi', 'google-genai', 'openai_responses']),
   baseUrl: z.string().url(),
   apiKey: z.string().optional(),
-  models: z.array(z.string()).optional(),
 });
 export type ProviderConfig = z.infer<typeof ProviderConfigSchema>;
+
+export const ProviderSummarySchema = z.object({
+  name: z.string(),
+  wireType: z.string(),
+  baseUrl: z.string().optional(),
+  hasApiKey: z.boolean(),
+  modelAliases: z.array(z.string()),
+});
+export type ProviderSummary = z.infer<typeof ProviderSummarySchema>;
+
+export const AddModelInputSchema = z.object({
+  provider: z.string().min(1),
+  model: z.string().min(1),
+  displayName: z.string().optional(),
+  maxContextSize: z.number().int().positive().optional(),
+  capabilities: z.array(z.string()).optional(),
+});
+export type AddModelInput = z.infer<typeof AddModelInputSchema>;
+
+export const SettingsSnapshotSchema = z.object({
+  providers: z.array(ProviderSummarySchema),
+  models: z.array(ModelOptionSchema),
+  defaultModel: z.string().optional(),
+});
+export type SettingsSnapshot = z.infer<typeof SettingsSnapshotSchema>;
 
 export const TranscriptEntrySchema = z.object({
   id: z.string(),

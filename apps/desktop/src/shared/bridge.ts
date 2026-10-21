@@ -1,10 +1,12 @@
 import type {
+  AddModelInput,
   ApprovalRequest,
   DoctorReport,
   ModelOption,
   ProviderConfig,
   QuestionRequest,
   SessionSummary,
+  SettingsSnapshot,
   StreamDelta,
   TranscriptEntry,
   Workspace,
@@ -19,13 +21,19 @@ export const IPC = {
   sessionDelete: 'wow:session:delete',
   sessionRename: 'wow:session:rename',
   sessionTranscript: 'wow:session:transcript',
+  sessionSetModel: 'wow:session:set-model',
   promptSend: 'wow:prompt:send',
   promptCancel: 'wow:prompt:cancel',
   approvalRespond: 'wow:approval:respond',
   questionRespond: 'wow:question:respond',
+  settingsSnapshot: 'wow:settings:snapshot',
   modelsList: 'wow:models:list',
   providerUpsert: 'wow:provider:upsert',
+  providerRemove: 'wow:provider:remove',
   providerTest: 'wow:provider:test',
+  modelAdd: 'wow:model:add',
+  modelRemove: 'wow:model:remove',
+  defaultModelSet: 'wow:model:set-default',
 } as const;
 
 export const EVENTS = {
@@ -47,6 +55,7 @@ export interface WowBridge {
     delete(sessionId: string): Promise<void>;
     rename(sessionId: string, title: string): Promise<void>;
     transcript(sessionId: string): Promise<TranscriptEntry[]>;
+    setModel(sessionId: string, modelAlias: string): Promise<void>;
   };
   prompt: {
     send(sessionId: string, text: string): Promise<void>;
@@ -54,9 +63,16 @@ export interface WowBridge {
   };
   approval: { respond(approvalId: string, optionId: string): Promise<void> };
   question: { respond(questionId: string, answer: string): Promise<void> };
-  models: { list(): Promise<ModelOption[]> };
+  settings: { snapshot(): Promise<SettingsSnapshot> };
+  models: {
+    list(): Promise<ModelOption[]>;
+    add(input: AddModelInput): Promise<void>;
+    remove(alias: string): Promise<void>;
+    setDefault(alias: string): Promise<void>;
+  };
   provider: {
     upsert(config: ProviderConfig): Promise<void>;
+    remove(name: string): Promise<void>;
     test(config: ProviderConfig): Promise<{ ok: boolean; detail: string }>;
   };
   on: {

@@ -15,12 +15,15 @@ import type {
 } from '@moonshot-ai/kimi-code-sdk';
 
 import type {
+  AddModelInput,
   ApprovalRequest,
   DoctorReport,
   ModelOption,
   ProviderConfig,
+  ProviderSummary,
   QuestionRequest,
   SessionSummary,
+  SettingsSnapshot,
   StreamDelta,
   TranscriptEntry,
   Workspace,
@@ -350,17 +353,103 @@ export class AgentHost {
     }));
   }
 
+  async settingsSnapshot(): Promise<SettingsSnapshot> {
+    const harness = await this.ensureStarted();
+    const config = await harness.getConfig();
+    const models = config.models ?? {};
+    const providers: ProviderSummary[] = Object.entries(config.providers ?? {}).map(
+      ([name, entry]) => ({
+        name,
+        wireType: entry.type,
+        baseUrl: entry.baseUrl,
+        hasApiKey: (entry.apiKey ?? '') !== '',
+        modelAliases: Object.entries(models)
+          .filter(([, model]) => model.provider === name)
+          .map(([alias]) => alias),
+      }),
+    );
+    return {
+      providers,
+      models: Object.entries(models).map(([alias, entry]) => ({
+        alias,
+        provider: entry.provider,
+        displayName: entry.displayName ?? alias,
+      })),
+      defaultModel: config.defaultModel,
+    };
+  }
+
   async upsertProvider(config: ProviderConfig): Promise<void> {
     const harness = await this.ensureStarted();
     await harness.setConfig({
       providers: {
         [config.name]: {
-          type: config.wireType as 'openai' | 'anthropic' | 'kimi' | 'google-genai',
+          type: config.wireType,
           baseUrl: config.baseUrl,
           apiKey: config.apiKey,
         },
       },
     });
+  }
+
+  async removeProvider(name: string): Promise<void> {
+    const harness = await this.ensureStarted();
+    await harness.removeProvider(name);
+  }
+
+  async addModel(input: AddModelInput): Promise<void> {
+    const harness = await this.ensureStarted();
+    const alias = `${input.provider}/${input.model}`;
+    await harness.setConfig({
+      models: {
+        [alias]: {
+          provider: input.provider,
+          model: input.model,
+          displayName: input.displayName ?? input.model,
+          maxContextSize: input.maxContextSize ?? 128_000,
+          capabilities: input.capabilities,
+        },
+      },
+    });
+    const config = await harness.getConfig();
+    if (config.defaultModel === undefined) {
+      await harness.setConfig({ defaultModel: alias });
+    }
+  }
+
+  /**
+   * `setConfig` deep-merges, so it cannot express "drop this key". Replacing the
+   * whole `models` domain is the only way to delete a single alias.
+   */
+  async removeModel(alias: string): Promise<void> {
+    const harness = await this.ensureStarted();
+    const config = await harness.getConfig();
+    const remaining = Object.fromEntries(
+      Object.entries(config.models ?? {}).filter(([key]) => key !== alias),
+    );
+    await harness.replaceConfigSection(
+      'models',
+      Object.keys(remaining).length === 0 ? undefined : remaining,
+    );
+    if (config.defaultModel === alias) {
+      const next = Object.keys(remaining)[0];
+      if (next !== undefined) await harness.setConfig({ defaultModel: next });
+    }
+  }
+
+  async deleteProvider(name: string): Promise<void> {
+    const harness = await this.ensureStarted();
+    await harness.removeProvider(name);
+  }
+
+  async setDefaultModel(alias: string): Promise<void> {
+    const harness = await this.ensureStarted();
+    await harness.setConfig({ defaultModel: alias });
+  }
+
+  async setSessionModel(sessionId: string, modelAlias: string): Promise<void> {
+    const session = await this.ensureSession(sessionId);
+    await session.setModel(modelAlias);
   }
 
   async testProvider(config: ProviderConfig): Promise<{ ok: boolean; detail: string }> {

@@ -107,6 +107,9 @@ function registerIpc(): void {
   ipcMain.handle(IPC.sessionTranscript, (_event, sessionId: string) =>
     guard(() => host.transcript(sessionId)),
   );
+  ipcMain.handle(IPC.sessionSetModel, async (_event, sessionId: string, alias: string) =>
+    await guard(() => host.setSessionModel(sessionId, alias)),
+  );
 
   ipcMain.handle(IPC.promptSend, async (_event, sessionId: string, text: string) =>
     await guard(() => host.sendPrompt(sessionId, text)),
@@ -126,9 +129,22 @@ function registerIpc(): void {
     }),
   );
 
+  ipcMain.handle(IPC.settingsSnapshot, async () => await guard(() => host.settingsSnapshot()));
   ipcMain.handle(IPC.modelsList, async () => await guard(() => host.listModels()));
+  ipcMain.handle(IPC.modelAdd, async (_event, input: Parameters<typeof host.addModel>[0]) =>
+    await guard(() => host.addModel(input)),
+  );
+  ipcMain.handle(IPC.modelRemove, async (_event, alias: string) =>
+    await guard(() => host.removeModel(alias)),
+  );
+  ipcMain.handle(IPC.defaultModelSet, async (_event, alias: string) =>
+    await guard(() => host.setDefaultModel(alias)),
+  );
   ipcMain.handle(IPC.providerUpsert, async (_event, config: Parameters<typeof host.upsertProvider>[0]) =>
     await guard(() => host.upsertProvider(config)),
+  );
+  ipcMain.handle(IPC.providerRemove, async (_event, name: string) =>
+    await guard(() => host.deleteProvider(name)),
   );
   ipcMain.handle(IPC.providerTest, async (_event, config: Parameters<typeof host.testProvider>[0]) =>
     await guard(() => host.testProvider(config)),
