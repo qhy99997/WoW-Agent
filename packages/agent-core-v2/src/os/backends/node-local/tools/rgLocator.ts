@@ -5,7 +5,6 @@ import { homedir, tmpdir } from 'node:os';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 
-import { kimiRegionProfile, resolveKimiRegion } from '@moonshot-ai/kimi-code-oauth';
 import { extract as extractTar } from 'tar';
 import { type Entry, fromBuffer as yauzlFromBuffer } from 'yauzl';
 import { basename, join } from 'pathe';
@@ -15,6 +14,7 @@ import { ErrorCodes, Error2 } from '#/errors';
 
 const RG_VERSION = '15.0.0';
 const DOWNLOAD_TIMEOUT_MS = 600_000;
+const DEFAULT_RG_MIRROR = `https://github.com/BurntSushi/ripgrep/releases/download/${RG_VERSION}`;
 const RG_ARCHIVE_SHA256: Record<string, string> = {
   'ripgrep-15.0.0-aarch64-apple-darwin.tar.gz':
     '98bb2e61e7277ba0ea72d2ae2592497fd8d2940934a16b122448d302a6637e3b',
@@ -56,9 +56,9 @@ function rgBinaryName(): string {
 }
 
 function getShareDir(): string {
-  const override = process.env['KIMI_CODE_HOME'];
+  const override = process.env['WOW_HOME'];
   if (override !== undefined && override !== '') return override;
-  return join(homedir(), '.kimi-code');
+  return join(homedir(), '.wow');
 }
 
 export function getShareBinRgPath(): string {
@@ -66,7 +66,9 @@ export function getShareBinRgPath(): string {
 }
 
 function rgBaseUrl(): string {
-  return `${kimiRegionProfile(resolveKimiRegion()).cdnBase}/rg`;
+  const mirror = process.env['WOW_RG_MIRROR'];
+  if (mirror !== undefined && mirror !== '') return mirror.replace(/\/+$/, '');
+  return DEFAULT_RG_MIRROR;
 }
 
 function throwIfAborted(signal: AbortSignal | undefined): void {
@@ -365,8 +367,10 @@ export function rgUnavailableMessage(cause: unknown): string {
     `Fix options:\n` +
     `  macOS:   brew install ripgrep\n` +
     `  Ubuntu:  sudo apt-get install ripgrep\n` +
+    `  Windows: winget install BurntSushi.ripgrep.MSVC\n` +
     `  Other:   https://github.com/BurntSushi/ripgrep#installation\n` +
     `\n` +
-    `Alternatively, drop a static rg binary at ${shareBin}`
+    `Alternatively, drop a static rg binary at ${shareBin},\n` +
+    `or point WOW_RG_MIRROR at a download mirror that serves the pinned archives.`
   );
 }

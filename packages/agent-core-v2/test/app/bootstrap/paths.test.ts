@@ -12,14 +12,14 @@ describe('bootstrap path helpers', () => {
       expect(resolveKimiHome('/tmp/kimi')).toBe('/tmp/kimi');
     });
 
-    it('falls back to KIMI_CODE_HOME env', () => {
-      const prev = process.env['KIMI_CODE_HOME'];
-      process.env['KIMI_CODE_HOME'] = '/env/kimi';
+    it('falls back to WOW_HOME env', () => {
+      const prev = process.env['WOW_HOME'];
+      process.env['WOW_HOME'] = '/env/kimi';
       try {
         expect(resolveKimiHome()).toBe('/env/kimi');
       } finally {
-        if (prev === undefined) delete process.env['KIMI_CODE_HOME'];
-        else process.env['KIMI_CODE_HOME'] = prev;
+        if (prev === undefined) delete process.env['WOW_HOME'];
+        else process.env['WOW_HOME'] = prev;
       }
     });
   });

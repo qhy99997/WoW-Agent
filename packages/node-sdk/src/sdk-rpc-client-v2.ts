@@ -1713,7 +1713,7 @@ export class SDKRpcClientV2 extends SDKRpcClientBase {
   /**
    * Through the session's handler (`IWorkspaceDirs`, workspace scope) — the
    * workspace-level add-dir surface: `persist: true` (default) appends to the
-   * project-local `.kimi-code/local.toml`, `persist: false` joins the
+   * project-local `.wow/local.toml`, `persist: false` joins the
    * handler's shared in-memory set. The set is shared by every session of
    * the workspace (a v1 `persist: false` dir was session-scoped and written
    * into session metadata to survive a resume; the v2 handler keeps it for

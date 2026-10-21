@@ -1170,7 +1170,7 @@ describe('ReadTool', () => {
     );
 
     const result = await execute(tool, {
-      path: '/home/user/.kimi-code/sessions/ws/session/agents/main/wire.jsonl',
+      path: '/home/user/.wow/sessions/ws/session/agents/main/wire.jsonl',
     });
     const output = toolContentString(result);
 
@@ -1189,7 +1189,7 @@ describe('ReadTool', () => {
     };
     const tool = createReadTool(createSpiedFs(`${huge}\nshort`).fs, createTestEnv(), PERMISSIVE_WORKSPACE, undefined, truncation);
     const result = await execute(tool, {
-      path: '/home/user/.kimi-code/sessions/ws/session/agents/main/wire.jsonl',
+      path: '/home/user/.wow/sessions/ws/session/agents/main/wire.jsonl',
       line_offset: 1,
       n_lines: 1,
       max_chars: 500_000,

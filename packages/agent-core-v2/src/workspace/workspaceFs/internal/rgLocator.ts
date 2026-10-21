@@ -24,9 +24,9 @@ function rgBinaryName(): string {
 }
 
 function getShareDir(): string {
-  const override = process.env['KIMI_CODE_HOME'];
+  const override = process.env['WOW_HOME'];
   if (override !== undefined && override !== '') return override;
-  return join(homedir(), '.kimi-code');
+  return join(homedir(), '.wow');
 }
 
 export function getShareBinRgPath(): string {
@@ -74,6 +74,7 @@ export function rgUnavailableMessage(cause: unknown): string {
     `Fix options:\n` +
     `  macOS:   brew install ripgrep\n` +
     `  Ubuntu:  sudo apt-get install ripgrep\n` +
+    `  Windows: winget install BurntSushi.ripgrep.MSVC\n` +
     `  Other:   https://github.com/BurntSushi/ripgrep#installation\n` +
     `\n` +
     `Alternatively, drop a static rg binary at ${shareBin}`

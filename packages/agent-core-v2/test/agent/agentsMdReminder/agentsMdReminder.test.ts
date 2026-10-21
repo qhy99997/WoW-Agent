@@ -205,7 +205,7 @@ function createHarness(
         acquire: (): RuntimeLease => ({
           runtime: {
             identity: { workspaceId: 'workspace-1', runtimeId: 'local', generation: 'test' },
-            capabilities: new Set(['fs', 'process', 'terminal']),
+            capabilities: new Set(['fs', 'process']),
             environment: hostEnvironment,
             path: {
               separator: options.pathClass === 'win32' ? '\\' : '/',
@@ -406,11 +406,11 @@ describe('agentsMdReminder path-carrying tools', () => {
     expect(reminderText(h)).toContain(subAgentsMd);
   });
 
-  it('discovers the .kimi-code/AGENTS.md variant alongside the plain one', async () => {
+  it('discovers the .wow/AGENTS.md variant alongside the plain one', async () => {
     const h = createHarness();
     const subDir = join(workDir, 'packages', 'kap-server');
-    const dotKimi = normalize(join(subDir, '.kimi-code', 'AGENTS.md'));
-    await writeAgentsMd(join(subDir, '.kimi-code'), 'dot kimi instructions');
+    const dotKimi = normalize(join(subDir, '.wow', 'AGENTS.md'));
+    await writeAgentsMd(join(subDir, '.wow'), 'dot kimi instructions');
     const plain = await writeAgentsMd(subDir);
 
     const result = await fire(h, didCtx('Read', { path: join(subDir, 'index.ts') }));

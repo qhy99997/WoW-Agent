@@ -103,7 +103,7 @@ export function splitAgentsMdFiles(
 export const AGENTS_MD_PLAIN_NAMES = ['AGENTS.md', 'agents.md'] as const;
 
 export function dotKimiAgentsMdPath(dir: string): string {
-  return join(dir, '.kimi-code', 'AGENTS.md');
+  return join(dir, '.wow', 'AGENTS.md');
 }
 
 export function agentsMdCandidatePaths(dir: string): string[] {
@@ -181,7 +181,7 @@ export async function loadAgentsMdForRoots(
   };
 
   const realHome = deps.homeDir;
-  const brandDir = brandHome ?? join(realHome, '.kimi-code');
+  const brandDir = brandHome ?? join(realHome, '.wow');
   await collect(join(brandDir, 'AGENTS.md'));
 
   const genericDirs = [join(realHome, '.agents')];
@@ -231,7 +231,7 @@ export async function agentsMdWatchRoots(
   brandHome?: string,
 ): Promise<readonly AgentsMdWatchRoot[]> {
   const realHome = deps.homeDir;
-  const brandDir = brandHome ?? join(realHome, '.kimi-code');
+  const brandDir = brandHome ?? join(realHome, '.wow');
   const plan: AgentsMdWatchRoot[] = [
     { root: brandDir, candidates: [join(brandDir, 'AGENTS.md')] },
     {
@@ -244,7 +244,7 @@ export async function agentsMdWatchRoots(
   const projectCandidates: string[] = [];
   for (const dir of dirsRootToLeaf(rootWorkDir, projectRoot)) {
     projectCandidates.push(
-      join(dir, '.kimi-code', 'AGENTS.md'),
+      join(dir, '.wow', 'AGENTS.md'),
       join(dir, 'AGENTS.md'),
       join(dir, 'agents.md'),
     );

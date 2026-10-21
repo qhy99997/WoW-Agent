@@ -40,27 +40,27 @@ tools exist and the user didn't name one, ask which.
 Config lives in three files; on key collision, later entries in this
 precedence order override earlier ones.
 
-The kimi-code runtime resolves the user-global directory as `KIMI_CODE_HOME`
-first, falling back to `~/.kimi-code`. Before touching the user-global file,
+The kimi-code runtime resolves the user-global directory as `WOW_HOME`
+first, falling back to `~/.wow`. Before touching the user-global file,
 resolve the actual directory with Bash so you don't read or write the wrong
-one. Check whether `KIMI_CODE_HOME` is set and fall back to `~/.kimi-code`
+one. Check whether `WOW_HOME` is set and fall back to `~/.wow`
 when it is empty:
 
 ```bash
-echo "$KIMI_CODE_HOME"
-echo "$HOME/.kimi-code"
+echo "$WOW_HOME"
+echo "$HOME/.wow"
 ```
 
 Use the first line when it is non-empty; otherwise use the second line. In the
-rest of this skill, `<KIMI_CODE_HOME>` means that resolved data root —
-**never assume `~/.kimi-code`**.
+rest of this skill, `<WOW_HOME>` means that resolved data root —
+**never assume `~/.wow`**.
 
-- User-global: `<KIMI_CODE_HOME>/mcp.json`. Use for servers you want
+- User-global: `<WOW_HOME>/mcp.json`. Use for servers you want
   everywhere.
 - Project-root: `<project root>/.mcp.json`, where project root is found
   by walking up from `<cwd>` to the nearest `.git`. Use for
   Claude-compatible, repo-shared, or cross-agent servers.
-- Project-local: `<cwd>/.kimi-code/mcp.json`. Use for Kimi-specific
+- Project-local: `<cwd>/.wow/mcp.json`. Use for Kimi-specific
   overrides in the current working directory.
 
 Mention once that project-root and project-local stdio entries spawn
@@ -102,7 +102,7 @@ For changes, the flow is:
 1. **Pick a scope.** Infer it from the user's words when you can
    (global / everywhere / all projects → user-global; root / repo /
    shared / cross-agent / Claude / `.mcp.json` → project-root; cwd /
-   current directory / Kimi-specific / `.kimi-code` → project-local). When
+   current directory / Kimi-specific / `.wow` → project-local). When
    the request is genuinely scope-less, use one `AskUserQuestion` to ask
    user-global vs project-root vs project-local, defaulting to
    user-global. Use plain text for every other question — `AskUserQuestion`

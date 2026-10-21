@@ -2,12 +2,17 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { FakeRuntime } from '#/runtime/fakeRuntime';
 import { RuntimeError, RuntimeRegistry } from '#/runtime/runtimeRegistry';
+import type { RuntimeCapability } from '#/runtime/runtime';
 
-function runtime(generation: string, status: 'ready' | 'disconnected' = 'ready'): FakeRuntime {
+function runtime(
+  generation: string,
+  status: 'ready' | 'disconnected' = 'ready',
+  capabilities: readonly RuntimeCapability[] = ['fs', 'process'],
+): FakeRuntime {
   return Object.assign(
     new FakeRuntime(
       { workspaceId: 'workspace', runtimeId: 'local', generation },
-      { status, capabilities: ['fs', 'process'] },
+      { status, capabilities },
     ),
     { fs: {} as never, process: {} as never },
   );
@@ -63,9 +68,12 @@ describe('RuntimeRegistry', () => {
     const lease = registry.acquire({ workspaceId: 'workspace', runtimeId: 'local' }, ['fs', 'process']);
     expect(lease.runtime).toBe(current);
     lease.dispose();
-    expect(() => registry.acquire(
+
+    const fsOnly = new RuntimeRegistry('workspace');
+    fsOnly.register(runtime('two', 'ready', ['fs']));
+    expect(() => fsOnly.acquire(
       { workspaceId: 'workspace', runtimeId: 'local' },
-      ['terminal'],
+      ['process'],
     )).toThrowError(expect.objectContaining<Partial<RuntimeError>>({ code: 'runtime.unavailable' }));
   });
 

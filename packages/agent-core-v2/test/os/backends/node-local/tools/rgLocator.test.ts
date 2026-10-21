@@ -316,9 +316,9 @@ describe('ensureRgPath download branch', () => {
     expect(new URL(url).protocol).toBe('https:');
   });
 
-  it('downloads from the global CDN when the env pins the global region', async () => {
-    const savedHost = process.env['KIMI_CODE_OAUTH_HOST'];
-    process.env['KIMI_CODE_OAUTH_HOST'] = 'https://auth.kimi.ai';
+  it('downloads from the pinned upstream release URL by default', async () => {
+    const savedMirror = process.env['WOW_RG_MIRROR'];
+    delete process.env['WOW_RG_MIRROR'];
     try {
       const body = bodyFromBuffer(Buffer.from('not a real archive', 'utf8'));
       const fetchMock = vi.fn().mockResolvedValue({
@@ -334,20 +334,18 @@ describe('ensureRgPath download branch', () => {
       ).rejects.toThrow();
 
       const [url] = fetchMock.mock.calls[0] as [string];
-      expect(url).toMatch(/^https:\/\/code\.kimi\.ai\/kimi-code\/rg\/ripgrep-/);
+      expect(url).toMatch(
+        /^https:\/\/github\.com\/BurntSushi\/ripgrep\/releases\/download\/15\.0\.0\/ripgrep-/,
+      );
     } finally {
-      if (savedHost === undefined) delete process.env['KIMI_CODE_OAUTH_HOST'];
-      else process.env['KIMI_CODE_OAUTH_HOST'] = savedHost;
+      if (savedMirror === undefined) delete process.env['WOW_RG_MIRROR'];
+      else process.env['WOW_RG_MIRROR'] = savedMirror;
     }
   });
 
-  it('downloads from the cn CDN by default (no env override, no install marker)', async () => {
-    const savedHost = process.env['KIMI_CODE_OAUTH_HOST'];
-    const savedLegacyHost = process.env['KIMI_OAUTH_HOST'];
-    const savedHome = process.env['KIMI_CODE_HOME'];
-    delete process.env['KIMI_CODE_OAUTH_HOST'];
-    delete process.env['KIMI_OAUTH_HOST'];
-    process.env['KIMI_CODE_HOME'] = fakeShare;
+  it('honors WOW_RG_MIRROR when the operator overrides the download host', async () => {
+    const savedMirror = process.env['WOW_RG_MIRROR'];
+    process.env['WOW_RG_MIRROR'] = 'https://mirror.example.test/rg/';
     try {
       const body = bodyFromBuffer(Buffer.from('not a real archive', 'utf8'));
       const fetchMock = vi.fn().mockResolvedValue({
@@ -363,14 +361,10 @@ describe('ensureRgPath download branch', () => {
       ).rejects.toThrow();
 
       const [url] = fetchMock.mock.calls[0] as [string];
-      expect(url).toMatch(/^https:\/\/code\.kimi\.com\/kimi-code\/rg\/ripgrep-/);
+      expect(url).toMatch(/^https:\/\/mirror\.example\.test\/rg\/ripgrep-/);
     } finally {
-      if (savedHost === undefined) delete process.env['KIMI_CODE_OAUTH_HOST'];
-      else process.env['KIMI_CODE_OAUTH_HOST'] = savedHost;
-      if (savedLegacyHost === undefined) delete process.env['KIMI_OAUTH_HOST'];
-      else process.env['KIMI_OAUTH_HOST'] = savedLegacyHost;
-      if (savedHome === undefined) delete process.env['KIMI_CODE_HOME'];
-      else process.env['KIMI_CODE_HOME'] = savedHome;
+      if (savedMirror === undefined) delete process.env['WOW_RG_MIRROR'];
+      else process.env['WOW_RG_MIRROR'] = savedMirror;
     }
   });
 

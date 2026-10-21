@@ -142,9 +142,9 @@ export function defineKlientConformance(
     it('session skills.list returns the workspace skills as summaries', async () => {
       const workDir = await mkdtemp(join(tmpdir(), 'klient-conf-skills-'));
       try {
-        await mkdir(join(workDir, '.kimi-code', 'skills', 'conf-skill'), { recursive: true });
+        await mkdir(join(workDir, '.wow', 'skills', 'conf-skill'), { recursive: true });
         await writeFile(
-          join(workDir, '.kimi-code', 'skills', 'conf-skill', 'SKILL.md'),
+          join(workDir, '.wow', 'skills', 'conf-skill', 'SKILL.md'),
           '---\nname: conf-skill\ndescription: conformance fixture skill\n---\n\n# Conf\n',
         );
         const created = await target.klient.global.sessions.create({ workDir });
@@ -166,9 +166,9 @@ export function defineKlientConformance(
     it('promptWithSkills submits skills, args, and steerIfActive on every transport', async () => {
       const workDir = await mkdtemp(join(tmpdir(), 'klient-conf-skill-submit-'));
       try {
-        await mkdir(join(workDir, '.kimi-code', 'skills', 'conf-skill'), { recursive: true });
+        await mkdir(join(workDir, '.wow', 'skills', 'conf-skill'), { recursive: true });
         await writeFile(
-          join(workDir, '.kimi-code', 'skills', 'conf-skill', 'SKILL.md'),
+          join(workDir, '.wow', 'skills', 'conf-skill', 'SKILL.md'),
           '---\nname: conf-skill\ndescription: conformance fixture skill\n---\n\n# Conf body\n',
         );
         const created = await target.klient.global.sessions.create({ workDir });

@@ -180,7 +180,7 @@
 
   - Use the `/add-dir <path>` command to add extra working directories to the current session, or remember them for the project.
   - Use `kimi --add-dir <path>` to add them on startup.
-  - Project-level local config is now managed in `.kimi-code/local.toml`; we recommend adding it to your `.gitignore`.
+  - Project-level local config is now managed in `.wow/local.toml`; we recommend adding it to your `.gitignore`.
 
 ### Patch Changes
 

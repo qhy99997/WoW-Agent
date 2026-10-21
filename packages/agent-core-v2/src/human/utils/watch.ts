@@ -681,7 +681,7 @@ function planCandidateWatches(
 
 function isKimiCodeDir(path: string): boolean {
   const name = basename(path);
-  return process.platform === 'win32' ? name.toLowerCase() === '.kimi-code' : name === '.kimi-code';
+  return process.platform === 'win32' ? name.toLowerCase() === '.wow' : name === '.wow';
 }
 
 function isCandidateRelated(root: string, candidates: readonly string[], path: string): boolean {

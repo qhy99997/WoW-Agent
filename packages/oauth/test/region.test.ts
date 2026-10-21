@@ -118,9 +118,9 @@ describe('resolveKimiRegion', () => {
     ).toBe('mainland-cn');
   });
 
-  it('honors KIMI_CODE_HOME when homeDir is not passed explicitly', async () => {
+  it('honors WOW_HOME when homeDir is not passed explicitly', async () => {
     const dir = await markerDir('global');
-    expect(resolveKimiRegion({ env: { KIMI_CODE_HOME: dir } })).toBe('global');
+    expect(resolveKimiRegion({ env: { WOW_HOME: dir } })).toBe('global');
   });
 
   it('env beats persisted login beats marker', async () => {

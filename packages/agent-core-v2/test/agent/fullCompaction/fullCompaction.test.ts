@@ -3494,7 +3494,7 @@ describe('FullCompaction', () => {
 });
 
 describe('FullCompaction context recovery pointer', () => {
-  const JOURNAL_HOME = '/home/user/.kimi-code';
+  const JOURNAL_HOME = '/home/user/.wow';
 
   interface ApplyCompactionArgs {
     readonly summary?: string;

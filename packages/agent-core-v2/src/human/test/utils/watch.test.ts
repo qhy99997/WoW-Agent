@@ -416,7 +416,7 @@ describe('watch chokidar mode', () => {
 
   it('does not emit sibling flood names when watching candidate paths', async () => {
     root = await mkdtemp(join(tmpdir(), 'watch-candidates-'));
-    const kimi = join(root, '.kimi-code');
+    const kimi = join(root, '.wow');
     const sessions = join(kimi, 'sessions', 's1.json');
     await mkdir(join(kimi, 'sessions'), { recursive: true });
     await writeFile(join(root, 'ck_0001'), 'x');

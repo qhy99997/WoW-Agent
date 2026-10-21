@@ -8,7 +8,7 @@ import { canonicalWorkspaceRoot, findUpwardRoot, resolvePath, subtreeWatchFilter
 
 describe('subtree watch filtering', () => {
   const root = '/repo';
-  const candidates = ['/repo/.kimi-code/skills', '/repo/.agents/skills'];
+  const candidates = ['/repo/.wow/skills', '/repo/.agents/skills'];
 
   it('keeps the root, candidate ancestors and candidate subtrees watched', () => {
     const ignored = subtreeWatchFilter(root, candidates);

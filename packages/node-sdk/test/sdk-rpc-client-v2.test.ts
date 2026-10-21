@@ -5,7 +5,7 @@
  * compare (engine telemetry forwarding, host request headers, the Windows
  * Git Bash probe, workspace trust, the config write cascade, deleteSession,
  * foldAgentWireReplay).
- * Wiring: real v2 engine bootstrapped on a temp KIMI_CODE_HOME; remote provider calls are stubbed.
+ * Wiring: real v2 engine bootstrapped on a temp WOW_HOME; remote provider calls are stubbed.
  * Run: pnpm exec vitest run test/sdk-rpc-client-v2.test.ts
  */
 import { execFile } from 'node:child_process';
@@ -897,7 +897,7 @@ key = "${titleOAuthRef.key}"
     const workDir = await mkdtemp(join(tmpdir(), 'kimi-sdk-v2-work-'));
     tempDirs.push(workDir);
     await writeSkill(join(homeDir, 'skills', 'demo-user-skill'), 'demo-user-skill');
-    await writeSkill(join(workDir, '.kimi-code', 'skills', 'demo-project-skill'), 'demo-project-skill');
+    await writeSkill(join(workDir, '.wow', 'skills', 'demo-project-skill'), 'demo-project-skill');
     try {
       const skills = await harness.listWorkspaceSkills(workDir);
       const byName = new Map(skills.map((skill) => [skill.name, skill]));
@@ -962,7 +962,7 @@ key = "${titleOAuthRef.key}"
     tempDirs.push(explicitBase);
     const explicitDir = join(explicitBase, 'skills');
     await writeSkill(join(homeDir, 'skills', 'demo-user-skill'), 'demo-user-skill');
-    await writeSkill(join(workDir, '.kimi-code', 'skills', 'demo-project-skill'), 'demo-project-skill');
+    await writeSkill(join(workDir, '.wow', 'skills', 'demo-project-skill'), 'demo-project-skill');
     await writeSkill(join(explicitDir, 'demo-explicit-skill'), 'demo-explicit-skill');
     const harness = createKimiHarness({
       homeDir,
@@ -1627,9 +1627,9 @@ describe('SDKRpcClientV2 workspace trust', () => {
       }),
       'utf-8',
     );
-    await mkdir(join(workDir, '.kimi-code'), { recursive: true });
+    await mkdir(join(workDir, '.wow'), { recursive: true });
     await writeFile(
-      join(workDir, '.kimi-code', 'mcp.json'),
+      join(workDir, '.wow', 'mcp.json'),
       JSON.stringify({ mcpServers: { 'nested-server': { command: 'nested-cmd' } } }),
       'utf-8',
     );
@@ -1647,7 +1647,7 @@ describe('SDKRpcClientV2 workspace trust', () => {
           name: 'nested-server',
           transport: 'stdio',
           command: 'nested-cmd',
-          origin: await realpath(join(workDir, '.kimi-code', 'mcp.json')),
+          origin: await realpath(join(workDir, '.wow', 'mcp.json')),
         },
         {
           name: 'root-server',
@@ -1723,8 +1723,8 @@ describe('SDKRpcClientV2 workspace trust', () => {
     tempDirs.push(workDir);
     await writeFile(join(workDir, '.mcp.json'), '{not json', 'utf-8');
     await writeFile(join(workDir, 'AGENTS.md'), '# Project instructions\n', 'utf-8');
-    await mkdir(join(workDir, '.kimi-code'));
-    await symlink(join(workDir, 'missing.md'), join(workDir, '.kimi-code', 'AGENTS.md'));
+    await mkdir(join(workDir, '.wow'));
+    await symlink(join(workDir, 'missing.md'), join(workDir, '.wow', 'AGENTS.md'));
     try {
       const info = await harness.getWorkspaceTrustInfo(workDir);
       expect(info).toEqual({
@@ -1734,7 +1734,7 @@ describe('SDKRpcClientV2 workspace trust', () => {
         additionalDirSources: [],
         warnings: expect.arrayContaining([
           'Could not inspect MCP configuration.',
-          expect.stringContaining(join(workDir, '.kimi-code', 'AGENTS.md')),
+          expect.stringContaining(join(workDir, '.wow', 'AGENTS.md')),
         ]),
         instructionSources: {
           agentsMdPaths: [await realpath(join(workDir, 'AGENTS.md'))],
@@ -1759,9 +1759,9 @@ describe('SDKRpcClientV2 workspace trust', () => {
     // the project and grants nothing new.
     await symlink(outsideDir, join(workDir, 'linked-dir'), 'dir');
     await symlink(insideDir, join(workDir, 'inner-link'), 'dir');
-    await mkdir(join(workDir, '.kimi-code'), { recursive: true });
+    await mkdir(join(workDir, '.wow'), { recursive: true });
     await writeFile(
-      join(workDir, '.kimi-code', 'local.toml'),
+      join(workDir, '.wow', 'local.toml'),
       `[workspace]\nadditional_dir = [${JSON.stringify(outsideDir)}, ".", "sub", "..cache", "linked-dir", "inner-link"]\n`,
       'utf-8',
     );
@@ -1775,15 +1775,15 @@ describe('SDKRpcClientV2 workspace trust', () => {
       '---\nname: demo-skill\ndescription: Demo skill\n---\n\nDo demo things.\n',
       'utf-8',
     );
-    await symlink(outsideSkills, join(workDir, '.kimi-code', 'skills'), 'dir');
-    await mkdir(join(workDir, '.kimi-code', 'agents'), { recursive: true });
+    await symlink(outsideSkills, join(workDir, '.wow', 'skills'), 'dir');
+    await mkdir(join(workDir, '.wow', 'agents'), { recursive: true });
     await writeFile(
-      join(workDir, '.kimi-code', 'agents', 'demo-agent.md'),
+      join(workDir, '.wow', 'agents', 'demo-agent.md'),
       '---\nname: demo-agent\ndescription: Demo agent\n---\n\nYou are demo-agent.\n',
       'utf-8',
     );
     await writeFile(
-      join(workDir, '.kimi-code', 'agents', 'clash-agent.md'),
+      join(workDir, '.wow', 'agents', 'clash-agent.md'),
       '---\nname: agent\ndescription: Clashes with the builtin default without override\n---\n\nYou are not loaded.\n',
       'utf-8',
     );
@@ -1792,7 +1792,7 @@ describe('SDKRpcClientV2 workspace trust', () => {
       expect(info.trusted).toBe(false);
       expect(info.gatedAdditionalDirs).toEqual([
         await realpath(outsideDir),
-        // The symlinked .kimi-code/skills grants access to its real target.
+        // The symlinked .wow/skills grants access to its real target.
         await realpath(outsideSkills),
       ]);
       // The project AGENTS.md is a symlink escaping the project, so its real
@@ -1801,13 +1801,13 @@ describe('SDKRpcClientV2 workspace trust', () => {
         await realpath(join(outsideDir, 'AGENTS.md')),
       ]);
       expect(info.additionalDirSources).toEqual([
-        await realpath(join(workDir, '.kimi-code', 'local.toml')),
+        await realpath(join(workDir, '.wow', 'local.toml')),
         await realpath(outsideSkills),
       ]);
       expect(info.instructionSources.paths).toEqual([
         await realpath(join(outsideDir, 'AGENTS.md')),
         `${await realpath(outsideSkills)}/`,
-        `${await realpath(join(workDir, '.kimi-code', 'agents'))}/`,
+        `${await realpath(join(workDir, '.wow', 'agents'))}/`,
       ]);
       expect(info.warnings).toEqual([]);
       expect(info.instructionSources.skills).toEqual(['demo-skill']);
@@ -1824,17 +1824,17 @@ describe('SDKRpcClientV2 workspace trust', () => {
     const workDir = await mkdtemp(join(tmpdir(), 'kimi-sdk-v2-work-'));
     const outsideDir = await mkdtemp(join(tmpdir(), 'kimi-sdk-v2-agent-source-'));
     tempDirs.push(workDir, outsideDir);
-    await mkdir(join(workDir, '.kimi-code', 'agents'), { recursive: true });
+    await mkdir(join(workDir, '.wow', 'agents'), { recursive: true });
     await writeFile(
       join(outsideDir, 'override-agent.md'),
       '---\nname: agent\noverride: true\ndescription: Replaces the builtin default\n---\n\nYou are the override.\n',
       'utf-8',
     );
-    await symlink(join(outsideDir, 'override-agent.md'), join(workDir, '.kimi-code', 'agents', 'override-agent.md'));
+    await symlink(join(outsideDir, 'override-agent.md'), join(workDir, '.wow', 'agents', 'override-agent.md'));
     try {
       const info = await harness.getWorkspaceTrustInfo(workDir);
       expect(info.instructionSources.agentProfiles).toEqual(['agent']);
-      expect(info.instructionSources.paths).toEqual([`${await realpath(join(workDir, '.kimi-code', 'agents'))}/`]);
+      expect(info.instructionSources.paths).toEqual([`${await realpath(join(workDir, '.wow', 'agents'))}/`]);
     } finally {
       await harness.close();
     }

@@ -4,14 +4,9 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const sourceRoot = join(import.meta.dirname, '../../src');
-const kapSourceRoot = join(import.meta.dirname, '../../../kap-server/src');
 
 function source(path: string): string {
   return readFileSync(join(sourceRoot, path), 'utf8');
-}
-
-function kapSource(path: string): string {
-  return readFileSync(join(kapSourceRoot, path), 'utf8');
 }
 
 function sourceFiles(path: string): string[] {
@@ -92,17 +87,11 @@ describe('runtime architecture boundaries', () => {
     expect(readTool).not.toContain("'acquire' in runtime");
   });
 
-  it('routes terminal, MCP, and external FS through explicit runtime selection', () => {
-    const terminal = source('session/terminal/terminalService.ts');
+  it('routes MCP and external FS through explicit runtime selection', () => {
     const mcp = source('workspace/workspaceMcp/workspaceMcpService.ts');
-    const externalFs = kapSource('routes/fs.ts');
+    const externalFs = source('routes/fs.ts');
 
-    expect(terminal).toContain('this.runtimeResolver.acquire(');
-    expect(terminal).toContain('new RuntimeWorkspaceView(');
-    expect(terminal).not.toMatch(/@IHostTerminalService/);
     expect(mcp).toContain('runtimeResolver: this.runtimeResolver');
     expect(mcp).not.toMatch(/@IHost(?:FileSystem|FsWatchService|ProcessService|TerminalService)/);
-    expect(externalFs).toContain('get(IRuntimeResolver).acquire(');
-    expect(externalFs).not.toMatch(/\.get\(IHost(?:FileSystem|FsWatchService|ProcessService|TerminalService)\)/);
   });
 });

@@ -57,7 +57,7 @@ describe('McpRegistryService', () => {
 
   beforeEach(() => {
     home = mkdtempSync(join(tmpdir(), 'kimi-mcp-registry-home-'));
-    vi.stubEnv('KIMI_CODE_HOME', home);
+    vi.stubEnv('WOW_HOME', home);
     disposables = new DisposableStore();
     tempDirs = [home];
     pluginEntries = [];
@@ -153,7 +153,7 @@ describe('McpRegistryService', () => {
           repoOnly: { command: 'repo-only' },
         },
       });
-      await writeJson(join(sub, '.kimi-code', 'mcp.json'), {
+      await writeJson(join(sub, '.wow', 'mcp.json'), {
         mcpServers: { localOnly: { command: 'local-only' } },
       });
 
@@ -186,7 +186,7 @@ describe('McpRegistryService', () => {
       });
       expect(byName.get('localOnly')).toMatchObject({
         mutable: false,
-        origin: join(sub, '.kimi-code', 'mcp.json'),
+        origin: join(sub, '.wow', 'mcp.json'),
       });
     });
 
@@ -196,7 +196,7 @@ describe('McpRegistryService', () => {
       await writeJson(join(project, '.mcp.json'), {
         mcpServers: { repoOnly: { command: 'repo-only' } },
       });
-      await writeJson(join(sub, '.kimi-code', 'mcp.json'), {
+      await writeJson(join(sub, '.wow', 'mcp.json'), {
         mcpServers: { localOnly: { command: 'local-only' } },
       });
       pluginEntries = [
@@ -220,7 +220,7 @@ describe('McpRegistryService', () => {
       await writeJson(join(project, '.mcp.json'), {
         mcpServers: { repoOnly: { command: 'repo-only' } },
       });
-      await writeJson(join(sub, '.kimi-code', 'mcp.json'), {
+      await writeJson(join(sub, '.wow', 'mcp.json'), {
         mcpServers: { localOnly: { command: 'local-only' } },
       });
       trusted = false;
@@ -252,7 +252,7 @@ describe('McpRegistryService', () => {
       await writeJson(join(project, '.mcp.json'), {
         mcpServers: { projectOnly: { command: 'project-only' } },
       });
-      await writeJson(join(sub, '.kimi-code', 'mcp.json'), {
+      await writeJson(join(sub, '.wow', 'mcp.json'), {
         mcpServers: { localOnly: { command: 'local-only' } },
       });
       trustedKey = sub;
