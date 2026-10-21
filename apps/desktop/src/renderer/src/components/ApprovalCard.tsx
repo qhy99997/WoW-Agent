@@ -2,7 +2,7 @@ import type { ApprovalRequest } from '@shared/contract.js';
 
 interface ApprovalCardProps {
   request: ApprovalRequest;
-  onRespond(optionId: string): void;
+  onRespond: (optionId: string) => void;
 }
 
 export function ApprovalCard({ request, onRespond }: ApprovalCardProps): React.JSX.Element {

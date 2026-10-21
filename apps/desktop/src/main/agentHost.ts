@@ -27,7 +27,7 @@ import type {
   StreamDelta,
   TranscriptEntry,
   Workspace,
-} from '../shared/contract.js';
+} from '../shared/contract';
 
 export interface EventSink {
   onDelta(delta: StreamDelta): void;
@@ -84,7 +84,7 @@ export class AgentHost {
       this.harness = harness;
       return harness;
     })();
-    return await this.starting;
+    return this.starting;
   }
 
   async doctor(): Promise<DoctorReport> {
@@ -165,15 +165,15 @@ export class AgentHost {
     this.sessions.set(session.id, session);
     if (!this.transcripts.has(session.id)) this.transcripts.set(session.id, []);
 
-    const approvalHandler: ApprovalHandler = async (request) =>
-      await new Promise<ApprovalResponse>((resolve) => {
+    const approvalHandler: ApprovalHandler = (request) =>
+      new Promise<ApprovalResponse>((resolve) => {
         const id = request.toolCallId === '' ? randomUUID() : request.toolCallId;
         this.emitApproval(session.id, id, request);
         this.pendingApprovals.set(id, resolve as (value: unknown) => void);
       });
 
-    const questionHandler: QuestionHandler = async (request) =>
-      await new Promise<QuestionResult>((resolve) => {
+    const questionHandler: QuestionHandler = (request) =>
+      new Promise<QuestionResult>((resolve) => {
         const id = request.id ?? randomUUID();
         const first = request.questions[0];
         this.sink?.onQuestion({

@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
-import { EVENTS, IPC, type WowBridge } from '../shared/bridge.js';
-import type { RpcResult } from '../shared/contract.js';
+import { EVENTS, IPC, type WowBridge } from '../shared/bridge';
+import type { RpcResult } from '../shared/contract';
 
 function unwrap<T>(result: RpcResult<T>): T {
   if (result.ok) return result.value;
@@ -27,43 +27,43 @@ function subscribe<T>(channel: string, listener: (payload: T) => void): () => vo
 
 const bridge: WowBridge = {
   doctor: {
-    run: async () => await call(IPC.doctorRun),
+    run: () => call(IPC.doctorRun),
   },
   workspace: {
-    pick: async () => await call(IPC.workspacePick),
-    list: async () => await call(IPC.workspaceList),
+    pick: () => call(IPC.workspacePick),
+    list: () => call(IPC.workspaceList),
   },
   session: {
-    list: async () => await call(IPC.sessionList),
-    create: async (workDir) => await call(IPC.sessionCreate, workDir),
-    delete: async (sessionId) => await call(IPC.sessionDelete, sessionId),
-    rename: async (sessionId, title) => await call(IPC.sessionRename, sessionId, title),
-    transcript: async (sessionId) => await call(IPC.sessionTranscript, sessionId),
-    setModel: async (sessionId, alias) => await call(IPC.sessionSetModel, sessionId, alias),
+    list: () => call(IPC.sessionList),
+    create: (workDir) => call(IPC.sessionCreate, workDir),
+    delete: (sessionId) => call(IPC.sessionDelete, sessionId),
+    rename: (sessionId, title) => call(IPC.sessionRename, sessionId, title),
+    transcript: (sessionId) => call(IPC.sessionTranscript, sessionId),
+    setModel: (sessionId, alias) => call(IPC.sessionSetModel, sessionId, alias),
   },
   prompt: {
-    send: async (sessionId, text) => await call(IPC.promptSend, sessionId, text),
-    cancel: async (sessionId) => await call(IPC.promptCancel, sessionId),
+    send: (sessionId, text) => call(IPC.promptSend, sessionId, text),
+    cancel: (sessionId) => call(IPC.promptCancel, sessionId),
   },
   approval: {
-    respond: async (approvalId, optionId) => await call(IPC.approvalRespond, approvalId, optionId),
+    respond: (approvalId, optionId) => call(IPC.approvalRespond, approvalId, optionId),
   },
   question: {
-    respond: async (questionId, answer) => await call(IPC.questionRespond, questionId, answer),
+    respond: (questionId, answer) => call(IPC.questionRespond, questionId, answer),
   },
   settings: {
-    snapshot: async () => await call(IPC.settingsSnapshot),
+    snapshot: () => call(IPC.settingsSnapshot),
   },
   models: {
-    list: async () => await call(IPC.modelsList),
-    add: async (input) => await call(IPC.modelAdd, input),
-    remove: async (alias) => await call(IPC.modelRemove, alias),
-    setDefault: async (alias) => await call(IPC.defaultModelSet, alias),
+    list: () => call(IPC.modelsList),
+    add: (input) => call(IPC.modelAdd, input),
+    remove: (alias) => call(IPC.modelRemove, alias),
+    setDefault: (alias) => call(IPC.defaultModelSet, alias),
   },
   provider: {
-    upsert: async (config) => await call(IPC.providerUpsert, config),
-    remove: async (name) => await call(IPC.providerRemove, name),
-    test: async (config) => await call(IPC.providerTest, config),
+    upsert: (config) => call(IPC.providerUpsert, config),
+    remove: (name) => call(IPC.providerRemove, name),
+    test: (config) => call(IPC.providerTest, config),
   },
   on: {
     streamDelta: (listener) => subscribe(EVENTS.streamDelta, listener),

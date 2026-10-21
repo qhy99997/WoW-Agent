@@ -7,9 +7,9 @@ interface ComposerProps {
   workspaceName: string;
   models: ModelOption[];
   activeModel: string | null;
-  onModelChange(alias: string): void;
-  onSubmit(text: string): void;
-  onCancel(): void;
+  onModelChange: (alias: string) => void;
+  onSubmit: (text: string) => void;
+  onCancel: () => void;
 }
 
 export function Composer({

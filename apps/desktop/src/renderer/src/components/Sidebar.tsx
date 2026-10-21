@@ -5,8 +5,8 @@ interface SidebarProps {
   workspaces: Workspace[];
   activeSession: string | null;
   activeWorkspaceId: string | null;
-  onSelect(sessionId: string): void;
-  onPickWorkspace(): void;
+  onSelect: (sessionId: string) => void;
+  onPickWorkspace: () => void;
 }
 
 export function Sidebar({

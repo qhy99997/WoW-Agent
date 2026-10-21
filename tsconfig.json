@@ -23,7 +23,12 @@
     "noEmit": true,
     "skipLibCheck": true,
 
-    "types": ["node"]
+    "types": ["node"],
+
+    "paths": {
+      "@shared/*": ["./apps/desktop/src/shared/*"],
+      "@renderer/*": ["./apps/desktop/src/renderer/*"]
+    }
   },
   "include": [
     "packages/*/src/**/*.ts",

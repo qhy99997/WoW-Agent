@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import type { SettingsSnapshot } from '@shared/contract.js';
-import { bridge } from '../bridge.js';
+import { bridge } from '../bridge';
 
 type WireType = 'openai' | 'anthropic' | 'kimi' | 'google-genai' | 'openai_responses';
 
@@ -14,7 +14,7 @@ const WIRE_PRESETS: Array<{ type: WireType; label: string; baseUrl: string }> = 
 ];
 
 interface SettingsProps {
-  onClose(): void;
+  onClose: () => void;
 }
 
 export function Settings({ onClose }: SettingsProps): React.JSX.Element {

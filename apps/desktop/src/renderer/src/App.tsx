@@ -10,13 +10,13 @@ import type {
   TranscriptEntry,
   Workspace,
 } from '@shared/contract.js';
-import { bridge } from './bridge.js';
-import { Composer } from './components/Composer.js';
-import { MessageList } from './components/MessageList.js';
-import { Onboarding } from './components/Onboarding.js';
-import { Settings } from './components/Settings.js';
-import { Sidebar } from './components/Sidebar.js';
-import { ApprovalCard } from './components/ApprovalCard.js';
+import { bridge } from './bridge';
+import { Composer } from './components/Composer';
+import { MessageList } from './components/MessageList';
+import { Onboarding } from './components/Onboarding';
+import { Settings } from './components/Settings';
+import { Sidebar } from './components/Sidebar';
+import { ApprovalCard } from './components/ApprovalCard';
 
 export function App(): React.JSX.Element {
   const [doctor, setDoctor] = useState<DoctorReport | null>(null);

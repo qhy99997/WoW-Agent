@@ -2,7 +2,7 @@ import type { DoctorReport } from '@shared/contract.js';
 
 interface OnboardingProps {
   report: DoctorReport;
-  onRetry(): void;
+  onRetry: () => void;
 }
 
 const STATUS_LABEL = { ok: '正常', warn: '注意', fail: '需修复' } as const;

@@ -10,7 +10,7 @@ import type {
   StreamDelta,
   TranscriptEntry,
   Workspace,
-} from './contract.js';
+} from './contract';
 
 export const IPC = {
   doctorRun: 'wow:doctor:run',
