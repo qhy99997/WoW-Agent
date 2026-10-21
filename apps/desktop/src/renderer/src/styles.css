@@ -1,0 +1,82 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-canvas: #0b0b0c;
+  --color-surface: #121214;
+  --color-surface-raised: #17171a;
+  --color-hairline: #26262b;
+  --color-ink: #ededef;
+  --color-ink-muted: #a1a1a8;
+  --color-ink-subtle: #6e6e76;
+  --color-accent: #c8a97e;
+  --color-accent-soft: #3a3227;
+  --color-danger: #e5484d;
+  --color-success: #3dd68c;
+  --radius-card: 14px;
+  --radius-control: 10px;
+  --font-sans: 'Inter Variable', 'Inter', -apple-system, 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Cascadia Code', ui-monospace, monospace;
+}
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+    margin: 0;
+  }
+
+  body {
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.5715;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background: var(--color-accent-soft);
+    color: var(--color-ink);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  .wow-drag {
+    -webkit-app-region: drag;
+  }
+
+  .wow-no-drag {
+    -webkit-app-region: no-drag;
+  }
+
+  .wow-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-hairline) transparent;
+  }
+
+  .wow-scroll::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  .wow-scroll::-webkit-scrollbar-thumb {
+    background: var(--color-hairline);
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+}

@@ -87,9 +87,8 @@ describe('runtime architecture boundaries', () => {
     expect(readTool).not.toContain("'acquire' in runtime");
   });
 
-  it('routes MCP and external FS through explicit runtime selection', () => {
+  it('routes MCP through explicit runtime selection', () => {
     const mcp = source('workspace/workspaceMcp/workspaceMcpService.ts');
-    const externalFs = source('routes/fs.ts');
 
     expect(mcp).toContain('runtimeResolver: this.runtimeResolver');
     expect(mcp).not.toMatch(/@IHost(?:FileSystem|FsWatchService|ProcessService|TerminalService)/);

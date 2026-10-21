@@ -43,3 +43,7 @@ handover.md
 *-mockup.html
 *-demo.html
 *-demos.html
+
+# Electron build output
+out/
+

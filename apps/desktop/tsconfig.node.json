@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ESNext"],
+    "types": ["node"],
+    "paths": {
+      "@shared/*": ["./src/shared/*"]
+    }
+  },
+  "include": ["src/main/**/*.ts", "src/main/**/*.d.ts", "src/preload/**/*.ts", "src/shared/**/*.ts", "electron.vite.config.ts", "../../packages/agent-core-v2/src/env.d.ts", "../../build/*.d.mts", "../../build/*.d.ts"]
+}

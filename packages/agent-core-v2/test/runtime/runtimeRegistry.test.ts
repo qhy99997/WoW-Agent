@@ -74,7 +74,9 @@ describe('RuntimeRegistry', () => {
     expect(() => fsOnly.acquire(
       { workspaceId: 'workspace', runtimeId: 'local' },
       ['process'],
-    )).toThrowError(expect.objectContaining<Partial<RuntimeError>>({ code: 'runtime.unavailable' }));
+    )).toThrowError(
+      expect.objectContaining<Partial<RuntimeError>>({ code: 'runtime.capability_unavailable' }),
+    );
   });
 
   it('keeps the current generation when replacement preparation fails', async () => {

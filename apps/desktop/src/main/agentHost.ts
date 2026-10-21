@@ -1,0 +1,395 @@
+import { randomUUID } from 'node:crypto';
+import { existsSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
+
+import type {
+  ApprovalHandler,
+  ApprovalResponse,
+  Event as AgentEvent,
+  KimiHarness,
+  QuestionHandler,
+  QuestionResult,
+  Session,
+  SessionSummary as SdkSessionSummary,
+} from '@moonshot-ai/kimi-code-sdk';
+
+import type {
+  ApprovalRequest,
+  DoctorReport,
+  ModelOption,
+  ProviderConfig,
+  QuestionRequest,
+  SessionSummary,
+  StreamDelta,
+  TranscriptEntry,
+  Workspace,
+} from '../shared/contract.js';
+
+export interface EventSink {
+  onDelta(delta: StreamDelta): void;
+  onApproval(request: ApprovalRequest): void;
+  onQuestion(request: QuestionRequest): void;
+  onSessionChanged(): void;
+}
+
+const ANSI = /\u001B\[[0-9;]*m/g;
+const WINDOWS_GIT_BASH = [
+  'C:\\Program Files\\Git\\bin\\bash.exe',
+  'C:\\Program Files (x86)\\Git\\bin\\bash.exe',
+];
+
+function stripAnsi(text: string): string {
+  return text.replace(ANSI, '');
+}
+
+/**
+ * Owns the agent engine for the desktop app. The engine runs in the Electron
+ * main process so the renderer only ever sees plain JSON over IPC.
+ */
+export class AgentHost {
+  private harness: KimiHarness | null = null;
+  private sink: EventSink | null = null;
+  private starting: Promise<KimiHarness> | null = null;
+  private readonly workspaces: Workspace[] = [];
+  private readonly sessions = new Map<string, Session>();
+  private readonly transcripts = new Map<string, TranscriptEntry[]>();
+  private readonly pendingApprovals = new Map<string, (value: unknown) => void>();
+  private readonly pendingQuestions = new Map<string, (value: unknown) => void>();
+
+  get homeDir(): string {
+    return process.env['WOW_HOME'] ?? join(homedir(), '.wow');
+  }
+
+  setSink(sink: EventSink | null): void {
+    this.sink = sink;
+  }
+
+  async ensureStarted(): Promise<KimiHarness> {
+    if (this.harness !== null) return this.harness;
+    this.starting ??= (async () => {
+      const sdk = await import('@moonshot-ai/kimi-code-sdk');
+      const harness = sdk.createKimiHarness({
+        homeDir: this.homeDir,
+        uiMode: 'desktop',
+        identity: {
+          productName: 'WoW',
+          version: process.env['WOW_VERSION'] ?? '0.1.0',
+          platform: 'wow_desktop',
+        },
+      });
+      this.harness = harness;
+      return harness;
+    })();
+    return await this.starting;
+  }
+
+  async doctor(): Promise<DoctorReport> {
+    const checks: DoctorReport['checks'] = [];
+    const major = Number(process.versions.node.split('.')[0] ?? '0');
+    checks.push({
+      id: 'node',
+      label: 'Node.js runtime',
+      status: major >= 24 ? 'ok' : 'fail',
+      detail: `v${process.versions.node}`,
+      hint: major >= 24 ? undefined : 'WoW needs Node.js 24 or newer.',
+    });
+
+    if (process.platform === 'win32') {
+      const shellPath = process.env['WOW_SHELL_PATH'] ?? WINDOWS_GIT_BASH.find((c) => existsSync(c));
+      const found = shellPath !== undefined;
+      checks.push({
+        id: 'shell',
+        label: 'Git Bash',
+        status: found ? 'ok' : 'fail',
+        detail: shellPath ?? 'not found',
+        hint: found ? undefined : 'Install Git for Windows, or set WOW_SHELL_PATH to bash.exe.',
+      });
+    }
+
+    checks.push({
+      id: 'home',
+      label: 'Data directory',
+      status: 'ok',
+      detail: this.homeDir,
+    });
+
+    return { ok: checks.every((check) => check.status !== 'fail'), checks };
+  }
+
+  listWorkspaces(): Workspace[] {
+    return [...this.workspaces];
+  }
+
+  addWorkspace(path: string): Workspace {
+    const existing = this.workspaces.find((workspace) => workspace.path === path);
+    if (existing !== undefined) return existing;
+    const name = path.split(/[\\/]/).filter(Boolean).pop() ?? path;
+    const workspace: Workspace = { id: randomUUID(), path, name };
+    this.workspaces.push(workspace);
+    return workspace;
+  }
+
+  async listSessions(): Promise<SessionSummary[]> {
+    const harness = await this.ensureStarted();
+    const rows = await harness.listSessions();
+    return rows.map((row) => toSummary(row));
+  }
+
+  async createSession(workDir: string): Promise<SessionSummary> {
+    const harness = await this.ensureStarted();
+    const session = await harness.createSession({ workDir });
+    this.wire(session);
+    return {
+      id: session.id,
+      title: 'New session',
+      workDir,
+      updatedAt: Date.now(),
+      status: 'idle',
+    };
+  }
+
+  private async ensureSession(sessionId: string): Promise<Session> {
+    const live = this.sessions.get(sessionId);
+    if (live !== undefined) return live;
+    const harness = await this.ensureStarted();
+    const resumed = await harness.resumeSession({ id: sessionId });
+    this.wire(resumed);
+    return resumed;
+  }
+
+  private wire(session: Session): void {
+    this.sessions.set(session.id, session);
+    if (!this.transcripts.has(session.id)) this.transcripts.set(session.id, []);
+
+    const approvalHandler: ApprovalHandler = async (request) =>
+      await new Promise<ApprovalResponse>((resolve) => {
+        const id = request.toolCallId === '' ? randomUUID() : request.toolCallId;
+        this.emitApproval(session.id, id, request);
+        this.pendingApprovals.set(id, resolve as (value: unknown) => void);
+      });
+
+    const questionHandler: QuestionHandler = async (request) =>
+      await new Promise<QuestionResult>((resolve) => {
+        const id = request.id ?? randomUUID();
+        const first = request.questions[0];
+        this.sink?.onQuestion({
+          id,
+          sessionId: session.id,
+          question: first?.question ?? '',
+          options: first?.options.map((option) => option.label),
+        });
+        this.pendingQuestions.set(id, resolve as (value: unknown) => void);
+      });
+
+    session.setApprovalHandler(approvalHandler);
+    session.setQuestionHandler(questionHandler);
+    session.onEvent((event) => {
+      this.handleEvent(session.id, event);
+    });
+  }
+
+  private emitApproval(
+    sessionId: string,
+    id: string,
+    request: Parameters<ApprovalHandler>[0],
+  ): void {
+    const display = request.display;
+    const detail =
+      display.kind === 'command'
+        ? display.command
+        : display.kind === 'file_io'
+          ? `${display.operation} ${display.path}`
+          : display.kind === 'diff'
+            ? `diff ${display.path}`
+            : display.kind === 'generic'
+              ? display.summary
+              : request.action;
+    this.sink?.onApproval({
+      id,
+      sessionId,
+      title: `${request.toolName}: ${request.action}`,
+      detail,
+      diff:
+        display.kind === 'diff'
+          ? `--- ${display.path}\n+++ ${display.path}\n- ${display.before}\n+ ${display.after}`
+          : undefined,
+      options: [
+        { id: 'allow_once', label: '允许一次' },
+        { id: 'allow_session', label: '本会话允许' },
+        { id: 'reject', label: '拒绝' },
+      ],
+    });
+  }
+
+  private handleEvent(sessionId: string, event: AgentEvent): void {
+    if (event.type === 'assistant.delta' || event.type === 'thinking.delta') {
+      const text = stripAnsi('delta' in event ? String(event.delta) : '');
+      if (text === '') return;
+      const kind = event.type === 'thinking.delta' ? 'thinking' : 'text';
+      this.appendDelta(sessionId, kind, text);
+      return;
+    }
+
+    if (event.type === 'tool.call.started') {
+      const entryId = 'toolCallId' in event ? String(event.toolCallId) : randomUUID();
+      const name = 'name' in event ? String(event.name) : 'tool';
+      const entry: TranscriptEntry = {
+        id: entryId,
+        role: 'tool',
+        kind: 'tool-call',
+        text: name,
+        createdAt: Date.now(),
+      };
+      const entries = this.transcripts.get(sessionId) ?? [];
+      entries.push(entry);
+      this.transcripts.set(sessionId, entries);
+      this.sink?.onDelta({
+        sessionId,
+        entryId,
+        role: 'tool',
+        kind: 'tool-call',
+        text: name,
+        done: true,
+      });
+      return;
+    }
+
+    if (event.type === 'turn.ended') {
+      this.sink?.onSessionChanged();
+    }
+  }
+
+  private appendDelta(sessionId: string, kind: string, text: string): void {
+    const entries = this.transcripts.get(sessionId) ?? [];
+    const last = entries.at(-1);
+    if (last !== undefined && last.kind === kind) {
+      last.text += text;
+      this.sink?.onDelta({
+        sessionId,
+        entryId: last.id,
+        role: 'assistant',
+        kind,
+        text,
+        done: false,
+      });
+      return;
+    }
+    const entry: TranscriptEntry = {
+      id: randomUUID(),
+      role: 'assistant',
+      kind,
+      text,
+      createdAt: Date.now(),
+    };
+    entries.push(entry);
+    this.transcripts.set(sessionId, entries);
+    this.sink?.onDelta({ sessionId, entryId: entry.id, role: 'assistant', kind, text, done: false });
+  }
+
+  respondApproval(approvalId: string, optionId: string): void {
+    const resolve = this.pendingApprovals.get(approvalId);
+    if (resolve === undefined) return;
+    this.pendingApprovals.delete(approvalId);
+    const decision = optionId === 'reject' ? 'rejected' : 'approved';
+    resolve({ decision, scope: optionId === 'allow_session' ? 'session' : undefined });
+  }
+
+  respondQuestion(questionId: string, answer: string): void {
+    const resolve = this.pendingQuestions.get(questionId);
+    if (resolve === undefined) return;
+    this.pendingQuestions.delete(questionId);
+    resolve({ answers: { '0': answer } });
+  }
+
+  async sendPrompt(sessionId: string, text: string): Promise<void> {
+    const session = await this.ensureSession(sessionId);
+    const entries = this.transcripts.get(sessionId) ?? [];
+    entries.push({ id: randomUUID(), role: 'user', kind: 'text', text, createdAt: Date.now() });
+    this.transcripts.set(sessionId, entries);
+    this.sink?.onDelta({
+      sessionId,
+      entryId: entries[entries.length - 1]?.id ?? randomUUID(),
+      role: 'user',
+      kind: 'text',
+      text,
+      done: true,
+    });
+    await session.prompt(text);
+  }
+
+  async cancelPrompt(sessionId: string): Promise<void> {
+    const session = this.sessions.get(sessionId);
+    await session?.cancel();
+  }
+
+  transcript(sessionId: string): TranscriptEntry[] {
+    return [...(this.transcripts.get(sessionId) ?? [])];
+  }
+
+  async deleteSession(sessionId: string): Promise<void> {
+    const harness = await this.ensureStarted();
+    await harness.deleteSession(sessionId);
+    this.transcripts.delete(sessionId);
+    this.sessions.delete(sessionId);
+  }
+
+  async renameSession(sessionId: string, title: string): Promise<void> {
+    const harness = await this.ensureStarted();
+    await harness.renameSession({ id: sessionId, title });
+  }
+
+  async listModels(): Promise<ModelOption[]> {
+    const harness = await this.ensureStarted();
+    const config = await harness.getConfig();
+    const models = config.models ?? {};
+    return Object.entries(models).map(([alias, entry]) => ({
+      alias,
+      provider: entry.provider,
+      displayName: entry.displayName ?? alias,
+    }));
+  }
+
+  async upsertProvider(config: ProviderConfig): Promise<void> {
+    const harness = await this.ensureStarted();
+    await harness.setConfig({
+      providers: {
+        [config.name]: {
+          type: config.wireType as 'openai' | 'anthropic' | 'kimi' | 'google-genai',
+          baseUrl: config.baseUrl,
+          apiKey: config.apiKey,
+        },
+      },
+    });
+  }
+
+  async testProvider(config: ProviderConfig): Promise<{ ok: boolean; detail: string }> {
+    try {
+      const response = await fetch(`${config.baseUrl.replace(/\/+$/, '')}/models`, {
+        headers: config.apiKey === undefined ? {} : { Authorization: `Bearer ${config.apiKey}` },
+        signal: AbortSignal.timeout(10_000),
+      });
+      return response.ok
+        ? { ok: true, detail: `HTTP ${String(response.status)}` }
+        : { ok: false, detail: `HTTP ${String(response.status)} ${response.statusText}` };
+    } catch (error) {
+      return { ok: false, detail: error instanceof Error ? error.message : String(error) };
+    }
+  }
+
+  async dispose(): Promise<void> {
+    await this.harness?.close();
+    this.harness = null;
+    this.starting = null;
+  }
+}
+
+function toSummary(row: SdkSessionSummary): SessionSummary {
+  return {
+    id: row.id,
+    title: row.title ?? row.lastPrompt ?? 'Untitled',
+    workDir: row.workDir,
+    updatedAt: row.updatedAt,
+    status: row.lastTurnReason ?? 'idle',
+  };
+}
