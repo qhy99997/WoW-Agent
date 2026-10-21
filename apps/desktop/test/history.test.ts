@@ -54,6 +54,32 @@ describe('projectHistory', () => {
     expect(entries.map((entry) => entry.text)).toEqual(['hi']);
   });
 
+  it('drops tool result messages so engine markup never reaches the UI', () => {
+    const entries = projectHistory([
+      message({ role: 'user', id: 'm1', content: text('list the dirs') }),
+      message({
+        role: 'assistant',
+        id: 'm2',
+        content: [],
+        toolCalls: [
+          { type: 'function', id: 'call_1', name: 'mcp__fs__list', arguments: '{}' },
+        ],
+      }),
+      message({
+        role: 'tool',
+        toolCallId: 'call_1',
+        content: text('\n<mcp-result-extras>\n{"_meta":{}}\n</mcp-result-extras>'),
+      }),
+    ]);
+
+    const all = entries.map((entry) => entry.text).join('\n');
+    expect(all).not.toContain('mcp-result-extras');
+    expect(entries.map((entry) => [entry.role, entry.text])).toEqual([
+      ['user', 'list the dirs'],
+      ['tool', 'mcp__fs__list'],
+    ]);
+  });
+
   it('expands tool calls into their own entries', () => {
     const entries = projectHistory([
       message({ role: 'user', id: 'm1', content: text('read a file') }),

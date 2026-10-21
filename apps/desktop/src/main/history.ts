@@ -19,6 +19,11 @@ export function projectHistory(history: readonly ContextMessage[]): TranscriptEn
     const injection = message.origin?.kind === 'injection';
     if (injection || message.role === 'system') continue;
 
+    // Tool results are machine-facing: they carry the engine's markup
+    // (<mcp-result-extras> and friends) and are not something the user wrote
+    // or read. The tool call itself is shown from `message.toolCalls` below.
+    if (message.role === 'tool') continue;
+
     const text = message.content
       .filter((part) => part.type === 'text')
       .map((part) => (part as { text: string }).text)
