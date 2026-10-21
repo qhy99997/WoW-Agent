@@ -266,7 +266,10 @@ export class AgentHost {
   private appendDelta(sessionId: string, kind: string, text: string): void {
     const entries = this.transcripts.get(sessionId) ?? [];
     const last = entries.at(-1);
-    if (last !== undefined && last.kind === kind) {
+    // A delta continues the previous bubble only when role AND kind match: a
+    // user prompt also carries kind 'text', so matching on kind alone would
+    // append the reply onto the user's own message.
+    if (last !== undefined && last.role === 'assistant' && last.kind === kind) {
       last.text += text;
       this.sink?.onDelta({
         sessionId,
