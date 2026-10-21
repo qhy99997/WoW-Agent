@@ -120,13 +120,34 @@ export const ApprovalRequestSchema = z.object({
 });
 export type ApprovalRequest = z.infer<typeof ApprovalRequestSchema>;
 
+export const QuestionOptionSchema = z.object({
+  label: z.string(),
+  description: z.string().optional(),
+});
+export type QuestionOption = z.infer<typeof QuestionOptionSchema>;
+
+export const QuestionItemSchema = z.object({
+  question: z.string(),
+  header: z.string().optional(),
+  options: z.array(QuestionOptionSchema),
+  multiSelect: z.boolean(),
+  otherLabel: z.string().optional(),
+});
+export type QuestionItem = z.infer<typeof QuestionItemSchema>;
+
 export const QuestionRequestSchema = z.object({
   id: z.string(),
   sessionId: z.string(),
-  question: z.string(),
-  options: z.array(z.string()).optional(),
+  questions: z.array(QuestionItemSchema),
 });
 export type QuestionRequest = z.infer<typeof QuestionRequestSchema>;
+
+/**
+ * Answers are keyed by the question text, which is how the engine matches them
+ * back to what the model asked. `true` marks a multi-select choice.
+ */
+export const QuestionAnswersSchema = z.record(z.string(), z.union([z.string(), z.literal(true)]));
+export type QuestionAnswers = z.infer<typeof QuestionAnswersSchema>;
 
 export const StreamDeltaSchema = z.object({
   sessionId: z.string(),

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type {
   DoctorReport,
   ModelOption,
+  QuestionAnswers,
   QuestionRequest,
   SessionSummary,
   StreamDelta,
@@ -17,6 +18,7 @@ import { Onboarding } from './components/Onboarding';
 import { Settings } from './components/Settings';
 import { Sidebar } from './components/Sidebar';
 import { ApprovalCard } from './components/ApprovalCard';
+import { QuestionCard } from './components/QuestionCard';
 import {
   applyDelta,
   EMPTY_APPROVAL_QUEUE,
@@ -35,6 +37,7 @@ export function App(): React.JSX.Element {
   const [activeSession, setActiveSession] = useState<string | null>(null);
   const [entries, setEntries] = useState<TranscriptEntry[]>([]);
   const [approvals, setApprovals] = useState<ApprovalQueue>(EMPTY_APPROVAL_QUEUE);
+  const [pendingQuestion, setPendingQuestion] = useState<QuestionRequest | null>(null);
   const [streaming, setStreaming] = useState(false);
   const [stalled, setStalled] = useState(false);
   const [error, setError] = useState<ErrorText | null>(null);
@@ -95,8 +98,9 @@ export function App(): React.JSX.Element {
       lastActivity.current = Date.now();
       setApprovals((queue) => enqueueApproval(queue, request));
     });
-    const offQuestion = bridge().on.questionAsked((_request: QuestionRequest) => {
-      /* questions surface inside the transcript once wired */
+    const offQuestion = bridge().on.questionAsked((request: QuestionRequest) => {
+      // Without a card here the engine's turn waits forever for an answer.
+      setPendingQuestion(request);
     });
     const offChanged = bridge().on.sessionChanged(() => {
       setStreaming(false);
@@ -194,6 +198,20 @@ export function App(): React.JSX.Element {
     [approvals],
   );
 
+  const respondQuestion = useCallback(
+    async (answers: QuestionAnswers) => {
+      const current = pendingQuestion;
+      if (current === null) return;
+      setPendingQuestion(null);
+      try {
+        await bridge().question.respond(current.id, answers);
+      } catch (cause) {
+        setError(describeError(cause));
+      }
+    },
+    [pendingQuestion],
+  );
+
   const activeWorkspace = useMemo(
     () => workspaces.find((workspace) => workspace.id === sessionWorkspace(sessions, activeSession)),
     [workspaces, sessions, activeSession],
@@ -259,6 +277,12 @@ export function App(): React.JSX.Element {
                   request={approvals.current}
                   queued={approvals.pending.length}
                   onRespond={(id) => void respond(id)}
+                />
+              )}
+              {pendingQuestion !== null && (
+                <QuestionCard
+                  request={pendingQuestion}
+                  onRespond={(answers) => void respondQuestion(answers)}
                 />
               )}
               {error !== null && (

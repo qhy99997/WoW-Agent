@@ -25,6 +25,7 @@ import type {
   ModelOption,
   ProviderConfig,
   ProviderSummary,
+  QuestionAnswers,
   QuestionRequest,
   SessionSummary,
   SettingsSnapshot,
@@ -208,12 +209,19 @@ export class AgentHost {
     const questionHandler: QuestionHandler = (request) =>
       new Promise<QuestionResult>((resolve) => {
         const id = request.id ?? randomUUID();
-        const first = request.questions[0];
         this.sink?.onQuestion({
           id,
           sessionId: session.id,
-          question: first?.question ?? '',
-          options: first?.options.map((option) => option.label),
+          questions: request.questions.map((item) => ({
+            question: item.question,
+            header: item.header,
+            options: item.options.map((option) => ({
+              label: option.label,
+              description: option.description,
+            })),
+            multiSelect: item.multiSelect === true,
+            otherLabel: item.otherLabel,
+          })),
         });
         this.pendingQuestions.set(id, resolve as (value: unknown) => void);
       });
@@ -378,11 +386,13 @@ export class AgentHost {
     resolve({ decision, scope: optionId === 'allow_session' ? 'session' : undefined });
   }
 
-  respondQuestion(questionId: string, answer: string): void {
+  respondQuestion(questionId: string, answers: QuestionAnswers): void {
     const resolve = this.pendingQuestions.get(questionId);
     if (resolve === undefined) return;
     this.pendingQuestions.delete(questionId);
-    resolve({ answers: { '0': answer } });
+    // The engine keys answers by question text, not by index, so the map built
+    // by the renderer is passed through untouched.
+    resolve({ answers });
   }
 
   async sendPrompt(sessionId: string, text: string): Promise<void> {

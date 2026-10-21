@@ -45,7 +45,7 @@ const bridge: WowBridge = {
     respond: (approvalId, optionId) => call(IPC.approvalRespond, approvalId, optionId),
   },
   question: {
-    respond: (questionId, answer) => call(IPC.questionRespond, questionId, answer),
+    respond: (questionId, answers) => call(IPC.questionRespond, questionId, answers),
   },
   settings: {
     snapshot: () => call(IPC.settingsSnapshot),

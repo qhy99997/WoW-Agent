@@ -7,6 +7,7 @@ import type {
   McpTestOutcome,
   ModelOption,
   ProviderConfig,
+  QuestionAnswers,
   QuestionRequest,
   SessionSummary,
   SettingsSnapshot,
@@ -69,7 +70,7 @@ export interface WowBridge {
     cancel(sessionId: string): Promise<void>;
   };
   approval: { respond(approvalId: string, optionId: string): Promise<void> };
-  question: { respond(questionId: string, answer: string): Promise<void> };
+  question: { respond(questionId: string, answers: QuestionAnswers): Promise<void> };
   settings: { snapshot(): Promise<SettingsSnapshot> };
   models: {
     list(): Promise<ModelOption[]>;

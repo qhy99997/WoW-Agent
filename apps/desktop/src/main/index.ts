@@ -1,6 +1,8 @@
 import { app, BrowserWindow, dialog, ipcMain, nativeTheme, shell } from 'electron';
 import { join } from 'node:path';
 
+import type { QuestionAnswers } from '../shared/contract';
+
 import { AgentHost } from './agentHost';
 import { guard } from './guard';
 import {
@@ -121,9 +123,9 @@ function registerIpc(): void {
       host.respondApproval(approvalId, optionId);
     }),
   );
-  ipcMain.handle(IPC.questionRespond, (_event, questionId: string, answer: string) =>
+  ipcMain.handle(IPC.questionRespond, (_event, questionId: string, answers: QuestionAnswers) =>
     guard(() => {
-      host.respondQuestion(questionId, answer);
+      host.respondQuestion(questionId, answers);
     }),
   );
 
