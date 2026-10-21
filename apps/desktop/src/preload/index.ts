@@ -2,16 +2,12 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 import { EVENTS, IPC, type WowBridge } from '../shared/bridge';
 import type { RpcResult } from '../shared/contract';
-
-function unwrap<T>(result: RpcResult<T>): T {
-  if (result.ok) return result.value;
-  const error = new Error(result.error.message);
-  error.name = result.error.code;
-  throw error;
-}
+import { unwrap } from '../shared/rpc';
 
 async function call<T>(channel: string, ...args: unknown[]): Promise<T> {
   const result = (await ipcRenderer.invoke(channel, ...args)) as RpcResult<T>;
+  // `unwrap` packs the code and hint into the message: a custom property on the
+  // Error would be stripped as it crosses the isolated-world boundary.
   return unwrap(result);
 }
 

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import type { SettingsSnapshot } from '@shared/contract';
+import { describeError } from '@shared/rpc';
 import { bridge } from '../bridge';
 import { McpSettings } from './McpSettings';
 
@@ -47,7 +48,7 @@ export function Settings({ onClose, workDir }: SettingsProps): React.JSX.Element
         await refresh();
         setMessage({ kind: 'ok', text: okText });
       } catch (cause) {
-        setMessage({ kind: 'error', text: cause instanceof Error ? cause.message : String(cause) });
+        setMessage({ kind: 'error', ...describeError(cause) });
       } finally {
         setBusy(false);
       }
@@ -80,7 +81,7 @@ export function Settings({ onClose, workDir }: SettingsProps): React.JSX.Element
         setMessage({ kind: result.ok ? 'ok' : 'error', text: result.detail });
       })
       .catch((cause: unknown) => {
-        setMessage({ kind: 'error', text: cause instanceof Error ? cause.message : String(cause) });
+        setMessage({ kind: 'error', ...describeError(cause) });
       })
       .finally(() => {
         setBusy(false);
@@ -198,15 +199,15 @@ export function Settings({ onClose, workDir }: SettingsProps): React.JSX.Element
             </div>
 
             {message !== null && (
-              <p
+              <div
                 className={`mt-2 rounded-control px-3 py-2 text-[12px] ${
                   message.kind === 'ok'
                     ? 'bg-success/10 text-success'
                     : 'bg-danger/10 text-danger'
                 }`}
               >
-                {message.text}
-              </p>
+                <p>{message.text}</p>
+              </div>
             )}
           </section>
 

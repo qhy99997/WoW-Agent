@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import type { AddMcpServerInput, McpServerSummary } from '@shared/contract';
+import { describeError } from '@shared/rpc';
 import { bridge } from '../bridge';
 
 interface McpSettingsProps {
@@ -48,7 +49,7 @@ export function McpSettings({ workDir }: McpSettingsProps): React.JSX.Element {
         await refresh();
         setMessage({ kind: 'ok', text: okText });
       } catch (cause) {
-        setMessage({ kind: 'error', text: cause instanceof Error ? cause.message : String(cause) });
+        setMessage({ kind: 'error', ...describeError(cause) });
       } finally {
         setBusy(false);
       }
@@ -163,10 +164,7 @@ export function McpSettings({ workDir }: McpSettingsProps): React.JSX.Element {
                 });
               })
               .catch((cause: unknown) => {
-                setMessage({
-                  kind: 'error',
-                  text: cause instanceof Error ? cause.message : String(cause),
-                });
+                setMessage({ kind: 'error', ...describeError(cause) });
               })
               .finally(() => {
                 setBusy(false);
@@ -185,11 +183,6 @@ export function McpSettings({ workDir }: McpSettingsProps): React.JSX.Element {
           }`}
         >
           <p>{message.text}</p>
-          {message.kind === 'error' && /ENOENT/.test(message.text) && (
-            <p className="mt-1 text-ink-muted">
-              Windows 上 stdio 命令需要可执行后缀，例如 <code className="font-mono">npx.cmd</code>，或改用绝对路径。
-            </p>
-          )}
         </div>
       )}
 

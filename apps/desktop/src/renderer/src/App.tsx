@@ -9,6 +9,7 @@ import type {
   TranscriptEntry,
   Workspace,
 } from '@shared/contract';
+import { describeError, type ErrorText } from '@shared/rpc';
 import { bridge } from './bridge';
 import { Composer } from './components/Composer';
 import { MessageList } from './components/MessageList';
@@ -36,7 +37,7 @@ export function App(): React.JSX.Element {
   const [approvals, setApprovals] = useState<ApprovalQueue>(EMPTY_APPROVAL_QUEUE);
   const [streaming, setStreaming] = useState(false);
   const [stalled, setStalled] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ErrorText | null>(null);
   const [models, setModels] = useState<ModelOption[]>([]);
   const [activeModel, setActiveModel] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
@@ -173,7 +174,7 @@ export function App(): React.JSX.Element {
         await bridge().prompt.send(activeSession, text);
       } catch (cause) {
         setStreaming(false);
-        setError(cause instanceof Error ? cause.message : String(cause));
+        setError(describeError(cause));
       }
     },
     [activeSession],
@@ -187,7 +188,7 @@ export function App(): React.JSX.Element {
       try {
         await bridge().approval.respond(current.id, optionId);
       } catch (cause) {
-        setError(cause instanceof Error ? cause.message : String(cause));
+        setError(describeError(cause));
       }
     },
     [approvals],
@@ -263,7 +264,7 @@ export function App(): React.JSX.Element {
               {error !== null && (
                 <div className="mx-auto w-full max-w-3xl px-6 pb-2">
                   <p className="rounded-control border border-danger/40 bg-danger/10 px-3 py-2 text-[13px] text-danger">
-                    {error}
+                    {error.text}
                   </p>
                 </div>
               )}

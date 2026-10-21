@@ -37,6 +37,18 @@ const Message = memo(function Message({ entry }: { entry: TranscriptEntry }): Re
     return <ToolCall name={entry.text} />;
   }
 
+  if (entry.kind === 'error') {
+    return (
+      <div className="rounded-control border border-danger/40 bg-danger/10 px-3 py-2 text-[13px] text-danger">
+        {entry.text}
+      </div>
+    );
+  }
+
+  if (entry.kind === 'notice') {
+    return <p className="text-[12px] text-ink-subtle">{entry.text}</p>;
+  }
+
   if (entry.kind === 'thinking') {
     return (
       <details className="group">

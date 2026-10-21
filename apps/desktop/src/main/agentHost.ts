@@ -51,6 +51,23 @@ function stripAnsi(text: string): string {
 }
 
 /**
+ * A turn that did not complete leaves no assistant text, so without an explicit
+ * message the UI would just go quiet. `cancelled` is the user's own doing and
+ * needs no notice; everything else must say what went wrong.
+ */
+export function describeTurnEnd(event: {
+  reason: 'completed' | 'cancelled' | 'failed' | 'blocked';
+  error?: { message?: string };
+}): string | null {
+  if (event.reason === 'completed' || event.reason === 'cancelled') return null;
+  const detail = typeof event.error?.message === 'string' ? event.error.message.trim() : '';
+  if (event.reason === 'blocked') {
+    return detail === '' ? '这一轮被拦下了，没有继续。' : `这一轮被拦下了：${detail}`;
+  }
+  return detail === '' ? '这一轮失败了，没有拿到模型回复。' : `这一轮失败了：${detail}`;
+}
+
+/**
  * Owns the agent engine for the desktop app. The engine runs in the Electron
  * main process so the renderer only ever sees plain JSON over IPC.
  */
@@ -61,6 +78,7 @@ export class AgentHost {
   private readonly workspaces: Workspace[] = [];
   private readonly sessions = new Map<string, Session>();
   private readonly transcripts = new Map<string, TranscriptEntry[]>();
+  private readonly retrying = new Set<string>();
   private readonly pendingApprovals = new Map<string, (value: unknown) => void>();
   private readonly pendingQuestions = new Map<string, (value: unknown) => void>();
 
@@ -273,7 +291,38 @@ export class AgentHost {
       return;
     }
 
+    if (event.type === 'turn.step.retrying') {
+      // The engine retries a failed model call up to ten times with exponential
+      // backoff, which can look like a silent hang from two minutes out. Say so
+      // on the first retry so the user knows the request is still alive.
+      if (this.retrying.has(sessionId)) return;
+      this.retrying.add(sessionId);
+      this.sink?.onDelta({
+        sessionId,
+        entryId: `retry-${sessionId}`,
+        role: 'system',
+        kind: 'notice',
+        text: '连不上模型，正在重试…',
+        done: true,
+      });
+      return;
+    }
+
     if (event.type === 'turn.ended') {
+      this.retrying.delete(sessionId);
+      // A turn can end because it failed. Without this the UI silently returns
+      // to idle and the user never learns that nothing happened.
+      const failure = describeTurnEnd(event);
+      if (failure !== null) {
+        this.sink?.onDelta({
+          sessionId,
+          entryId: `turn-error-${randomUUID()}`,
+          role: 'system',
+          kind: 'error',
+          text: failure,
+          done: true,
+        });
+      }
       // Re-read the engine's canonical history once the turn settles, so the
       // local streaming cache is reconciled with what actually persisted
       // (tool calls, injected context, anything a delta stream cannot express).
@@ -338,6 +387,7 @@ export class AgentHost {
 
   async sendPrompt(sessionId: string, text: string): Promise<void> {
     const session = await this.ensureSession(sessionId);
+    this.retrying.delete(sessionId);
     // Echo the user's own message immediately so the composer feels responsive.
     // The engine's replayed context replaces the cache when the turn ends, so
     // this entry is transient by design and must not be appended to the cache.

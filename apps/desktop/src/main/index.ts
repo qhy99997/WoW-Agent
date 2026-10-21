@@ -2,12 +2,12 @@ import { app, BrowserWindow, dialog, ipcMain, nativeTheme, shell } from 'electro
 import { join } from 'node:path';
 
 import { AgentHost } from './agentHost';
+import { guard } from './guard';
 import {
   EVENTS,
   IPC,
   type WowBridge,
 } from '../shared/bridge';
-import type { RpcResult } from '../shared/contract';
 
 const host = new AgentHost();
 let mainWindow: BrowserWindow | null = null;
@@ -75,15 +75,6 @@ host.setSink({
     emit(EVENTS.sessionChanged, null);
   },
 });
-
-async function guard<T>(run: () => Promise<T> | T): Promise<RpcResult<T>> {
-  try {
-    return { ok: true, value: await run() };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    return { ok: false, error: { code: 'internal', message } };
-  }
-}
 
 function registerIpc(): void {
   ipcMain.handle(IPC.doctorRun, () => guard(() => host.doctor()));
