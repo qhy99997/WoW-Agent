@@ -312,12 +312,6 @@ importers:
 
   packages/telemetry: {}
 
-  packages/transcript:
-    dependencies:
-      zod:
-        specifier: 'catalog:'
-        version: 4.3.6
-
   packages/tree-sitter-bash:
     devDependencies:
       tree-sitter-bash:
