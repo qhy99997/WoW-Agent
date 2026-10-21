@@ -121,15 +121,26 @@ export class AgentHost {
     return { ok: checks.every((check) => check.status !== 'fail'), checks };
   }
 
-  listWorkspaces(): Workspace[] {
-    return [...this.workspaces];
+  /**
+   * Workspaces are derived from session history rather than kept in memory: the
+   * engine already persists every session's workDir, so this stays correct across
+   * restarts without a second source of truth to keep in sync.
+   */
+  async listWorkspaces(): Promise<Workspace[]> {
+    const sessions = await this.listSessions();
+    const byPath = new Map<string, Workspace>();
+    for (const workspace of this.workspaces) byPath.set(workspace.path, workspace);
+    for (const session of sessions) {
+      if (session.workDir === '' || byPath.has(session.workDir)) continue;
+      byPath.set(session.workDir, toWorkspace(session.workDir));
+    }
+    return [...byPath.values()];
   }
 
   addWorkspace(path: string): Workspace {
     const existing = this.workspaces.find((workspace) => workspace.path === path);
     if (existing !== undefined) return existing;
-    const name = path.split(/[\\/]/).filter(Boolean).pop() ?? path;
-    const workspace: Workspace = { id: randomUUID(), path, name };
+    const workspace = toWorkspace(path);
     this.workspaces.push(workspace);
     return workspace;
   }
@@ -488,5 +499,18 @@ function toSummary(row: SdkSessionSummary): SessionSummary {
     workDir: row.workDir,
     updatedAt: row.updatedAt,
     status: row.lastTurnReason ?? 'idle',
+  };
+}
+
+/**
+ * A stable id derived from the path, so a workspace keeps the same identity
+ * across restarts (the renderer uses it as a React key and to highlight the
+ * active workspace).
+ */
+function toWorkspace(path: string): Workspace {
+  return {
+    id: path,
+    path,
+    name: path.split(/[\\/]/).filter(Boolean).pop() ?? path,
   };
 }
