@@ -151,6 +151,18 @@ export function App(): React.JSX.Element {
     [refreshSessions, selectSession],
   );
 
+  const renameSession = useCallback(
+    async (sessionId: string, title: string) => {
+      try {
+        await bridge().session.rename(sessionId, title);
+        await refreshSessions();
+      } catch (cause) {
+        setError(describeError(cause));
+      }
+    },
+    [refreshSessions],
+  );
+
   const deleteSession = useCallback(
     async (sessionId: string) => {
       await bridge().session.delete(sessionId);
@@ -251,6 +263,7 @@ export function App(): React.JSX.Element {
           onPickWorkspace={() => void pickWorkspace()}
           onNewSession={(workDir) => void newSession(workDir)}
           onDeleteSession={(id) => void deleteSession(id)}
+          onRenameSession={(id, title) => void renameSession(id, title)}
         />
         <main className="flex min-w-0 flex-1 flex-col">
           {showSettings ? (

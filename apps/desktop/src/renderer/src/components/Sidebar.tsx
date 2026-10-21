@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 import type { SessionSummary, Workspace } from '@shared/contract';
 
 interface SidebarProps {
@@ -9,6 +11,7 @@ interface SidebarProps {
   onPickWorkspace: () => void;
   onNewSession: (workDir: string) => void;
   onDeleteSession: (sessionId: string) => void;
+  onRenameSession: (sessionId: string, title: string) => void;
 }
 
 export function Sidebar({
@@ -20,7 +23,23 @@ export function Sidebar({
   onPickWorkspace,
   onNewSession,
   onDeleteSession,
+  onRenameSession,
 }: SidebarProps): React.JSX.Element {
+  const [renaming, setRenaming] = useState<string | null>(null);
+  const [draft, setDraft] = useState('');
+
+  const startRename = (session: SessionSummary): void => {
+    setRenaming(session.id);
+    setDraft(session.title);
+  };
+
+  const commitRename = (session: SessionSummary): void => {
+    const title = draft.trim();
+    setRenaming(null);
+    if (title === '' || title === session.title) return;
+    onRenameSession(session.id, title);
+  };
+
   return (
     <aside className="flex w-64 shrink-0 flex-col border-r border-hairline bg-surface">
       <div className="wow-no-drag flex items-center justify-between px-3 py-3">
@@ -64,35 +83,71 @@ export function Sidebar({
               </div>
               {sessions
                 .filter((session) => session.workDir === workspace.path)
-                .map((session) => (
-                  <div key={session.id} className="group relative">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onSelect(session.id);
+                .map((session) =>
+                  renaming === session.id ? (
+                    <input
+                      key={session.id}
+                      autoFocus
+                      value={draft}
+                      onChange={(event) => {
+                        setDraft(event.target.value);
                       }}
-                      className={`wow-no-drag block w-full truncate rounded-md px-2 py-1.5 pr-7 text-left text-[13px] transition-colors ${
-                        session.id === activeSession
-                          ? 'bg-surface-raised text-ink'
-                          : 'text-ink-muted hover:bg-surface-raised/60 hover:text-ink'
-                      }`}
-                      title={session.title}
-                    >
-                      {session.title}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onDeleteSession(session.id);
+                      onBlur={() => {
+                        commitRename(session);
                       }}
-                      aria-label={`删除会话 ${session.title}`}
-                      title="删除会话"
-                      className="wow-no-drag absolute top-1/2 right-1 grid size-5 -translate-y-1/2 place-items-center rounded text-[13px] text-ink-subtle opacity-0 transition-opacity group-hover:opacity-100 hover:text-danger"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') commitRename(session);
+                        if (event.key === 'Escape') setRenaming(null);
+                      }}
+                      aria-label="会话名称"
+                      className="wow-no-drag mx-1 my-0.5 w-[calc(100%-8px)] rounded-md border border-accent/50 bg-canvas px-2 py-1 text-[13px] text-ink outline-none"
+                    />
+                  ) : (
+                    <div key={session.id} className="group relative">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onSelect(session.id);
+                        }}
+                        onDoubleClick={() => {
+                          startRename(session);
+                        }}
+                        className={`wow-no-drag block w-full truncate rounded-md px-2 py-1.5 pr-12 text-left text-[13px] transition-colors ${
+                          session.id === activeSession
+                            ? 'bg-surface-raised text-ink'
+                            : 'text-ink-muted hover:bg-surface-raised/60 hover:text-ink'
+                        }`}
+                        title={`${session.title}（双击重命名）`}
+                      >
+                        {session.title}
+                      </button>
+                      <div className="absolute top-1/2 right-1 flex -translate-y-1/2 items-center opacity-0 transition-opacity group-hover:opacity-100">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            startRename(session);
+                          }}
+                          aria-label={`重命名会话 ${session.title}`}
+                          title="重命名"
+                          className="wow-no-drag grid size-5 place-items-center rounded text-[11px] text-ink-subtle hover:text-ink"
+                        >
+                          ✎
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onDeleteSession(session.id);
+                          }}
+                          aria-label={`删除会话 ${session.title}`}
+                          title="删除会话"
+                          className="wow-no-drag grid size-5 place-items-center rounded text-[13px] text-ink-subtle hover:text-danger"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                  ),
+                )}
             </div>
           ))
         )}
