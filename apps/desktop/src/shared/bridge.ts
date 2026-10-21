@@ -1,7 +1,10 @@
 import type {
+  AddMcpServerInput,
   AddModelInput,
   ApprovalRequest,
   DoctorReport,
+  McpServerSummary,
+  McpTestOutcome,
   ModelOption,
   ProviderConfig,
   QuestionRequest,
@@ -34,6 +37,10 @@ export const IPC = {
   modelAdd: 'wow:model:add',
   modelRemove: 'wow:model:remove',
   defaultModelSet: 'wow:model:set-default',
+  mcpList: 'wow:mcp:list',
+  mcpAdd: 'wow:mcp:add',
+  mcpRemove: 'wow:mcp:remove',
+  mcpTest: 'wow:mcp:test',
 } as const;
 
 export const EVENTS = {
@@ -74,6 +81,12 @@ export interface WowBridge {
     upsert(config: ProviderConfig): Promise<void>;
     remove(name: string): Promise<void>;
     test(config: ProviderConfig): Promise<{ ok: boolean; detail: string }>;
+  };
+  mcp: {
+    list(workDir?: string): Promise<McpServerSummary[]>;
+    add(input: AddMcpServerInput, workDir?: string): Promise<McpServerSummary[]>;
+    remove(name: string, workDir?: string): Promise<McpServerSummary[]>;
+    test(input: AddMcpServerInput, workDir?: string): Promise<McpTestOutcome>;
   };
   on: {
     streamDelta(listener: (delta: StreamDelta) => void): () => void;

@@ -154,6 +154,21 @@ function registerIpc(): void {
   ipcMain.handle(IPC.providerTest, (_event, config: Parameters<typeof host.testProvider>[0]) =>
     guard(() => host.testProvider(config)),
   );
+
+  ipcMain.handle(IPC.mcpList, (_event, workDir?: string) => guard(() => host.listMcpServers(workDir)));
+  ipcMain.handle(
+    IPC.mcpAdd,
+    (_event, input: Parameters<typeof host.addMcpServer>[0], workDir?: string) =>
+      guard(() => host.addMcpServer(input, workDir)),
+  );
+  ipcMain.handle(IPC.mcpRemove, (_event, name: string, workDir?: string) =>
+    guard(() => host.removeMcpServer(name, workDir)),
+  );
+  ipcMain.handle(
+    IPC.mcpTest,
+    (_event, input: Parameters<typeof host.testMcpServer>[0], workDir?: string) =>
+      guard(() => host.testMcpServer(input, workDir)),
+  );
 }
 
 const gotLock = app.requestSingleInstanceLock();

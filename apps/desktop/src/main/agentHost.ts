@@ -16,9 +16,12 @@ import type {
 
 import { projectHistory } from './history';
 import type {
+  AddMcpServerInput,
   AddModelInput,
   ApprovalRequest,
   DoctorReport,
+  McpServerSummary,
+  McpTestOutcome,
   ModelOption,
   ProviderConfig,
   ProviderSummary,
@@ -498,6 +501,86 @@ export class AgentHost {
     } catch (error) {
       return { ok: false, detail: error instanceof Error ? error.message : String(error) };
     }
+  }
+
+  async listMcpServers(workDir?: string): Promise<McpServerSummary[]> {
+    const harness = await this.ensureStarted();
+    const servers = await harness.listMcpServers(workDir === undefined ? {} : { cwd: workDir });
+    return servers.map((server) => ({
+      name: server.name,
+      transport: server.transport,
+      detail:
+        server.transport === 'stdio'
+          ? [server.command, ...(server.args ?? [])].join(' ')
+          : server.url,
+      enabled: server.enabled !== false,
+      mutable: server.mutable,
+      source: String(server.source),
+    }));
+  }
+
+  async addMcpServer(input: AddMcpServerInput, workDir?: string): Promise<McpServerSummary[]> {
+    const harness = await this.ensureStarted();
+    const base = { name: input.name, enabled: true };
+    let server: Parameters<typeof harness.addMcpServer>[0];
+    if (input.transport === 'stdio') {
+      if (input.command === undefined || input.command === '') {
+        throw new Error('stdio transport needs a command');
+      }
+      server = {
+        ...base,
+        transport: 'stdio',
+        command: input.command,
+        args: input.args,
+        env: input.env,
+      };
+    } else {
+      if (input.url === undefined || input.url === '') {
+        throw new Error(`${input.transport} transport needs a url`);
+      }
+      server = {
+        ...base,
+        transport: input.transport,
+        url: input.url,
+        headers: input.headers,
+      };
+    }
+    await harness.addMcpServer(server, workDir === undefined ? {} : { cwd: workDir });
+    return this.listMcpServers(workDir);
+  }
+
+  async removeMcpServer(name: string, workDir?: string): Promise<McpServerSummary[]> {
+    const harness = await this.ensureStarted();
+    await harness.removeMcpServer(name, workDir === undefined ? {} : { cwd: workDir });
+    return this.listMcpServers(workDir);
+  }
+
+  async testMcpServer(input: AddMcpServerInput, workDir?: string): Promise<McpTestOutcome> {
+    const harness = await this.ensureStarted();
+    const base = { name: input.name, enabled: true };
+    const server =
+      input.transport === 'stdio'
+        ? {
+            ...base,
+            transport: 'stdio' as const,
+            command: input.command ?? '',
+            args: input.args,
+            env: input.env,
+          }
+        : {
+            ...base,
+            transport: input.transport,
+            url: input.url ?? '',
+            headers: input.headers,
+          };
+    const result = await harness.testMcpServerConfig(
+      server,
+      workDir === undefined ? {} : { cwd: workDir },
+    );
+    return {
+      ok: result.success,
+      detail: result.output === '' ? (result.success ? 'connected' : 'failed') : result.output,
+    };
   }
 
   async dispose(): Promise<void> {

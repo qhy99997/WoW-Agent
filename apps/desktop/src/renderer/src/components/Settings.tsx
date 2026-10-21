@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import type { SettingsSnapshot } from '@shared/contract.js';
+import type { SettingsSnapshot } from '@shared/contract';
 import { bridge } from '../bridge';
+import { McpSettings } from './McpSettings';
 
 type WireType = 'openai' | 'anthropic' | 'kimi' | 'google-genai' | 'openai_responses';
 
@@ -15,9 +16,10 @@ const WIRE_PRESETS: Array<{ type: WireType; label: string; baseUrl: string }> = 
 
 interface SettingsProps {
   onClose: () => void;
+  workDir: string | undefined;
 }
 
-export function Settings({ onClose }: SettingsProps): React.JSX.Element {
+export function Settings({ onClose, workDir }: SettingsProps): React.JSX.Element {
   const [snapshot, setSnapshot] = useState<SettingsSnapshot | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
@@ -309,6 +311,8 @@ export function Settings({ onClose }: SettingsProps): React.JSX.Element {
               )}
             </div>
           </section>
+
+          <McpSettings workDir={workDir} />
         </div>
       </div>
     </div>

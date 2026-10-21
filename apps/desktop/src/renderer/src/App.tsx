@@ -202,6 +202,7 @@ export function App(): React.JSX.Element {
         <main className="flex min-w-0 flex-1 flex-col">
           {showSettings ? (
             <Settings
+              workDir={activeWorkspace?.path}
               onClose={() => {
                 setShowSettings(false);
                 void refreshModels();

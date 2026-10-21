@@ -73,6 +73,33 @@ export const SettingsSnapshotSchema = z.object({
 });
 export type SettingsSnapshot = z.infer<typeof SettingsSnapshotSchema>;
 
+export const McpServerSummarySchema = z.object({
+  name: z.string(),
+  transport: z.enum(['stdio', 'http', 'sse']),
+  detail: z.string(),
+  enabled: z.boolean(),
+  mutable: z.boolean(),
+  source: z.string(),
+});
+export type McpServerSummary = z.infer<typeof McpServerSummarySchema>;
+
+export const AddMcpServerInputSchema = z.object({
+  name: z.string().min(1),
+  transport: z.enum(['stdio', 'http', 'sse']),
+  command: z.string().optional(),
+  args: z.array(z.string()).optional(),
+  url: z.string().optional(),
+  headers: z.record(z.string(), z.string()).optional(),
+  env: z.record(z.string(), z.string()).optional(),
+});
+export type AddMcpServerInput = z.infer<typeof AddMcpServerInputSchema>;
+
+export const McpTestResultSchema = z.object({
+  ok: z.boolean(),
+  detail: z.string(),
+});
+export type McpTestOutcome = z.infer<typeof McpTestResultSchema>;
+
 export const TranscriptEntrySchema = z.object({
   id: z.string(),
   role: z.enum(['user', 'assistant', 'system', 'tool']),

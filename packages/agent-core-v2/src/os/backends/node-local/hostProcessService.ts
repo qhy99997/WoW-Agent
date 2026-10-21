@@ -15,8 +15,17 @@ import {
 
 const isWindows: boolean = process.platform === 'win32';
 const TASKKILL_TIMEOUT_MS = 5_000;
+const WINDOWS_SCRIPT_EXTENSION = /\.(cmd|bat)$/i;
+const WINDOWS_SHELL_COMMANDS = /^(npx|npm|pnpm|yarn|bunx?|uvx|pipx)$/i;
 
-function buildSpawnOptions(options: HostProcessOptions): SpawnOptions {
+function needsWindowsShell(command: string): boolean {
+  if (!isWindows) return false;
+  if (WINDOWS_SCRIPT_EXTENSION.test(command)) return true;
+  if (command.includes('/') || command.includes('\\')) return false;
+  return WINDOWS_SHELL_COMMANDS.test(command);
+}
+
+function buildSpawnOptions(options: HostProcessOptions, command: string): SpawnOptions {
   const detached = options.detached ?? !isWindows;
   const spawnOptions: SpawnOptions = {
     cwd: options.cwd,
@@ -29,6 +38,8 @@ function buildSpawnOptions(options: HostProcessOptions): SpawnOptions {
 
   if (options.shell !== undefined) {
     spawnOptions.shell = options.shell;
+  } else if (needsWindowsShell(command)) {
+    spawnOptions.shell = true;
   }
 
   return spawnOptions;
@@ -187,7 +198,7 @@ export class HostProcessService implements IHostProcessService {
     args: readonly string[] = [],
     options: HostProcessOptions = {},
   ): Promise<IHostProcess> {
-    const spawnOptions = buildSpawnOptions(options);
+    const spawnOptions = buildSpawnOptions(options, command);
     const child = spawn(command, args as string[], spawnOptions);
     try {
       await waitForSpawn(child);

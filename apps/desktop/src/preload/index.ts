@@ -65,6 +65,12 @@ const bridge: WowBridge = {
     remove: (name) => call(IPC.providerRemove, name),
     test: (config) => call(IPC.providerTest, config),
   },
+  mcp: {
+    list: (workDir) => call(IPC.mcpList, workDir),
+    add: (input, workDir) => call(IPC.mcpAdd, input, workDir),
+    remove: (name, workDir) => call(IPC.mcpRemove, name, workDir),
+    test: (input, workDir) => call(IPC.mcpTest, input, workDir),
+  },
   on: {
     streamDelta: (listener) => subscribe(EVENTS.streamDelta, listener),
     approvalRequested: (listener) => subscribe(EVENTS.approvalRequested, listener),
