@@ -2,6 +2,7 @@ import type { ToolInputDisplay } from '@moonshot-ai/agent-core-v2/tool/toolInput
 import type { ContentPart, Message } from '@moonshot-ai/kosong';
 
 import type { BackgroundTaskStatus } from '#/task';
+import type { TokenUsage } from '#/types';
 
 export type SkillSource = 'project' | 'user' | 'extra' | 'builtin';
 
@@ -97,11 +98,21 @@ export type PromptOrigin =
   | HookResultOrigin
   | RetryOrigin;
 
+export interface ContextMessageTiming {
+  readonly llmFirstTokenLatencyMs?: number;
+  readonly llmStreamDurationMs?: number;
+}
+
 export type ContextMessage = Message & {
+  readonly id?: string;
+  readonly providerMessageId?: string;
   readonly origin?: PromptOrigin | undefined;
   readonly isError?: boolean;
   toolCallDisplays?: Record<string, ToolInputDisplay>;
   readonly note?: string;
+  readonly usage?: TokenUsage;
+  readonly llmTiming?: ContextMessageTiming;
+  readonly durationMs?: number;
 };
 
 export interface UserMessageRecord {

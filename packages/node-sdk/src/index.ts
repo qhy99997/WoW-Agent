@@ -65,6 +65,7 @@ export {
 } from '#/logging/index';
 export { resolveKimiHome } from '@moonshot-ai/agent-core-v2';
 export type { LogContext, LogLevel, LogPayload, Logger } from '#/logging/index';
+export type { AgentContextData, ContextMessage, PromptOrigin } from '#/context';
 
 export { effectiveModelAlias, loadRuntimeConfigSafe } from '#/config/index';
 export { resolveConfigPath } from '@moonshot-ai/agent-core-v2';
