@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type {
-  ApprovalRequest,
   DoctorReport,
   ModelOption,
   QuestionRequest,
@@ -9,7 +8,7 @@ import type {
   StreamDelta,
   TranscriptEntry,
   Workspace,
-} from '@shared/contract.js';
+} from '@shared/contract';
 import { bridge } from './bridge';
 import { Composer } from './components/Composer';
 import { MessageList } from './components/MessageList';
@@ -17,6 +16,16 @@ import { Onboarding } from './components/Onboarding';
 import { Settings } from './components/Settings';
 import { Sidebar } from './components/Sidebar';
 import { ApprovalCard } from './components/ApprovalCard';
+import {
+  applyDelta,
+  EMPTY_APPROVAL_QUEUE,
+  enqueueApproval,
+  isStalled,
+  resolveApproval,
+  type ApprovalQueue,
+} from './transcript';
+
+const STALL_CHECK_INTERVAL_MS = 5_000;
 
 export function App(): React.JSX.Element {
   const [doctor, setDoctor] = useState<DoctorReport | null>(null);
@@ -24,14 +33,16 @@ export function App(): React.JSX.Element {
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [activeSession, setActiveSession] = useState<string | null>(null);
   const [entries, setEntries] = useState<TranscriptEntry[]>([]);
-  const [approval, setApproval] = useState<ApprovalRequest | null>(null);
+  const [approvals, setApprovals] = useState<ApprovalQueue>(EMPTY_APPROVAL_QUEUE);
   const [streaming, setStreaming] = useState(false);
+  const [stalled, setStalled] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [models, setModels] = useState<ModelOption[]>([]);
   const [activeModel, setActiveModel] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [ready, setReady] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const lastActivity = useRef(Date.now());
 
   const refreshSessions = useCallback(async () => {
     const rows = await bridge().session.list();
@@ -77,9 +88,11 @@ export function App(): React.JSX.Element {
     const offDelta = bridge().on.streamDelta((delta: StreamDelta) => {
       setEntries((current) => applyDelta(current, delta));
       if (delta.role === 'assistant' && delta.kind === 'text') setStreaming(!delta.done);
+      lastActivity.current = Date.now();
     });
     const offApproval = bridge().on.approvalRequested((request) => {
-      setApproval(request);
+      lastActivity.current = Date.now();
+      setApprovals((queue) => enqueueApproval(queue, request));
     });
     const offQuestion = bridge().on.questionAsked((_request: QuestionRequest) => {
       /* questions surface inside the transcript once wired */
@@ -98,6 +111,18 @@ export function App(): React.JSX.Element {
       offChanged();
     };
   }, [refreshSessions, activeSession, selectSession]);
+
+  // The engine has no wall-clock turn timeout, so a stream that dies mid-reply
+  // leaves the UI spinning forever. Surface it instead of pretending to work.
+  useEffect(() => {
+    if (!streaming) return;
+    const timer = setInterval(() => {
+      if (isStalled(lastActivity.current, Date.now())) setStalled(true);
+    }, STALL_CHECK_INTERVAL_MS);
+    return () => {
+      clearInterval(timer);
+    };
+  }, [streaming]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ block: 'end' });
@@ -141,7 +166,9 @@ export function App(): React.JSX.Element {
     async (text: string) => {
       if (activeSession === null) return;
       setError(null);
+      setStalled(false);
       setStreaming(true);
+      lastActivity.current = Date.now();
       try {
         await bridge().prompt.send(activeSession, text);
       } catch (cause) {
@@ -152,12 +179,19 @@ export function App(): React.JSX.Element {
     [activeSession],
   );
 
-  const respond = useCallback(async (optionId: string) => {
-    const current = approval;
-    setApproval(null);
-    if (current === null) return;
-    await bridge().approval.respond(current.id, optionId);
-  }, [approval]);
+  const respond = useCallback(
+    async (optionId: string) => {
+      const current = approvals.current;
+      if (current === null) return;
+      setApprovals((queue) => resolveApproval(queue, current.id));
+      try {
+        await bridge().approval.respond(current.id, optionId);
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : String(cause));
+      }
+    },
+    [approvals],
+  );
 
   const activeWorkspace = useMemo(
     () => workspaces.find((workspace) => workspace.id === sessionWorkspace(sessions, activeSession)),
@@ -219,14 +253,38 @@ export function App(): React.JSX.Element {
           ) : (
             <>
               <MessageList entries={entries} bottomRef={bottomRef} />
-              {approval !== null && (
-                <ApprovalCard request={approval} onRespond={(id) => void respond(id)} />
+              {approvals.current !== null && (
+                <ApprovalCard
+                  request={approvals.current}
+                  queued={approvals.pending.length}
+                  onRespond={(id) => void respond(id)}
+                />
               )}
               {error !== null && (
                 <div className="mx-auto w-full max-w-3xl px-6 pb-2">
                   <p className="rounded-control border border-danger/40 bg-danger/10 px-3 py-2 text-[13px] text-danger">
                     {error}
                   </p>
+                </div>
+              )}
+              {stalled && streaming && (
+                <div className="mx-auto w-full max-w-3xl px-6 pb-2">
+                  <div className="flex items-center justify-between gap-3 rounded-control border border-hairline bg-surface px-3 py-2">
+                    <p className="text-[12px] text-ink-muted">
+                      已经很久没有收到新的输出，模型可能卡住了。
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStalled(false);
+                        lastActivity.current = Date.now();
+                        void bridge().prompt.cancel(activeSession);
+                      }}
+                      className="shrink-0 rounded-control border border-hairline px-2.5 py-1 text-[11px] text-ink-muted transition-colors hover:text-ink"
+                    >
+                      停止这一轮
+                    </button>
+                  </div>
                 </div>
               )}
               <Composer
@@ -252,27 +310,6 @@ export function App(): React.JSX.Element {
 function sessionWorkspace(sessions: SessionSummary[], activeSession: string | null): string | null {
   const session = sessions.find((row) => row.id === activeSession);
   return session?.workDir ?? null;
-}
-
-function applyDelta(current: TranscriptEntry[], delta: StreamDelta): TranscriptEntry[] {
-  const index = current.findIndex((entry) => entry.id === delta.entryId);
-  if (index === -1) {
-    return [
-      ...current,
-      {
-        id: delta.entryId,
-        role: delta.role,
-        kind: delta.kind,
-        text: delta.text,
-        createdAt: Date.now(),
-      },
-    ];
-  }
-  const next = [...current];
-  const existing = next[index];
-  if (existing === undefined) return current;
-  next[index] = { ...existing, text: existing.text + delta.text };
-  return next;
 }
 
 function EmptyState({
