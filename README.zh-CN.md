@@ -23,7 +23,7 @@ WoW 是一个桌面端 AI 编程 agent。指定一个项目目录，用自然语
 
 环境要求：
 
-- Windows 10/11（x64）——目前仅提供这一个安装包目标
+- Windows（x64）——目前仅提供这一个安装包目标
 - [Git for Windows](https://gitforwindows.org/)——WoW 使用其中的 Git Bash 作为 Shell
 - Node.js ≥ 24.15.0、pnpm 10.33.0
 

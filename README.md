@@ -23,7 +23,7 @@ Prebuilt installers are not distributed from this repository; build one from sou
 
 Requirements:
 
-- Windows 10/11 (x64) — this is currently the only installer target
+- Windows (x64) — this is currently the only installer target
 - [Git for Windows](https://gitforwindows.org/) — WoW uses the Git Bash bundled with it as its shell
 - Node.js ≥ 24.15.0 and pnpm 10.33.0
 
