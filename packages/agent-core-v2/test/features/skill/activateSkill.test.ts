@@ -303,22 +303,6 @@ describe('promptWithSkills', () => {
     ).toBe(false);
   });
 
-  it('undoes the bundled prompt as a single anchor', async () => {
-    ctx = agentWithSkills();
-    await ctx.restorePersisted();
-    ctx.mockNextResponse({ type: 'text', text: 'done' });
-    await ctx.rpc.promptWithSkills({
-      input: [{ type: 'text', text: 'Review this change.' }],
-      skills: [{ name: 'review' }, { name: 'security' }],
-    });
-    await ctx.untilTurnEnd();
-    expect(ctx.context.get().length).toBeGreaterThan(0);
-
-    const undone = await ctx.rpc.undoHistory({ count: 1 });
-    expect(undone).toBe(1);
-    expect(ctx.context.get()).toHaveLength(0);
-  });
-
   it('accepts later prompt_id reuse of a bundled prompt id as a pure correlation id', async () => {
     ctx = agentWithSkills();
     ctx.mockNextResponse({ type: 'text', text: 'done' });

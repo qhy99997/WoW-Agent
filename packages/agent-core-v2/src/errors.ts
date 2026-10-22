@@ -5,9 +5,7 @@ import { AuthErrors } from '#/app/auth/errors';
 import { TaskErrors } from '#/agent/task/errors';
 import { ProtocolErrors } from '#/llm-adapter/protocol/errors';
 import { ConfigErrors } from '#/app/config/errors';
-import { CapabilityErrors } from '#/app/capability/errors';
 import { CronErrors } from '#/features/cron/errors';
-import { DebugErrors } from '#/debug/errors';
 import { EventErrors } from '#/app/event/errors';
 import { FileErrors } from '#/app/file/fileService';
 import { FsErrors } from '#/workspace/workspaceFs/internal/errors';
@@ -21,8 +19,6 @@ import { OsProcessErrors } from '#/os/interface/hostProcess';
 import { PluginErrors } from '#/app/plugin/errors';
 import { ProfileErrors } from '#/agent/profile/errors';
 import { PromptErrors } from '#/agent/prompt/errors';
-import { ModelsDevImportErrors } from '#/app/kosongConfig/errors';
-import { SessionExportErrors } from '#/app/sessionExport/errors';
 import { SessionErrors } from '#/session/errors';
 import { SkillErrors } from '#/features/skill/catalog/errors';
 import { StateErrors } from '#/state/errors';
@@ -31,7 +27,6 @@ import { UsageErrors } from '#/agent/usage/errors';
 import { WebErrors } from '#/app/web/errors';
 import { WireErrors } from '#/wire/errors';
 import { WorkspaceErrors } from '#/app/workspace/errors';
-import { DefaultWorkspaceErrors } from '#/app/defaultWorkspace/errors';
 
 export * from '#/_base/errors/codes';
 export * from '#/_base/errors/errorMessage';
@@ -43,9 +38,7 @@ export { AuthErrors } from '#/app/auth/errors';
 export { TaskErrors } from '#/agent/task/errors';
 export { ProtocolErrors } from '#/llm-adapter/protocol/errors';
 export { ConfigErrors } from '#/app/config/errors';
-export { CapabilityErrors } from '#/app/capability/errors';
 export { CronErrors } from '#/features/cron/errors';
-export { DebugErrors } from '#/debug/errors';
 export { FileErrors } from '#/app/file/fileService';
 export { FsErrors } from '#/workspace/workspaceFs/internal/errors';
 export { FullCompactionErrors } from '#/agent/fullCompaction/errors';
@@ -58,8 +51,6 @@ export { OsProcessErrors } from '#/os/interface/hostProcess';
 export { PluginErrors } from '#/app/plugin/errors';
 export { ProfileErrors } from '#/agent/profile/errors';
 export { PromptErrors } from '#/agent/prompt/errors';
-export { ModelsDevImportErrors } from '#/app/kosongConfig/errors';
-export { SessionExportErrors } from '#/app/sessionExport/errors';
 export { SessionErrors } from '#/session/errors';
 export { SkillErrors } from '#/features/skill/catalog/errors';
 export { StorageErrors } from '#/persistence/interface/storage';
@@ -67,7 +58,6 @@ export { UsageErrors } from '#/agent/usage/errors';
 export { WebErrors } from '#/app/web/errors';
 export { WireErrors } from '#/wire/errors';
 export { WorkspaceErrors } from '#/app/workspace/errors';
-export { DefaultWorkspaceErrors } from '#/app/defaultWorkspace/errors';
 export { EventErrors } from '#/app/event/errors';
 export { StateErrors } from '#/state/errors';
 
@@ -78,9 +68,7 @@ export const ErrorCodes = {
   ...TaskErrors.codes,
   ...ProtocolErrors.codes,
   ...ConfigErrors.codes,
-  ...CapabilityErrors.codes,
   ...CronErrors.codes,
-  ...DebugErrors.codes,
   ...FileErrors.codes,
   ...FsErrors.codes,
   ...FullCompactionErrors.codes,
@@ -93,8 +81,6 @@ export const ErrorCodes = {
   ...PluginErrors.codes,
   ...ProfileErrors.codes,
   ...PromptErrors.codes,
-  ...ModelsDevImportErrors.codes,
-  ...SessionExportErrors.codes,
   ...SessionErrors.codes,
   ...SkillErrors.codes,
   ...StorageErrors.codes,
@@ -102,7 +88,6 @@ export const ErrorCodes = {
   ...WebErrors.codes,
   ...WireErrors.codes,
   ...WorkspaceErrors.codes,
-  ...DefaultWorkspaceErrors.codes,
   ...EventErrors.codes,
   ...StateErrors.codes,
 } as const;
@@ -121,11 +106,6 @@ export type KimiErrorCode =
   | 'session.state_not_found'
   | 'session.state_invalid'
   | 'session.fork_active_turn'
-  | 'session.undo_unavailable'
-  | 'session.export_not_found'
-  | 'session.export_missing_version'
-  | 'session.export_output_conflict'
-  | 'session.export_too_large'
   | 'session.closed'
   | 'session.permission_mode_invalid'
   | 'session.thinking_empty'
@@ -133,7 +113,6 @@ export type KimiErrorCode =
   | 'session.plan_mode_invalid'
   | 'session.approval_handler_error'
   | 'session.question_handler_error'
-  | 'session.init_failed'
   | 'agent.not_found'
   | 'agent.already_exists'
   | 'agent.already_running'
@@ -197,7 +176,6 @@ export type KimiErrorCode =
   | 'prompt.not_found'
   | 'session.busy'
   | 'shell.git_bash_not_found'
-  | 'default_workspace.unavailable'
   | 'workspace.not_found'
   | 'terminal.not_found'
   | 'file.not_found'

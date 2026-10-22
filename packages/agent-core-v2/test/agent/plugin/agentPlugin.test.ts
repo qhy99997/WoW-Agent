@@ -269,60 +269,6 @@ describe('AgentPluginService plugin session-start wiring', () => {
     sinkChange.dispose();
   });
 
-  it('reconciles the current plugin guidance after undo removes its latest render', async () => {
-    const catalog = new InMemorySkillCatalog();
-    catalog.register(pluginSkill());
-    const sinkChange = new Emitter<string>();
-    const skillCatalog: ISessionSkillCatalog = {
-      _serviceBrand: undefined,
-      catalog,
-      ready: Promise.resolve(),
-      onDidChange: sinkChange.event,
-      load: async () => {},
-      reload: async () => {},
-      list: async () => catalog.listSkills().map(summarizeSkill),
-    };
-
-    ctx = createTestAgent(
-      { autoConfigure: true },
-      appService(
-        IPluginService,
-        stubPluginService({
-          sessionStarts: [{ pluginId: 'demo', skillName: 'demo-skill' }],
-        }),
-      ),
-      skillServices(skillCatalog),
-      agentService(IAgentPluginService, new SyncDescriptor(AgentPluginService)),
-    );
-    ctx.get(IAgentPluginService);
-    await ctx.restorePersisted();
-
-    ctx.mockNextResponse({ type: 'text', text: 'first answer' });
-    await ctx.rpc.prompt({ input: [{ type: 'text', text: 'first prompt' }] });
-    await ctx.untilTurnEnd();
-
-    catalog.register(
-      { ...pluginSkill(), content: 'Do the updated demo thing.' },
-      { replace: true },
-    );
-    sinkChange.fire('plugin');
-    ctx.mockNextResponse({ type: 'text', text: 'second answer' });
-    await ctx.rpc.prompt({ input: [{ type: 'text', text: 'second prompt' }] });
-    await ctx.untilTurnEnd();
-
-    await ctx.undoHistory(1);
-    ctx.mockNextResponse({ type: 'text', text: 'third answer' });
-    await ctx.rpc.prompt({ input: [{ type: 'text', text: 'third prompt' }] });
-    await ctx.untilTurnEnd();
-
-    const latest = findPluginSessionStartEventMessages(ctx).at(-1);
-    expect(latest).toBeDefined();
-    expect(messageText(latest!)).toContain('Do the updated demo thing.');
-    expect(messageText(latest!)).toContain(
-      'supersedes any earlier plugin_session_start reminder',
-    );
-    sinkChange.dispose();
-  });
 });
 
 describe('AgentPluginService plugin-change reminder', () => {

@@ -36,8 +36,6 @@ import { WAIT_FOR_FLAG_ID } from '#/agent/tools/task/task-wait/flag';
 import { IWebSearchProviderService } from '#/app/auth/webSearch/webSearch';
 import { IFlagService } from '#/app/flag/flag';
 import { ISessionNotify } from '#/features/notify/sessionNotify';
-import { ISessionBtwService } from '#/features/btw/btw';
-import { TOWER_WORKER_PROFILE } from '#/features/tower/tower';
 import { IAgentReminderService } from '#/features/reminder/reminderService';
 import { SUBAGENT_FORK_FLAG_ID } from '#/session/subagent/flag';
 import {
@@ -442,7 +440,7 @@ describe('subagent task reminders and fork request parity', () => {
     expect(tailText).not.toContain(SUBAGENT_BACKGROUND_TASK_NOTICE);
   });
 
-  it.each(['coder', TOWER_WORKER_PROFILE])(
+  it.each(['coder'])(
     'keeps guidance across steps and turns for a directly created %s',
     async (profile) => {
       createMainForkCtx();
@@ -584,58 +582,4 @@ describe('subagent task reminders and fork request parity', () => {
     expect(taskReminders(child.accessor.get(IAgentContextMemoryService).get())).toHaveLength(1);
   });
 
-  it('keeps btw system, tools and inherited history identical to main', async () => {
-    createMainForkCtx();
-    await ctx.get(IAgentProfileService).bind({ profile: 'agent', model: 'mock-model' });
-    ctx.get(IAgentProfileService).update({ activeToolNames: contributedToolNames() });
-    const lifecycle = ctx.get(IAgentLifecycleService);
-    await runPrompt(lifecycle.handleOf('main')!);
-    const childId = await ctx.get(ISessionBtwService).start();
-    const child = lifecycle.handleOf(childId)!;
-
-    await runPrompt(child);
-
-    const parentReq = ctx.llmCalls[0]!;
-    const childReq = ctx.llmCalls[1]!;
-    expect(parentReq.tools.some((tool) => tool.name === 'WaitFor')).toBe(true);
-    expect(childReq.tools).toEqual(parentReq.tools);
-    expect(childReq.systemPrompt).toBe(parentReq.systemPrompt);
-    expect(childReq.history.slice(0, parentReq.history.length)).toEqual(parentReq.history);
-    expect(ctx.llmCalls).toHaveLength(2);
-  });
-
-  it('drops the parent comparison from the btw cache probe once main compacts', async () => {
-    const telemetry: TelemetryRecord[] = [];
-    createMainForkCtx(stubFlag(true), telemetry);
-    await ctx.get(IAgentProfileService).bind({ profile: 'agent', model: 'mock-model' });
-    ctx.get(IAgentProfileService).update({ activeToolNames: contributedToolNames() });
-    const lifecycle = ctx.get(IAgentLifecycleService);
-    const main = lifecycle.handleOf('main')!;
-    await runPrompt(main);
-
-    const beforeCompaction = await ctx.get(ISessionBtwService).start();
-    await runPrompt(lifecycle.handleOf(beforeCompaction)!);
-    const context = main.accessor.get(IAgentContextMemoryService);
-    context.applyCompaction({
-      summary: 'The main agent still needs to finish the task.',
-      compactedCount: context.get().length,
-      tokensBefore: 1000,
-    });
-    const afterCompaction = await ctx.get(ISessionBtwService).start();
-    await runPrompt(lifecycle.handleOf(afterCompaction)!);
-
-    const probes = telemetry
-      .filter((record) => record.event === 'prompt_cache_probe')
-      .map((record) => record.properties ?? {});
-    expect(probes.map((probe) => probe['agent_id'])).toEqual([beforeCompaction, afterCompaction]);
-    expect(probes[0]).toMatchObject({
-      tools_match: true,
-      system_prompt_match: true,
-      parent_input_tokens: expect.any(Number),
-    });
-    expect(probes[1]?.['tools_match']).toBeUndefined();
-    expect(probes[1]?.['system_prompt_match']).toBeUndefined();
-    expect(probes[1]?.['parent_input_tokens']).toBeUndefined();
-    expect(probes[1]?.['parent_request_gap_ms']).toBeUndefined();
-  });
 });

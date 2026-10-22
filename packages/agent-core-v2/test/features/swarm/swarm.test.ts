@@ -639,42 +639,6 @@ describe('AgentSwarmService', () => {
   });
 });
 
-describe('swarm context reconciliation', () => {
-  it('renders the corrective exit again when undo removes the latest exit render', async () => {
-    const ctx = createTestAgent();
-    try {
-      await ctx.restorePersisted();
-      const swarm = ctx.get(IAgentSwarmService);
-      swarm.enter('manual');
-      ctx.mockNextResponse({ type: 'text', text: 'first answer' });
-      await ctx.rpc.prompt({ input: [{ type: 'text', text: 'first prompt' }] });
-      await ctx.untilTurnEnd();
-
-      swarm.exit();
-      ctx.mockNextResponse({ type: 'text', text: 'second answer' });
-      await ctx.rpc.prompt({ input: [{ type: 'text', text: 'second prompt' }] });
-      await ctx.untilTurnEnd();
-
-      await ctx.undoHistory(1);
-      ctx.mockNextResponse({ type: 'text', text: 'third answer' });
-      await ctx.rpc.prompt({ input: [{ type: 'text', text: 'third prompt' }] });
-      await ctx.untilTurnEnd();
-
-      const reminders = ctx.contextData().history.filter(
-        (message) =>
-          message.origin?.kind === 'injection' && message.origin.variant === 'swarm_mode',
-      );
-      const latest = reminders.at(-1);
-      const text = latest?.content
-        .map((part) => (part.type === 'text' ? part.text : ''))
-        .join('');
-      expect(text).toContain('Swarm Mode has ended.');
-    } finally {
-      await ctx.dispose();
-    }
-  });
-});
-
 describe('AgentSwarmTool', () => {
   it('applies one subagent_type across templated subagents', async () => {
     const host = mockSwarmHost({

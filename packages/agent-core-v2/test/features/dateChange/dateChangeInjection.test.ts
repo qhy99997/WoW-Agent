@@ -8,7 +8,6 @@ import { IAgentContextMemoryService } from '#/agent/contextMemory/contextMemory'
 import type { ContextMessage } from '#/agent/contextMemory/types';
 import { IAgentLoopService } from '#/agent/loop/loop';
 import { IAgentProfileService } from '#/agent/profile/profile';
-import { IAgentConversationUndoService } from '#/agent/undo/undo';
 import { DEFAULT_AGENT_PROFILE_NAME } from '#/app/agentProfileCatalog/agentProfileCatalog';
 import {
   AgentDateChangeService,
@@ -283,66 +282,6 @@ describe('AgentDateChangeService', () => {
     await runWillBeginStepHooks(loop);
 
     expect(dateReminders(context)).toHaveLength(2);
-  });
-
-  it('keeps the structured reminder metadata exactly once across undo and the next step', async () => {
-    updateSystemPrompt(
-      profile,
-      'You are a deterministic test agent.',
-      ctx.get(ISessionContext).cwd,
-    );
-    context.append({
-      role: 'user',
-      content: [{ type: 'text', text: 'first turn' }],
-      toolCalls: [],
-      origin: { kind: 'user' },
-    });
-    await runWillBeginStepHooks(loop);
-    expect(dateReminders(context)).toHaveLength(1);
-
-    await ctx.get(IAgentConversationUndoService).undo(1);
-    expect(dateReminders(context)).toHaveLength(1);
-    context.append({
-      role: 'user',
-      content: [{ type: 'text', text: 'replacement turn' }],
-      toolCalls: [],
-      origin: { kind: 'user' },
-    });
-
-    await runWillBeginStepHooks(loop);
-
-    expect(dateReminders(context)).toHaveLength(1);
-  });
-
-  it('keeps the initial date disclosure across undo and the next step', async () => {
-    updateSystemPrompt(
-      profile,
-      'You are a deterministic test agent.',
-      ctx.get(ISessionContext).cwd,
-    );
-    context.append({
-      role: 'user',
-      content: [{ type: 'text', text: 'first turn' }],
-      toolCalls: [],
-      origin: { kind: 'user' },
-    });
-    await runWillBeginStepHooks(loop);
-    expect(dateReminders(context)).toHaveLength(1);
-
-    await ctx.get(IAgentConversationUndoService).undo(1);
-    expect(dateReminders(context)).toHaveLength(1);
-    context.append({
-      role: 'user',
-      content: [{ type: 'text', text: 'replacement turn' }],
-      toolCalls: [],
-      origin: { kind: 'user' },
-    });
-
-    await runWillBeginStepHooks(loop);
-
-    const reminders = dateReminders(context);
-    expect(reminders).toHaveLength(1);
-    expect(messageText(reminders[0] as ContextMessage)).toContain('2026-07-29');
   });
 
   it('discloses the current date on the first step and stays quiet', async () => {

@@ -669,7 +669,6 @@ describe('Agent loop', () => {
     }
   });
 
-
   it('preserves tool call extras (Gemini thought_signature) through to context', async () => {
     const sigCall: ToolCall = {
       type: 'function',
@@ -1969,68 +1968,6 @@ describe('interruption reminder', () => {
         user: text "<system-reminder>\\nThe previous turn was interrupted by the user before completion; any partial output shown above is incomplete. The user's next message continues the conversation.\\n</system-reminder>"
         user: text "Next"
     `);
-  });
-
-  it('undo removes the event-point interruption with its cancelled turn', async () => {
-    ctx.mockNextResponse({ type: 'text', text: 'partial answer' });
-    const subscription = cancelOnFirstDelta();
-    await ctx.rpc.prompt({ input: [{ type: 'text', text: 'Hello' }] });
-    await ctx.untilTurnEnd();
-    subscription.dispose();
-    expect(interruptionReminders()).toHaveLength(1);
-
-    await ctx.undoHistory(1);
-
-    expect(ctx.contextData().history).toEqual([]);
-    await ctx.expectResumeMatches();
-
-    ctx.mockNextResponse({ type: 'text', text: 'second answer' });
-    await ctx.rpc.prompt({ input: [{ type: 'text', text: 'Next' }] });
-    await ctx.untilTurnEnd();
-    expect(interruptionReminders()).toHaveLength(0);
-  });
-
-  it('keeps an interruption reminder when undo only removes a later turn', async () => {
-    ctx.mockNextResponse({ type: 'text', text: 'partial answer' });
-    const subscription = cancelOnFirstDelta();
-    await ctx.rpc.prompt({ input: [{ type: 'text', text: 'Hello' }] });
-    await ctx.untilTurnEnd();
-    subscription.dispose();
-    const interruptedHistory = ctx.contextData().history;
-
-    ctx.mockNextResponse({ type: 'text', text: 'second answer' });
-    await ctx.rpc.prompt({ input: [{ type: 'text', text: 'Next' }] });
-    await ctx.untilTurnEnd();
-
-    await ctx.undoHistory(1);
-
-    expect(ctx.contextData().history).toEqual(interruptedHistory);
-    expect(interruptionReminders()).toHaveLength(1);
-    await ctx.expectResumeMatches();
-
-    await ctx.undoHistory(1);
-
-    expect(ctx.contextData().history).toEqual([]);
-  });
-
-  it('undo removes a cancelled retry reminder with its preceding user prompt', async () => {
-    ctx.mockNextResponse({ type: 'text', text: 'first answer' });
-    await ctx.rpc.prompt({ input: [{ type: 'text', text: 'Hello' }] });
-    await ctx.untilTurnEnd();
-
-    ctx.mockNextResponse({ type: 'text', text: 'partial retry' });
-    const subscription = cancelOnFirstDelta();
-    const retry = submitPromptTurn(loop, {
-      message: { role: 'user', content: [] },
-      meta: { origin: { kind: 'retry' } },
-    }).turn;
-    await expect(retry.result).resolves.toMatchObject({ type: 'cancelled' });
-    subscription.dispose();
-    expect(interruptionReminders()).toHaveLength(1);
-
-    await ctx.undoHistory(1);
-
-    expect(ctx.contextData().history).toEqual([]);
   });
 
   it('drops unsigned thinking but keeps signed thinking on user cancel', async () => {

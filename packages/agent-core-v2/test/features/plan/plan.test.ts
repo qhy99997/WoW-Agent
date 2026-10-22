@@ -890,19 +890,6 @@ describe('Plan service', () => {
       expect(context.get()).toHaveLength(afterExit);
     });
 
-    it('keeps the preserved injection index aligned after undo removes earlier messages', async () => {
-      await plan.enter('test-plan', false);
-
-      ctx.appendUserTurn('draft the plan');
-      await injectDynamic();
-      ctx.appendAssistantTurn(1, 'Plan drafted.');
-
-      await ctx.undoHistory(1);
-      ctx.appendUserMessage([{ type: 'text', text: 'new plan request' }]);
-      await injectDynamic();
-
-      expect(lastUserText(context.get())).toContain('Plan mode is active');
-    });
   });
 
   function delay(ms: number): Promise<void> {

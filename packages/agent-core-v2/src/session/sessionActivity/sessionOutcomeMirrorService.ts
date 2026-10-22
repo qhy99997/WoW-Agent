@@ -4,7 +4,6 @@ import { LifecycleScope } from '#/app/scopes';
 import { IEventBus } from '#/app/event/eventBus';
 import { TurnStarted } from '#/agent/loop/turnEvents';
 import { TurnEnded, turnKey } from '#/agent/loop/turnOps';
-import { ContextUndone } from '#/agent/undo/undoService';
 import { IAgentStateService } from '#/agent/state/agentState';
 import { IEventDispatcher } from '#/state/eventDispatcher';
 import {
@@ -89,18 +88,6 @@ export class SessionOutcomeMirror extends Disposable implements ISessionOutcomeM
     subscription.add(
       bus.subscribe(TurnStarted, () => {
         this.turnStartedHere = true;
-        this.write(undefined);
-      }),
-    );
-    subscription.add(
-      bus.subscribe(ContextUndone, (event) => {
-        if (
-          event.fromTurnId !== undefined &&
-          this.lastPersistedTurnId !== undefined &&
-          this.lastPersistedTurnId < event.fromTurnId
-        ) {
-          return;
-        }
         this.write(undefined);
       }),
     );

@@ -16,7 +16,6 @@ import type { Event2, Event2Class } from '#/app/event/event2';
 import type { AgentContext } from '#/agent/agentContext/agentContext';
 import { TurnStarted } from '#/agent/loop/turnEvents';
 import { TurnEnded, turnKey, type TurnModelState } from '#/agent/loop/turnOps';
-import { ContextUndone } from '#/agent/undo/undoService';
 import { IAgentStateService } from '#/agent/state/agentState';
 import { IEventDispatcher } from '#/state/eventDispatcher';
 import type { SessionMeta } from '#/session/sessionMetadata/sessionMetadata';
@@ -281,41 +280,6 @@ describe('SessionOutcomeMirror (Session scope)', () => {
     lifecycle.addMain();
     await tick();
     expect(writes).toEqual(['completed']);
-  });
-
-  it('clears the persisted outcome when an undo rewinds the turn', async () => {
-    lifecycle.addMain();
-    await tick();
-    ended('cancelled', 'user_cancelled');
-    expect(writes).toEqual(['cancelled']);
-    lifecycle.bus.publish(new ContextUndone({ agentId: 'main', turns: 1, fromTurnId: 1 }));
-    expect(writes).toEqual(['cancelled', undefined]);
-  });
-
-  it('an undo with no stored outcome writes nothing', async () => {
-    lifecycle.addMain();
-    await tick();
-    lifecycle.bus.publish(new ContextUndone({ agentId: 'main', turns: 1 }));
-    expect(writes).toEqual([]);
-  });
-
-  it('keeps the persisted outcome when an undo rewinds only a later turn', async () => {
-    lifecycle.addMain();
-    await tick();
-    ended('cancelled', 'user_cancelled', 1);
-    expect(writes).toEqual(['cancelled']);
-    lifecycle.bus.publish(new ContextUndone({ agentId: 'main', turns: 1, fromTurnId: 2 }));
-    expect(writes).toEqual(['cancelled']);
-  });
-
-  it('tracks the narrated turn across equal outcomes for the undo range check', async () => {
-    lifecycle.addMain();
-    await tick();
-    ended('completed', undefined, 1);
-    ended('completed', undefined, 2);
-    expect(writes).toEqual(['completed']);
-    lifecycle.bus.publish(new ContextUndone({ agentId: 'main', turns: 1, fromTurnId: 2 }));
-    expect(writes).toEqual(['completed', undefined]);
   });
 
   it('clears a stale persisted outcome when the replayed wire has no ended turn', async () => {

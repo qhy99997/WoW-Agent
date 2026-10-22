@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { IAgentContextMemoryService } from '#/agent/contextMemory/contextMemory';
-import { IAgentConversationUndoService } from '#/agent/undo/undo';
 import type { ContextMessage } from '#/agent/contextMemory/types';
 import { IAgentProfileService } from '#/agent/profile/profile';
 import type { ExecutableTool, ToolExecution } from '#/tool/toolContract';
@@ -207,38 +206,6 @@ describe('progressive tool disclosure end-to-end', () => {
     expect(historyText(ctx.get(IAgentContextMemoryService).get())).toContain(
       'dashboard-created',
     );
-  });
-
-  it('keeps the selected schema across undo and reports it as already available on reselect', async () => {
-    ctx.get(IAgentContextMemoryService).append({
-      role: 'user',
-      content: [{ type: 'text', text: 'earlier question' }],
-      toolCalls: [],
-      origin: { kind: 'user' },
-    });
-
-    ctx.mockNextResponse(selectToolsCall('call_select_1', [MCP_ALPHA]));
-    ctx.mockNextResponse({ type: 'text', text: 'alpha is loaded' });
-    await ctx.rpc.prompt({ input: [{ type: 'text', text: 'load alpha' }] });
-    await ctx.untilTurnEnd();
-
-    await ctx.get(IAgentConversationUndoService).undo(1);
-    const afterUndo = ctx.get(IAgentContextMemoryService).get();
-    expect(afterUndo.some((message) => message.tools?.some((tool) => tool.name === MCP_ALPHA))).toBe(
-      true,
-    );
-
-    ctx.mockNextResponse(selectToolsCall('call_select_2', [MCP_ALPHA]));
-    ctx.mockNextResponse({ type: 'text', text: 'reloaded' });
-    await ctx.rpc.prompt({ input: [{ type: 'text', text: 'load alpha again' }] });
-    await ctx.untilTurnEnd();
-
-    const afterReload = ctx.get(IAgentContextMemoryService).get();
-    expect(
-      afterReload.some((message) => message.tools?.some((tool) => tool.name === MCP_ALPHA)),
-    ).toBe(true);
-    expect(historyText(afterReload)).toContain('Already available: mcp__srv__alpha');
-    expect(historyText(afterReload)).not.toContain('Loaded: mcp__srv__alpha');
   });
 
   it('reports select_tools as callable despite a profile allowlist omission, but respects an explicit deny', async () => {

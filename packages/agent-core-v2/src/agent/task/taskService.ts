@@ -22,7 +22,6 @@ import {
   ContextSpliced,
 } from '#/agent/contextMemory/contextEvents';
 import '#/agent/contextMemory/conversationTime';
-import { IAgentConversationUndoParticipantRegistry } from '#/agent/contextMemory/conversationUndoParticipants';
 import { IEventDispatcher } from '#/state/eventDispatcher';
 import type { TaskOrigin } from '#/agent/contextMemory/types';
 import { IAgentReminderService } from '#/features/reminder/reminderService';
@@ -234,8 +233,6 @@ export class AgentTaskService extends Disposable implements IAgentTaskService {
     @IEventDispatcher private readonly dispatcher: IEventDispatcher,
     @IAgentReminderService private readonly reminder: IAgentReminderService,
     @IAgentLoopService private readonly loop: IAgentLoopService,
-    @IAgentConversationUndoParticipantRegistry
-    undoParticipants: IAgentConversationUndoParticipantRegistry,
     @ILogService private readonly log: ILogService,
     @IAgentStateService private readonly states: IAgentStateService,
     @IFlagService flags: IFlagService,
@@ -259,12 +256,6 @@ export class AgentTaskService extends Disposable implements IAgentTaskService {
       atomicDocs,
       byteStore,
       fallbackRoot,
-    );
-    this._register(
-      undoParticipants.register({
-        id: 'task.notificationDelivery',
-        reconcileAfterUndo: () => this.reconcileNotificationDeliveryAfterUndo(),
-      }),
     );
     this._register(
       this.dispatcher.hooks.onDidRestore.register('task', async (_ctx, next) => {
@@ -524,20 +515,6 @@ export class AgentTaskService extends Disposable implements IAgentTaskService {
     return result;
   }
 
-  private async reconcileNotificationDeliveryAfterUndo(): Promise<void> {
-    const restoredKeys = new Set(this.states.get(taskNotificationDeliveryKey));
-    for (const [key, request] of this.pendingNotificationRequests) {
-      if (request.dropped) this.clearPendingNotification(key, request);
-    }
-    this.deliveredNotificationKeys.clear();
-    for (const key of restoredKeys) this.deliveredNotificationKeys.add(key);
-    for (const key of this.scheduledNotificationKeys) {
-      if (restoredKeys.has(key) || !this.pendingNotificationRequests.has(key)) {
-        this.scheduledNotificationKeys.delete(key);
-      }
-    }
-    await this.restoreAgentTaskNotifications();
-  }
 
   persistOutput(taskId: string): void {
     const entry = this.tasks.get(taskId);

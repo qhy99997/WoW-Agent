@@ -197,18 +197,6 @@ describe('Agent token counting', () => {
     expect(size.size).toBe(estimateTokensForMessages(context.get()));
   });
 
-  it('restores the REAL size of the surviving prefix when undo truncates the ledger', async () => {
-    ctx.appendTurnExchange('u1', 'a1', 1_000);
-    ctx.appendTurnExchange('u2', 'a2', 2_000);
-    expect(tokenCounting.get()).toEqual({ size: 2_000, measured: 2_000, estimated: 0 });
-
-    await ctx.undoHistory(1);
-
-    expect(context.get().map((m) => m.role)).toEqual(['user', 'assistant']);
-    expect(tokenCounting.get()).toEqual({ size: 1_000, measured: 1_000, estimated: 0 });
-    expect(tokenCounting.latestMeasured()).toBe(1_000);
-  });
-
   it('rebases the ledger on compaction and blends in the measured summary tokens', () => {
     ctx.appendTurnExchange('u1', 'a1', 1_000);
 

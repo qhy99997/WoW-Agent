@@ -24,7 +24,7 @@
 // cross-reducers), blobs (the folding states whose blob codec offloads inline
 // media to blob storage), owner (the source file declaring the class).
 
-// Index (65 record types)
+// Index (63 record types)
 //   changeNotifier.snapshot            changeNotifier.snapshot                                                        src/agent/changeNotifier/changeNotifierOps.ts
 //   config.update                      profile                                                                        src/agent/profile/profileOps.ts
 //   context.append_loop_event          contextMemory, turn                                                            src/agent/contextMemory/contextEvents.ts
@@ -81,8 +81,6 @@
 //   tools.set_active_tools             profile.activeTools                                                            src/agent/profile/profileOps.ts
 //   tools.unregister_user_tool         userTool                                                                       src/agent/userTool/userToolOps.ts
 //   tools.update_store                 (none)                                                                         src/features/todo/todoOps.ts
-//   tower_mode.enter                   tower, tower.owner                                                             src/features/tower/towerOps.ts
-//   tower_mode.exit                    tower, tower.owner                                                             src/features/tower/towerOps.ts
 //   turn.cancel                        turn                                                                           src/agent/loop/turnOps.ts
 //   turn.ended                         turn                                                                           src/agent/loop/turnOps.ts
 //   turn.prompt                        turn                                                                           src/agent/loop/turnOps.ts
@@ -809,25 +807,6 @@ interface ToolsUpdateStorePayload {
 }
 
 /**
- * states: tower, tower.owner
- * owner: src/features/tower/towerOps.ts
- */
-interface TowerModeEnterPayload {
-  _name: 'tower_mode.enter';
-  agentId: string;
-  sessionId?: string;
-}
-
-/**
- * states: tower, tower.owner
- * owner: src/features/tower/towerOps.ts
- */
-interface TowerModeExitPayload {
-  _name: 'tower_mode.exit';
-  agentId: string;
-}
-
-/**
  * states: turn
  * owner: src/agent/loop/turnOps.ts
  */
@@ -1030,8 +1009,6 @@ interface WirePayloadMap {
   "tools.set_active_tools": ToolsSetActiveToolsPayload;
   "tools.unregister_user_tool": ToolsUnregisterUserToolPayload;
   "tools.update_store": ToolsUpdateStorePayload;
-  "tower_mode.enter": TowerModeEnterPayload;
-  "tower_mode.exit": TowerModeExitPayload;
   "turn.cancel": TurnCancelPayload;
   "turn.ended": TurnEndedPayload;
   "turn.prompt": TurnPromptPayload;

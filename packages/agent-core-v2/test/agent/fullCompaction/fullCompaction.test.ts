@@ -3596,24 +3596,6 @@ describe('FullCompaction context recovery pointer', () => {
     await ctx.expectResumeMatches();
   });
 
-  it('renders recovery windows over a journal carrying undo switch edges', async () => {
-    const ctx = recoveryAgent(appService(IFileSystemStorageService, locatedStorage(JOURNAL_HOME)));
-    await ctx.restorePersisted();
-    ctx.appendExchange(1, 'old user one', 'old assistant one', 20);
-    ctx.appendExchange(2, 'doomed user two', 'doomed assistant two', 40);
-    await ctx.rpc.undoHistory({ count: 1 });
-    ctx.appendExchange(3, 'recent user three', 'recent assistant three', 40);
-
-    await compactOnce(ctx, 'Summary after undo.');
-
-    const [record] = applyCompactionRecords(ctx);
-    expect(record?.wireLines).toEqual({ start: 1, end: expect.any(Number) });
-    const note = noteText(ctx);
-    expect(note).toContain('## Context Recovery');
-    expect(note).not.toContain('doomed user two');
-    await ctx.expectResumeMatches();
-  });
-
   it('records window line ranges but omits the pointer when the journal has no on-disk path', async () => {
     const ctx = recoveryAgent();
     ctx.appendExchange(1, 'old user one', 'old assistant one', 20);

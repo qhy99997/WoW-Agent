@@ -50,41 +50,30 @@ import type {
   PromptPayload,
   SteerPayload,
 } from '#/agent/loop/loop';
-import type { AgentCommandInfo } from '#/agent/command/agentCommand';
-import { IAgentCommandService } from '#/agent/command/agentCommand';
 import type { AgentContextData } from '#/agent/contextMemory/types';
 import type { CreateGoalInput, GoalSnapshot, GoalToolResult } from '#/features/goal/types';
-import { IAgentConversationUndoService } from '#/agent/undo/undo';
 import { IAgentLoopService } from '#/agent/loop/loop';
-import type { RunShellCommandInput, RunShellCommandResult } from '#/agent/shellCommand/shellCommand';
 import type { ProfileSetModelResult } from '#/agent/profile/profile';
 import type { SwarmModeTrigger } from '#/features/swarm/agent/swarm';
 import type { UserToolRegistration } from '#/agent/userTool/userTool';
-import type { ActivatePluginCommandPayload } from '#/agent/pluginCommand/pluginCommand';
-import { IAgentPluginCommandService } from '#/agent/pluginCommand/pluginCommand';
 import type { ToolInfo } from '#/tool/toolContract';
 
 type EmptyPayload = {};
 type CreateGoalPayload = CreateGoalInput;
 type RegisterToolPayload = UserToolRegistration;
-type RunShellCommandPayload = RunShellCommandInput;
-type ShellCommandResult = RunShellCommandResult;
 type SetModelResult = ProfileSetModelResult;
 interface BeginCompactionPayload { readonly instruction?: string }
 interface CancelPayload { readonly turnId?: number }
 interface CancelPlanPayload { readonly id?: string }
-interface CancelShellCommandPayload { readonly commandId: string }
 interface DetachTaskPayload { readonly taskId: string }
 interface EnterSwarmPayload { readonly trigger: SwarmModeTrigger }
 interface GetTaskOutputPayload { readonly taskId: string; readonly tail?: number }
 interface GetTasksPayload { readonly activeOnly?: boolean; readonly limit?: number }
-interface RunCommandPayload { readonly name: string; readonly args?: string }
 interface SetActiveToolsPayload { readonly names: readonly string[] }
 interface SetModelPayload { readonly model: string }
 interface SetPermissionPayload { readonly mode: PermissionMode }
 interface SetThinkingPayload { readonly level: string }
 interface StopTaskPayload { readonly taskId: string; readonly reason?: string }
-interface UndoHistoryPayload { readonly count: number }
 interface UnregisterToolPayload { readonly name: string }
 import { type UsageStatus } from '#/agent/usage/usage';
 import { type PromptWithSkillsInput, type PromptWithSkillsResult, type SkillActivationInput } from '#/features/skill/skill';
@@ -149,11 +138,9 @@ import {
   IAgentPermissionRulesService,
   IHostFileSystem,
   IHostProcessService,
-  ISessionBtwService,
   ISessionContext,
   IAgentScopeContext,
   makeAgentScopeContext,
-  IAgentShellCommandService,
   IAgentSwarmService,
   AgentSwarmService,
   ISessionTokenCountingService,
@@ -354,17 +341,11 @@ interface AgentRpcPassthroughAPI {
   promptWithSkills: (payload: PromptWithSkillsInput) => Promisable<PromptWithSkillsResult>;
   steer: (payload: SteerPayload) => Promisable<PromptLaunchResult | undefined>;
   cancel: (payload: CancelPayload) => void;
-  undoHistory: (payload: UndoHistoryPayload) => Promisable<number>;
   setPermission: (payload: SetPermissionPayload) => void;
   cancelCompaction: (payload: EmptyPayload) => void;
   activateSkill: (payload: SkillActivationInput) => Promisable<PromptLaunchResult>;
-  activatePluginCommand: (payload: ActivatePluginCommandPayload) => Promisable<void>;
-  listCommands: (payload: EmptyPayload) => readonly AgentCommandInfo[];
-  runCommand: (payload: RunCommandPayload) => Promisable<void>;
   getContext: (payload: EmptyPayload) => AgentContextData;
   getTools: (payload: EmptyPayload) => readonly ToolInfo[];
-  runShellCommand: (payload: RunShellCommandPayload) => Promisable<ShellCommandResult>;
-  cancelShellCommand: (payload: CancelShellCommandPayload) => void;
   setThinking: (payload: SetThinkingPayload) => void;
   setModel: (payload: SetModelPayload) => Promisable<SetModelResult>;
   getModel: (payload: EmptyPayload) => string;
@@ -374,7 +355,6 @@ interface AgentRpcPassthroughAPI {
   enterSwarm: (payload: EnterSwarmPayload) => void;
   exitSwarm: (payload: EmptyPayload) => void;
   getSwarmMode: (payload: EmptyPayload) => boolean;
-  startBtw: (payload: EmptyPayload) => Promisable<string>;
   beginCompaction: (payload: BeginCompactionPayload) => void;
   registerTool: (payload: RegisterToolPayload) => void;
   unregisterTool: (payload: UnregisterToolPayload) => void;
@@ -1777,10 +1757,6 @@ export class AgentTestContext {
     this.get(IAgentContextMemoryService).clear();
   }
 
-  async undoHistory(count: number): Promise<number> {
-    return this.get(IAgentConversationUndoService).undo(count);
-  }
-
   newEvents(): EventSnapshot {
     return this.snapshots.drain();
   }
@@ -2187,23 +2163,15 @@ export class AgentTestContext {
         this.get(IAgentLoopService).cancel(
           payload.turnId === undefined ? undefined : { turnId: payload.turnId },
         ),
-      undoHistory: (payload) => this.get(IAgentConversationUndoService).undo(payload.count),
       setPermission: (payload) =>
         this.get(IAgentPermissionModeService).setModeAndBroadcast(payload.mode),
       cancelCompaction: () => this.get(IAgentFullCompactionService).cancel(),
       activateSkill: (payload) => this.get(IAgentSkillService).activate(payload),
-      activatePluginCommand: (payload) =>
-        this.get(IAgentPluginCommandService).activate(payload),
-      listCommands: () => this.get(IAgentCommandService).list(),
-      runCommand: (payload) => this.get(IAgentCommandService).run(payload.name, payload.args),
       getContext: () => ({
         history: this.get(IAgentContextMemoryService).get(),
         tokenCount: this.tokenCounting.statusSize(),
       }),
       getTools: () => this.toolsData(),
-      runShellCommand: (payload) => this.get(IAgentShellCommandService).run(payload),
-      cancelShellCommand: (payload) =>
-        this.get(IAgentShellCommandService).cancel(payload.commandId),
       setThinking: (payload) => this.get(IAgentProfileService).setThinking(payload.level),
       setModel: (payload) => this.get(IAgentProfileService).setModel(payload.model),
       getModel: () => this.get(IAgentProfileService).getModel(),
@@ -2213,7 +2181,6 @@ export class AgentTestContext {
       enterSwarm: (payload) => this.get(IAgentSwarmService).enter(payload.trigger),
       exitSwarm: () => this.get(IAgentSwarmService).exit(),
       getSwarmMode: () => this.get(IAgentSwarmService).isActive,
-      startBtw: () => this.get(ISessionBtwService).start(),
       beginCompaction: (payload) =>
         this.get(IAgentFullCompactionService).begin({
           source: 'manual',

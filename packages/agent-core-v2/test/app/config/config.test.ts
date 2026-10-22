@@ -65,8 +65,6 @@ import {
 } from '#/app/kosongConfig/configSection';
 import '#/app/kosongConfig/envOverlay';
 import { IOAuthService } from '#/app/auth/auth';
-import { IAuthLegacyService } from '#/app/authLegacy/authLegacy';
-import { AuthLegacyService } from '#/app/authLegacy/authLegacyService';
 import { type ThinkingConfig } from '#/llm-adapter/model/thinking';
 import {
   BASH_TASK_TIMEOUT_S_ENV,
@@ -653,29 +651,6 @@ describe('ConfigService env overlay (live)', () => {
     disposables.dispose();
   });
 
-  it('marks the env-injected flat model ready in the auth legacy summary', async () => {
-    const env: Record<string, string> = { KIMI_MODEL_NAME: 'kimi-for-coding' };
-    const disposables = new DisposableStore();
-    const ix = disposables.add(new TestInstantiationService());
-    ix.stub(ILogService, stubLog());
-    ix.stub(IBootstrapService, stubBootstrap('/tmp/kimi-cfg', env));
-    ix.stub(IFileSystemStorageService, new InMemoryStorageService());
-    ix.stub(IOAuthService, { status: vi.fn() } as unknown as IOAuthService);
-    ix.set(IAtomicTomlDocumentStore, new SyncDescriptor(TomlAtomicDocumentStore));
-    ix.set(IConfigRegistry, new SyncDescriptor(ConfigRegistry));
-    ix.set(IConfigService, new SyncDescriptor(ConfigService));
-    ix.set(IAuthLegacyService, new SyncDescriptor(AuthLegacyService));
-
-    const summary = await ix.get(IAuthLegacyService).get();
-
-    expect(summary).toEqual({
-      models_ready: true,
-      providers_count: 1,
-      managed_provider: null,
-    });
-
-    disposables.dispose();
-  });
 });
 
 describe('services config section env bindings', () => {

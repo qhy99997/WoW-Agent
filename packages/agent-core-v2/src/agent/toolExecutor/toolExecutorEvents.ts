@@ -4,11 +4,6 @@ import type {
   McpServerStatusEventPayload,
   ToolListUpdatedPayload,
 } from '#/agent/mcp/mcpEvents';
-import type {
-  ShellCompletedPayload,
-  ShellOutputPayload,
-  ShellStartedPayload,
-} from '#/agent/shellCommand/shellCommandService';
 import { AgentEvent2 } from '#/app/event/event2';
 import type { ToolUpdate } from '#/tool/toolContract';
 import type { ToolInputDisplay } from '#/tool/toolInputDisplay';
@@ -67,18 +62,6 @@ export interface ToolCallStartedEvent extends Omit<ToolCallStartedPayload, 'agen
 
 export interface ToolProgressEvent extends Omit<ToolProgressPayload, 'agentId'> {
   readonly type: 'tool.progress';
-}
-
-export interface ShellOutputEvent extends Omit<ShellOutputPayload, 'agentId'> {
-  readonly type: 'shell.output';
-}
-
-export interface ShellStartedEvent extends Omit<ShellStartedPayload, 'agentId'> {
-  readonly type: 'shell.started';
-}
-
-export interface ShellCompletedEvent extends Omit<ShellCompletedPayload, 'agentId'> {
-  readonly type: 'shell.completed';
 }
 
 export interface ToolListUpdatedEvent extends Omit<ToolListUpdatedPayload, 'agentId'> {

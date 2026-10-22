@@ -6,7 +6,6 @@ import { SyncDescriptor } from '#/_base/di/descriptors';
 import { DisposableStore, toDisposable } from '#/_base/di/lifecycle';
 import { ILogService } from '#/_base/log/log';
 import { TestInstantiationService } from '#/_base/di/test';
-import { IAgentConversationUndoParticipantRegistry } from '#/agent/contextMemory/conversationUndoParticipants';
 import type {
   ContextInjectionContext,
   ContextInjectionProvider,
@@ -106,10 +105,6 @@ describe('AgentTaskService', () => {
     ix = disposables.add(new TestInstantiationService());
     injectionProviders = new Map();
     ix.stub(ILogService, stubLog());
-    ix.stub(IAgentConversationUndoParticipantRegistry, {
-      register: () => toDisposable(() => {}),
-      list: () => [],
-    });
     ix.stub(IWireService, stubWireService());
     ix.stub(
       IAgentReminderService,
@@ -768,10 +763,6 @@ describe('AgentTaskService', () => {
     ix.stub(IAgentToolRegistryService, { resolve: () => undefined });
     ix.stub(IAgentToolPolicyService, { isToolActive: () => false });
     ix.stub(ILogService, stubLog());
-    ix.stub(IAgentConversationUndoParticipantRegistry, {
-      register: () => toDisposable(() => {}),
-      list: () => [],
-    });
     ix.stub(IWireService, stubWireService());
     ix.stub(IAgentReminderService, createReminderStub());
     ix.stub(ITaskService, {
@@ -826,10 +817,6 @@ describe('AgentTaskService', () => {
     ix.stub(IAgentToolRegistryService, { resolve: () => undefined });
     ix.stub(IAgentToolPolicyService, { isToolActive: () => false });
     ix.stub(ILogService, stubLog());
-    ix.stub(IAgentConversationUndoParticipantRegistry, {
-      register: () => toDisposable(() => {}),
-      list: () => [],
-    });
     ix.stub(IAgentReminderService, createReminderStub());
     ix.stub(ITaskService, {
       run: () => {

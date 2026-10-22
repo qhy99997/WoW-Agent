@@ -1,4 +1,3 @@
-import type { TowerExitReason } from '#/features/tower/tower';
 
 import type { TelemetryPrimitive } from './telemetry';
 
@@ -149,10 +148,6 @@ export interface CancelEvent {
   trace_id?: string;
 }
 
-export interface ConversationUndoEvent {
-  count: number;
-}
-
 export interface YoloToggleEvent {
   enabled: boolean;
 }
@@ -207,15 +202,6 @@ export interface PlanEnterResolvedEvent {
   outcome: 'auto_approved';
 }
 
-export interface TowerModeEnterEvent {
-  outcome: 'entered' | 'rejected';
-  reason?: 'not-main-agent' | 'experiment-off' | 'feature-not-assembled' | 'owned-by-live-session';
-}
-
-export interface TowerModeExitEvent {
-  reason: TowerExitReason;
-}
-
 export interface SwarmModeTransitionEvent {
   trigger: 'manual' | 'task' | 'tool';
 }
@@ -225,11 +211,6 @@ export interface ExternalHookResolvedEvent {
   action: 'allow' | 'block';
   matched_count: number;
   failed_count: number;
-}
-
-export interface RemoteControlToggleEvent {
-  enabled: boolean;
-  outcome: 'ok' | 'already_running' | 'rejected' | 'error';
 }
 
 export interface PluginToggleEvent {
@@ -558,8 +539,6 @@ export interface WireRepairEvent {
   backup_created: boolean;
 }
 
-export interface FirstLaunchEvent {}
-
 export interface ExitEvent {
   duration_ms: number;
 }
@@ -579,12 +558,6 @@ export interface OauthModelsRefreshFinishedEvent {
 export interface AuthEnsureReadyFailedEvent {
   reason: 'provisioning_required' | 'model_not_resolved' | 'token_missing' | 'unexpected';
   has_model_override: boolean;
-}
-
-export interface ShellCommandFinishedEvent {
-  duration_ms: number;
-  is_error: boolean;
-  backgrounded: boolean;
 }
 
 export interface AgentCreateFailedEvent {
@@ -783,13 +756,6 @@ export const telemetryEventDefinitions = {
         'Trace id of the in-flight request, or of the most recent request between steps; absent for non-Kimi protocols',
     },
   }),
-  conversation_undo: defineAgentTelemetryEvent<ConversationUndoEvent>({
-    owner: 'kimi-code',
-    comment: 'The user undoes conversation entries.',
-    properties: {
-      count: 'Number of entries undone',
-    },
-  }),
   yolo_toggle: defineAgentTelemetryEvent<YoloToggleEvent>({
     owner: 'kimi-code',
     comment: 'Yolo permission mode is toggled.',
@@ -853,22 +819,6 @@ export const telemetryEventDefinitions = {
       outcome: 'How the request was resolved',
     },
   }),
-  tower_mode_enter: defineAgentTelemetryEvent<TowerModeEnterEvent>({
-    owner: 'kimi-code',
-    comment: 'A request to enter tower mode resolves.',
-    properties: {
-      outcome: 'Whether tower mode was entered or the request was rejected',
-      reason: 'Why the request was rejected; omitted when tower mode was entered',
-    },
-  }),
-  tower_mode_exit: defineAgentTelemetryEvent<TowerModeExitEvent>({
-    owner: 'kimi-code',
-    comment: 'Tower mode is exited.',
-    properties: {
-      reason:
-        'Why tower mode was exited: the user turned it off, another session took the tower over, or a foreign tower was reconciled away',
-    },
-  }),
   swarm_mode_entered: defineAgentTelemetryEvent<SwarmModeTransitionEvent>({
     owner: 'kimi-code',
     comment: 'Swarm mode is entered.',
@@ -891,14 +841,6 @@ export const telemetryEventDefinitions = {
       action: 'Whether the trigger resolved to allow or block',
       matched_count: 'Number of hooks that ran for the trigger',
       failed_count: 'Number of hooks that failed (timeout, spawn error, or a non-zero exit code other than 2)',
-    },
-  }),
-  remote_control_toggle: defineTelemetryEvent<RemoteControlToggleEvent>({
-    owner: 'kimi-code',
-    comment: 'A request to toggle the Remote Control tunnel resolves.',
-    properties: {
-      enabled: 'Whether the request was to enable or disable the tunnel',
-      outcome: 'How the request resolved',
     },
   }),
   plugin_toggle: defineTelemetryEvent<PluginToggleEvent>({
@@ -1339,11 +1281,6 @@ export const telemetryEventDefinitions = {
       backup_created: 'Whether a first-time .bak backup of the corrupted file was created',
     },
   }),
-  first_launch: defineTelemetryEvent<FirstLaunchEvent>({
-    owner: 'kimi-code',
-    comment: 'The CLI runs for the first time on this device.',
-    properties: {},
-  }),
   exit: defineTelemetryEvent<ExitEvent>({
     owner: 'kimi-code',
     comment: 'A CLI run exits.',
@@ -1373,15 +1310,6 @@ export const telemetryEventDefinitions = {
     properties: {
       reason: 'Why auth is not ready',
       has_model_override: 'Whether a model override is configured',
-    },
-  }),
-  shell_command_finished: defineAgentTelemetryEvent<ShellCommandFinishedEvent>({
-    owner: 'kimi-code',
-    comment: 'A shell command execution finishes; this path bypasses the tool executor.',
-    properties: {
-      duration_ms: 'Execution wall-clock time in milliseconds',
-      is_error: 'Whether the execution ended with an error',
-      backgrounded: 'Whether the command was sent to the background',
     },
   }),
   agent_create_failed: defineTelemetryEvent<AgentCreateFailedEvent>({

@@ -71,9 +71,6 @@ describe('Event public types', () => {
       switch (event.type) {
         case 'agent.status.updated':
         case 'session.meta.updated':
-        case 'event.session.created':
-        case 'event.session.status_changed':
-        case 'event.session.work_changed':
         case 'event.workspace.created':
         case 'event.workspace.updated':
         case 'event.workspace.deleted':
@@ -81,10 +78,8 @@ describe('Event public types', () => {
         case 'event.config.warning':
         case 'event.model_catalog.changed':
         case 'event.plugin.changed':
-        case 'event.capability.changed':
         case 'goal.updated':
         case 'skill.activated':
-        case 'plugin_command.activated':
         case 'error':
         case 'warning':
         case 'turn.started':
@@ -99,9 +94,6 @@ describe('Event public types', () => {
         case 'tool.call.delta':
         case 'tool.call.started':
         case 'tool.progress':
-        case 'shell.output':
-        case 'shell.started':
-        case 'shell.completed':
         case 'tool.result':
         case 'tool.list.updated':
         case 'mcp.server.status':

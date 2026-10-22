@@ -25,8 +25,6 @@ import { IHostFileSystem } from '#/os/interface/hostFileSystem';
 import { IBlobStore } from '#/persistence/interface/blobStore';
 import { ISessionContext } from '#/session/sessionContext/sessionContext';
 import { IEventDispatcher } from '#/state/eventDispatcher';
-import { AgentStatusUpdated } from '#/agent/usage/usageEvents';
-import { ContextUndone } from '#/agent/undo/undoService';
 import type { ToolFileAccess } from '#/tool/toolContract';
 import {
   IAgentPlanService,
@@ -71,14 +69,6 @@ export class AgentPlanService extends Service implements IAgentPlanService {
       this.dispatcher.hooks.onDidRestore.register('plan', async (_ctx, next) => {
         this.restoreTelemetryMode();
         await next();
-      }),
-    );
-    this._register(
-      eventBus.subscribe(ContextUndone, () => {
-        this.restoreTelemetryMode();
-        void this.dispatcher.dispatch(
-          new AgentStatusUpdated({ agentId: this.agentCtx.agentId, planMode: this.isActive }),
-        );
       }),
     );
 
