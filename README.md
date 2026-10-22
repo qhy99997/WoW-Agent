@@ -107,7 +107,7 @@ For security vulnerabilities, see [SECURITY.md](SECURITY.md).
 
 ## Acknowledgements
 
-WoW is derived from [MoonshotAI/kimi-code](https://github.com/MoonshotAI/kimi-code), the MIT-licensed Kimi Code CLI. The agent engine, the SDK, and the supporting packages come from that project, and the bundled plugins originate there as well.
+WoW is derived from [MoonshotAI/kimi-code](https://github.com/MoonshotAI/kimi-code), the MIT-licensed Kimi Code CLI. The agent engine, the SDK, and the supporting packages come from that project, and the plugin sources under `plugins/` originate there as well.
 
 ## License
 
