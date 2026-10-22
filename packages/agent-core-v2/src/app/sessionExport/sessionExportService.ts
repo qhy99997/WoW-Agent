@@ -34,8 +34,8 @@ import {
 import { openZipSource, type ZipSource } from './file-source';
 import { FILE_HISTORY_BLOB_PREFIX } from '#/features/fileHistory/fileHistoryService';
 
-const SESSION_LOG_REL = 'logs/kimi-code.log';
-const GLOBAL_LOG_REL = 'logs/global/kimi-code.log';
+const SESSION_LOG_REL = 'logs/wow.log';
+const GLOBAL_LOG_REL = 'logs/global/wow.log';
 const WEB_LOG_REL = 'logs/kimi-web.jsonl';
 const DESKTOP_LOG_REL = 'logs/kimi-desktop.log';
 
@@ -86,7 +86,7 @@ export class SessionExportService implements ISessionExportService {
       globalLogPath: resolveGlobalLogPath(this.bootstrap.homeDir),
       desktopLogPath:
         input.includeDesktopLog === true
-          ? join(this.bootstrap.homeDir, 'logs', 'kimi-code-desktop.log')
+          ? join(this.bootstrap.homeDir, 'logs', 'wow-desktop.log')
           : undefined,
       webLog: options.webLog,
       signal: options.signal,

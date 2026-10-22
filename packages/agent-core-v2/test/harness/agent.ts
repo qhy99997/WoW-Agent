@@ -1156,7 +1156,7 @@ export class AgentTestContext {
             ILogOptions,
             {
               level: 'off',
-              globalLogPath: '/tmp/kimi-code-agent-app-v2-test/logs/kimi-code.log',
+              globalLogPath: '/tmp/kimi-code-agent-app-v2-test/logs/wow.log',
               globalMaxBytes: 6 * 1024 * 1024,
               globalFiles: 1,
               sessionMaxBytes: 5 * 1024 * 1024,

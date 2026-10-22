@@ -206,5 +206,5 @@ export async function __resetRootLoggerForTest(): Promise<void> {
 }
 
 export function resolveGlobalLogPath(homeDir: string): string {
-  return join(homeDir, 'logs', 'kimi-code.log');
+  return join(homeDir, 'logs', 'wow.log');
 }

@@ -1,8 +1,10 @@
 {
   "name": "@wow/desktop",
+  "productName": "WoW",
   "version": "0.1.0",
   "private": true,
   "description": "WoW desktop agent",
+  "author": "WoW",
   "license": "MIT",
   "type": "module",
   "main": "./out/main/index.js",
@@ -12,6 +14,7 @@
     "start": "electron-vite preview",
     "typecheck": "tsc -p tsconfig.node.json --noEmit && tsc -p tsconfig.web.json --noEmit",
     "test": "vitest run",
+    "icon": "node build/make-icon.mjs build/icon.png build/icon.ico",
     "dist": "electron-vite build && electron-builder --win --x64",
     "clean": "node -e \"require('node:fs').rmSync('out',{recursive:true,force:true})\""
   },
