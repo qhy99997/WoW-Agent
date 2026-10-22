@@ -19,7 +19,6 @@ import type { IAtomicDocumentStore } from '#/persistence/interface/atomicDocumen
 import type { SessionLifecycleService } from '#/workspace/sessionLifecycle/sessionLifecycleService';
 import type { IWorkspaceContext } from '#/workspace/workspaceContext/workspaceContext';
 import type { IExtraAgentProfileLoader } from '#/workspace/workspaceAgentProfileLoader/extraAgentProfileLoader';
-import type { IExplicitAgentProfileLoader } from '#/workspace/workspaceAgentProfileLoader/explicitAgentProfileLoader';
 import type { IPluginAgentProfileLoader } from '#/workspace/workspaceAgentProfileLoader/pluginAgentProfileLoader';
 import type { IUserAgentProfileLoader } from '#/workspace/workspaceAgentProfileLoader/userAgentProfileLoader';
 import type { IWorkspaceAgentProfileLoader } from '#/workspace/workspaceAgentProfileLoader/workspaceAgentProfileLoader';
@@ -33,7 +32,6 @@ export interface ProgramSessionControllerInput {
   readonly fs: IHostFileSystem;
   readonly workspaceAgentProfiles: IWorkspaceAgentProfileLoader;
   readonly extraAgentProfiles: IExtraAgentProfileLoader;
-  readonly explicitAgentProfiles: IExplicitAgentProfileLoader;
   readonly userAgentProfiles: IUserAgentProfileLoader;
   readonly pluginAgentProfiles: IPluginAgentProfileLoader;
   readonly dirs: IWorkspaceDirs;

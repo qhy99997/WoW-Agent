@@ -285,9 +285,4 @@ describe('agentProfileFromFile', () => {
     expect(profile.subagents).toEqual(['explore']);
   });
 
-  it('treats an explicit file as an override intent', () => {
-    const profile = agentProfileFromFile({ ...base, source: 'explicit' }, basePrompt);
-
-    expect(profile.override).toBe(true);
-  });
 });

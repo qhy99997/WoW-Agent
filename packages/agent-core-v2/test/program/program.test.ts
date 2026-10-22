@@ -78,7 +78,6 @@ function setup(readiness = new Map<string, Promise<void>>(), order: string[] = [
       agentProfiles: behavior,
       userAgentProfiles: behavior,
       pluginAgentProfiles: behavior,
-      explicitAgentProfiles: behavior,
       extraAgentProfiles: behavior,
       disposables: [behavior],
       ready: false,

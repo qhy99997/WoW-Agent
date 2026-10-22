@@ -2,7 +2,7 @@ import type { SkippedAgentFile } from '#/app/agentProfileCatalog/agentProfileCon
 
 export type { SkippedAgentFile } from '#/app/agentProfileCatalog/agentProfileContribution';
 
-export type AgentFileSource = 'plugin' | 'project' | 'user' | 'extra' | 'explicit';
+export type AgentFileSource = 'plugin' | 'project' | 'user' | 'extra';
 
 export interface AgentFileRoot {
   readonly path: string;

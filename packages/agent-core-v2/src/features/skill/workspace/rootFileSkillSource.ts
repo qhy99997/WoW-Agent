@@ -4,7 +4,6 @@ import { Emitter, type Event } from '#/_base/event';
 import { TimeoutTimer } from '#/_base/utils/timer';
 import { subtreeWatchFilter } from '#/_base/utils/paths';
 import { IConfigService } from '#/app/config/config';
-import { IBootstrapService } from '#/app/bootstrap/bootstrap';
 import {
   MERGE_ALL_AVAILABLE_SKILLS_SECTION,
   type MergeAllAvailableSkillsConfig,
@@ -47,7 +46,6 @@ export class WorkspaceRootSkillSource extends Disposable implements IWorkspaceRo
     @ISkillDiscovery private readonly discovery: ISkillDiscovery,
     @IWorkspaceContext private readonly workspace: IWorkspaceContext,
     @IConfigService private readonly config: IConfigService,
-    @IBootstrapService private readonly bootstrap: IBootstrapService,
   ) {
     super();
     this._register(
@@ -60,9 +58,6 @@ export class WorkspaceRootSkillSource extends Disposable implements IWorkspaceRo
 
   async load(): Promise<SkillContribution> {
     await this.watchReady;
-    if ((this.bootstrap.args.skillDirs?.length ?? 0) > 0) {
-      return { skills: [] };
-    }
     await this.config.ready;
     const mergeAllAvailableSkills =
       this.config.get<MergeAllAvailableSkillsConfig>(MERGE_ALL_AVAILABLE_SKILLS_SECTION) ?? true;

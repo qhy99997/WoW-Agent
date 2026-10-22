@@ -236,7 +236,6 @@ export class WorkspaceInstanceManager implements IWorkspaceInstanceManager {
           this.flags,
           input.workspaceAgentProfiles,
           input.extraAgentProfiles,
-          input.explicitAgentProfiles,
           input.userAgentProfiles,
           input.pluginAgentProfiles,
           input.dirs,

@@ -36,7 +36,6 @@ import { HostFsError, OsFsErrors } from '#/os/interface/hostFsErrors';
 import { IHostFileSystem } from '#/os/interface/hostFileSystem';
 import { SessionAgentProfileCatalogService } from '#/session/sessionAgentProfileCatalog/sessionAgentProfileCatalogService';
 import type { ISessionAgentProfileCatalogSeed } from '#/session/sessionAgentProfileCatalog/agentProfileCatalogSeed';
-import { ExplicitAgentProfileLoaderService } from '#/workspace/workspaceAgentProfileLoader/explicitAgentProfileLoaderService';
 import { ExtraAgentProfileLoaderService } from '#/workspace/workspaceAgentProfileLoader/extraAgentProfileLoaderService';
 import { WorkspaceAgentProfileLoaderService } from '#/workspace/workspaceAgentProfileLoader/workspaceAgentProfileLoaderService';
 import { IWorkspaceContext } from '#/workspace/workspaceContext/workspaceContext';
@@ -44,7 +43,6 @@ import { IUserAgentProfileLoader } from '#/workspace/workspaceAgentProfileLoader
 import { IPluginAgentProfileLoader } from '#/workspace/workspaceAgentProfileLoader/pluginAgentProfileLoader';
 import { IWorkspaceAgentProfileLoader } from '#/workspace/workspaceAgentProfileLoader/workspaceAgentProfileLoader';
 import { IExtraAgentProfileLoader } from '#/workspace/workspaceAgentProfileLoader/extraAgentProfileLoader';
-import { IExplicitAgentProfileLoader } from '#/workspace/workspaceAgentProfileLoader/explicitAgentProfileLoader';
 
 import { stubBootstrap } from '../../app/bootstrap/stubs';
 
@@ -238,7 +236,6 @@ function failingReaddirFs(
 
 interface StackOptions {
   readonly extraAgentDirs?: readonly string[];
-  readonly explicitFiles?: readonly string[];
   readonly pluginAgentRoots?: readonly PluginAgentRoot[];
   readonly pluginReloadEmitter?: Emitter<PluginReloadEvent>;
   readonly hostFs?: HostFileSystem;
@@ -250,7 +247,7 @@ function makeStack(fixture: Fixture, opts?: StackOptions) {
   const config = configStub();
   if (opts?.extraAgentDirs !== undefined) config.setExtraAgentDirs(opts.extraAgentDirs);
   const bootstrap: IBootstrapService = {
-    ...stubBootstrap(fixture.homeDir, {}, { agentFiles: opts?.explicitFiles }),
+    ...stubBootstrap(fixture.homeDir),
     osHomeDir: fixture.osHomeDir,
   };
   const hostFs = opts?.hostFs ?? new HostFileSystem();
@@ -270,7 +267,6 @@ function makeStack(fixture: Fixture, opts?: StackOptions) {
       [IPluginAgentProfileLoader, new SyncDescriptor(PluginAgentProfileLoaderService)],
       [IWorkspaceAgentProfileLoader, new SyncDescriptor(WorkspaceAgentProfileLoaderService)],
       [IExtraAgentProfileLoader, new SyncDescriptor(ExtraAgentProfileLoaderService)],
-      [IExplicitAgentProfileLoader, new SyncDescriptor(ExplicitAgentProfileLoaderService)],
     ),
     true,
   );
@@ -282,7 +278,6 @@ function makeStack(fixture: Fixture, opts?: StackOptions) {
   const pluginLoader = get(IPluginAgentProfileLoader);
   const workspaceLoader = get(IWorkspaceAgentProfileLoader);
   const extraLoader = get(IExtraAgentProfileLoader);
-  const explicitLoader = get(IExplicitAgentProfileLoader);
   const seed: ISessionAgentProfileCatalogSeed = {
     _serviceBrand: undefined,
     workspaceKey: workspaceContext.workspaceId,
@@ -296,7 +291,6 @@ function makeStack(fixture: Fixture, opts?: StackOptions) {
     pluginLoader,
     workspaceLoader,
     extraLoader,
-    explicitLoader,
     catalog,
     config,
     warnings,
@@ -306,7 +300,6 @@ function makeStack(fixture: Fixture, opts?: StackOptions) {
         pluginLoader.ready,
         workspaceLoader.ready,
         extraLoader.ready,
-        explicitLoader.ready,
       ]);
       await catalog.ready;
     },
@@ -382,7 +375,7 @@ describe('agent profile loaders + session catalog', () => {
     });
   });
 
-  it('orders sources user < extra < workspace < explicit', async () => {
+  it('orders sources user < extra < workspace', async () => {
     await withFixture(async (fixture) => {
       await writeAgent(join(fixture.homeDir, 'agents'), 'shared.md', agentMd('shared', 'from user'));
       await writeAgent(join(fixture.homeDir, 'agents'), 'user-extra.md', agentMd('user-extra', 'from user'));
@@ -393,22 +386,13 @@ describe('agent profile loaders + session catalog', () => {
         'shared.md',
         agentMd('shared', 'from project'),
       );
-      const explicitFile = await writeAgent(
-        fixture.workDir,
-        'explicit.md',
-        agentMd('shared', 'from explicit'),
-      );
-      await withStack(
-        fixture,
-        { extraAgentDirs: [fixture.extraDir], explicitFiles: [explicitFile] },
-        async (stack) => {
-          await stack.ready();
+      await withStack(fixture, { extraAgentDirs: [fixture.extraDir] }, async (stack) => {
+        await stack.ready();
 
-          expect(stack.catalog.get('shared')?.description).toBe('from explicit');
-          expect(stack.catalog.get('user-extra')?.description).toBe('from extra');
-          expect(stack.catalog.inspect('shared')?.sourceId).toBe('explicit');
-        },
-      );
+        expect(stack.catalog.get('shared')?.description).toBe('from project');
+        expect(stack.catalog.get('user-extra')?.description).toBe('from extra');
+        expect(stack.catalog.inspect('shared')?.sourceId).toBe('workspace');
+      });
     });
   });
 
@@ -457,67 +441,6 @@ describe('agent profile loaders + session catalog', () => {
           expect(stack.catalog.get('late')?.description).toBe('late plugin agent');
         },
       );
-    });
-  });
-
-  it('fails ready when an explicit agent file is invalid', async () => {
-    await withFixture(async (fixture) => {
-      const bad = await writeAgent(
-        fixture.workDir,
-        'bad.md',
-        '---\nname: bad\n---\n\nbody\n',
-      );
-      await withStack(fixture, { explicitFiles: [bad] }, async (stack) => {
-        await expect(stack.explicitLoader.ready).rejects.toThrow(/description/i);
-      });
-    });
-  });
-
-  it('fails ready when an explicit agent file does not exist', async () => {
-    await withFixture(async (fixture) => {
-      await withStack(
-        fixture,
-        { explicitFiles: [join(fixture.workDir, 'missing.md')] },
-        async (stack) => {
-          await expect(stack.explicitLoader.ready).rejects.toMatchObject({
-            code: 'os.fs.not_found',
-          });
-        },
-      );
-    });
-  });
-
-  it('recovers ready after a reload fixes a previously fatal explicit file', async () => {
-    await withFixture(async (fixture) => {
-      const bad = await writeAgent(
-        fixture.workDir,
-        'bad.md',
-        '---\nname: bad\n---\n\nbody\n',
-      );
-      await withStack(fixture, { explicitFiles: [bad] }, async (stack) => {
-        await expect(stack.explicitLoader.ready).rejects.toThrow(/description/i);
-
-        await writeFile(bad, agentMd('fixed', 'fixed agent'));
-        await stack.explicitLoader.reload();
-
-        await expect(stack.explicitLoader.ready).resolves.toBeUndefined();
-        expect(stack.catalog.get('fixed')?.description).toBe('fixed agent');
-      });
-    });
-  });
-
-  it('resolves relative explicit files against the workspace root', async () => {
-    await withFixture(async (fixture) => {
-      await writeAgent(
-        join(fixture.workDir, 'agents'),
-        'solo.md',
-        agentMd('solo', 'relative explicit'),
-      );
-      await withStack(fixture, { explicitFiles: ['agents/solo.md'] }, async (stack) => {
-        await stack.ready();
-
-        expect(stack.catalog.get('solo')?.description).toBe('relative explicit');
-      });
     });
   });
 
@@ -619,7 +542,7 @@ describe('agent profile loaders + session catalog', () => {
     });
   });
 
-  it('keeps builtin profiles and warns when a non-fatal loader fails its first load', async () => {
+  it('keeps builtin profiles and warns when a loader fails its first load', async () => {
     await withFixture(async (fixture) => {
       await mkdir(join(fixture.homeDir, 'agents'), { recursive: true });
       const hostFs = failingReaddirFs(new HostFileSystem(), () => true);
@@ -635,7 +558,7 @@ describe('agent profile loaders + session catalog', () => {
     });
   });
 
-  it('keeps the previous contribution when a non-fatal loader reload fails', async () => {
+  it('keeps the previous contribution when a loader reload fails', async () => {
     await withFixture(async (fixture) => {
       await writeAgent(
         join(fixture.homeDir, 'agents'),
@@ -655,34 +578,6 @@ describe('agent profile loaders + session catalog', () => {
         expect(stack.catalog.get('file-agent')?.description).toBe('from file');
         const userEntry = stack.registry.entries().find((e) => e.sourceId === 'user');
         expect(userEntry?.contribution.profiles.map((p) => p.name)).toContain('file-agent');
-      });
-    });
-  });
-
-  it('warns and keeps stale data when a fatal loader reload fails', async () => {
-    await withFixture(async (fixture) => {
-      const explicitFile = await writeAgent(
-        fixture.workDir,
-        'explicit.md',
-        agentMd('exp-agent', 'explicit'),
-      );
-      await withStack(fixture, { explicitFiles: [explicitFile] }, async (stack) => {
-        await stack.ready();
-        expect(stack.catalog.get('exp-agent')?.description).toBe('explicit');
-
-        await rm(explicitFile, { force: true });
-        void stack.explicitLoader
-          .reload()
-          .catch((error) =>
-            stack.warnings.push(`agent profile loader "explicit" reload failed: ${String(error)}`),
-          );
-        await vi.waitFor(() => {
-          expect(stack.warnings.some((w) => w.includes('reload failed'))).toBe(true);
-        });
-
-        expect(stack.catalog.get('exp-agent')?.description).toBe('explicit');
-        const explicitEntry = stack.registry.entries().find((e) => e.sourceId === 'explicit');
-        expect(explicitEntry?.contribution.profiles.map((p) => p.name)).toContain('exp-agent');
       });
     });
   });
@@ -739,23 +634,6 @@ describe('agent profile loaders + session catalog', () => {
     });
   });
 
-  it('lets an explicit agent file win over user-level SYSTEM.md', async () => {
-    await withFixture(async (fixture) => {
-      await writeFile(join(fixture.homeDir, 'SYSTEM.md'), 'system md prompt');
-      const explicitFile = await writeAgent(
-        fixture.workDir,
-        'explicit.md',
-        agentMd('agent', 'explicit default override', true),
-      );
-      await withStack(fixture, { explicitFiles: [explicitFile] }, async (stack) => {
-        await stack.ready();
-
-        expect(stack.catalog.getDefault().description).toBe('explicit default override');
-        expect(stack.catalog.getDefault().systemPrompt({})).not.toContain('system md prompt');
-      });
-    });
-  });
-
   it('rescans the workspace source when a project agent file changes on disk', async () => {
     watchMockState.mode = 'real';
     await withFixture(async (fixture) => {
@@ -795,7 +673,6 @@ describe('agent profile loaders + session catalog', () => {
         const bySourceId = new Map(stack.registry.entries().map((entry) => [entry.sourceId, entry]));
         expect([...bySourceId.keys()].toSorted()).toEqual([
           'builtin',
-          'explicit',
           'extra',
           'plugin',
           'user',
@@ -803,7 +680,7 @@ describe('agent profile loaders + session catalog', () => {
         ]);
         expect(bySourceId.get('builtin')?.workspaceKey).toBeUndefined();
         expect(bySourceId.get('builtin')?.priority).toBe(AGENT_PROFILE_SOURCE_PRIORITY.builtin);
-        for (const sourceId of ['explicit', 'extra', 'plugin', 'user', 'workspace'] as const) {
+        for (const sourceId of ['extra', 'plugin', 'user', 'workspace'] as const) {
           expect(bySourceId.get(sourceId)?.workspaceKey).toBe('wd_test');
           expect(bySourceId.get(sourceId)?.priority).toBe(AGENT_PROFILE_SOURCE_PRIORITY[sourceId]);
         }

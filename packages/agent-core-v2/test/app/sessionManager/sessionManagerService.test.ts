@@ -617,7 +617,6 @@ describe('SessionManager controller retirement', () => {
         agentProfiles: behavior,
         userAgentProfiles: behavior,
         pluginAgentProfiles: behavior,
-        explicitAgentProfiles: behavior,
         extraAgentProfiles: behavior,
         disposables: [behavior],
         ready: false,

@@ -101,7 +101,7 @@ describe('SessionAgentProfileCatalogService (registry projection)', () => {
       priority: AGENT_PROFILE_SOURCE_PRIORITY.user,
     });
     contribute('workspace', [profile('shared')], {
-      priority: AGENT_PROFILE_SOURCE_PRIORITY.explicit,
+      priority: AGENT_PROFILE_SOURCE_PRIORITY.workspace + 10,
       workspaceKey: 'wd_b',
     });
     contribute('workspace', [ownProfile], {

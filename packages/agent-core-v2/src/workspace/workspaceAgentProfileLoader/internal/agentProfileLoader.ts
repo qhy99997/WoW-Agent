@@ -7,7 +7,6 @@ import type { IAgentProfileRegistry } from '#/app/agentProfileCatalog/agentProfi
 export abstract class AgentProfileLoaderBase extends Service {
   protected abstract readonly sourceId: string;
   protected abstract readonly priority: number;
-  protected readonly fatal: boolean = false;
 
   private readyPromise: Promise<void> = Promise.resolve();
   private tail: Promise<void> = Promise.resolve();
@@ -63,7 +62,6 @@ export abstract class AgentProfileLoaderBase extends Service {
         this.contributionHandle.value = { dispose: () => void handle.dispose() };
       }
     } catch (error) {
-      if (this.fatal) throw error;
       this.log.warn(`agent profile loader "${this.sourceId}" load failed: ${String(error)}`);
     }
   }

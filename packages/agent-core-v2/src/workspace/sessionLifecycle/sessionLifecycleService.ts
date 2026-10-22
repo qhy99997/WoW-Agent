@@ -83,9 +83,6 @@ import { IWorkspaceContext } from '#/workspace/workspaceContext/workspaceContext
 import { IUserAgentProfileLoader } from '#/workspace/workspaceAgentProfileLoader/userAgentProfileLoader';
 import { IPluginAgentProfileLoader } from '#/workspace/workspaceAgentProfileLoader/pluginAgentProfileLoader';
 import {
-  IExplicitAgentProfileLoader,
-} from '#/workspace/workspaceAgentProfileLoader/explicitAgentProfileLoader';
-import {
   IExtraAgentProfileLoader,
 } from '#/workspace/workspaceAgentProfileLoader/extraAgentProfileLoader';
 import {
@@ -126,7 +123,6 @@ const NO_ABORT = new AbortController().signal;
 
 const SESSION_CREATE_RELOAD_SKILL_SOURCES: readonly string[] = [
   'user',
-  'explicit',
   'extra',
   PLUGIN_SKILL_SOURCE_ID,
 ];
@@ -177,8 +173,6 @@ export class SessionLifecycleService extends Disposable implements ISessionLifec
     private readonly workspaceAgentProfileLoader: IWorkspaceAgentProfileLoader,
     @IExtraAgentProfileLoader
     private readonly extraAgentProfileLoader: IExtraAgentProfileLoader,
-    @IExplicitAgentProfileLoader
-    private readonly explicitAgentProfileLoader: IExplicitAgentProfileLoader,
     @IUserAgentProfileLoader
     private readonly userAgentProfileLoader: IUserAgentProfileLoader,
     @IPluginAgentProfileLoader
@@ -309,13 +303,11 @@ export class SessionLifecycleService extends Disposable implements ISessionLifec
       await Promise.all([
         this.workspaceAgentProfileLoader.ready,
         this.extraAgentProfileLoader.ready,
-        this.explicitAgentProfileLoader.ready,
         this.userAgentProfileLoader.ready,
         this.pluginAgentProfileLoader.ready,
       ]);
     } catch (error) {
       void handle.dispose();
-      void this.explicitAgentProfileLoader.reload().catch(() => undefined);
       throw error;
     }
     this.sessions.set(opts.sessionId, handle);

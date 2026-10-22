@@ -61,7 +61,7 @@ describe('AgentPermissionPolicyService chain', () => {
     rules = [];
     sessionApprovalRulePatterns = [];
     workspace = workspaceStub('/workspace');
-    hostArgs = { requestHeaders: {}, nonInteractive: false };
+    hostArgs = { requestHeaders: {} };
     dangerousCommandGuardEnabled = true;
     ix = createServices(disposables, {
       additionalServices: (reg) => {
@@ -397,19 +397,6 @@ describe('AgentPermissionPolicyService chain', () => {
     },
   );
 
-  it('does not load the dangerous command policy for non-interactive hosts', async () => {
-    hostArgs = { ...hostArgs, nonInteractive: true };
-    mode = 'auto';
-
-    await expect(evaluate({
-      toolName: 'Bash',
-      args: { command: 'rm -rf /tmp/build', timeout: 60 },
-    })).resolves.toMatchObject({
-      policyName: 'auto-mode-approve',
-      result: { kind: 'approve' },
-    });
-  });
-
   it('does not load the built-in guard policies when disabled by config', async () => {
     dangerousCommandGuardEnabled = false;
     mode = 'yolo';
@@ -506,7 +493,7 @@ describe('AgentPermissionPolicyService git cwd write approval', () => {
       additionalServices: (reg) => {
         reg.defineInstance(IAgentPermissionModeService, stubPermissionModeService(() => mode));
         reg.definePartialInstance(IBootstrapService, {
-          args: { requestHeaders: {}, nonInteractive: false },
+          args: { requestHeaders: {} },
         });
         reg.definePartialInstance(IConfigService, {
           get: (() => undefined) as IConfigService['get'],

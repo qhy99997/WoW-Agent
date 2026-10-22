@@ -24,15 +24,12 @@ import type { IWorkspaceTrustDisclosure } from '#/workspace/workspaceTrust/trust
 import { WorkspaceTrustDisclosureService } from '#/workspace/workspaceTrust/trustDisclosureService';
 import type { IExtraAgentProfileLoader } from '#/workspace/workspaceAgentProfileLoader/extraAgentProfileLoader';
 import { ExtraAgentProfileLoaderService } from '#/workspace/workspaceAgentProfileLoader/extraAgentProfileLoaderService';
-import type { IExplicitAgentProfileLoader } from '#/workspace/workspaceAgentProfileLoader/explicitAgentProfileLoader';
-import { ExplicitAgentProfileLoaderService } from '#/workspace/workspaceAgentProfileLoader/explicitAgentProfileLoaderService';
 import type { IPluginAgentProfileLoader } from '#/workspace/workspaceAgentProfileLoader/pluginAgentProfileLoader';
 import { PluginAgentProfileLoaderService } from '#/workspace/workspaceAgentProfileLoader/pluginAgentProfileLoaderService';
 import type { IUserAgentProfileLoader } from '#/workspace/workspaceAgentProfileLoader/userAgentProfileLoader';
 import { UserAgentProfileLoaderService } from '#/workspace/workspaceAgentProfileLoader/userAgentProfileLoaderService';
 import type { IWorkspaceAgentProfileLoader } from '#/workspace/workspaceAgentProfileLoader/workspaceAgentProfileLoader';
 import { WorkspaceAgentProfileLoaderService } from '#/workspace/workspaceAgentProfileLoader/workspaceAgentProfileLoaderService';
-import { ExplicitFileSkillSource } from '#/features/skill/workspace/explicitFileSkillSource';
 import { ExtraFileSkillSource } from '#/features/skill/workspace/extraFileSkillSource';
 import { PluginSkillSource } from '#/features/skill/workspace/pluginSkillSource';
 import { WorkspaceRootSkillSource } from '#/features/skill/workspace/rootFileSkillSource';
@@ -98,7 +95,6 @@ interface ProgramGeneration {
   readonly agentProfiles: IWorkspaceAgentProfileLoader;
   readonly userAgentProfiles: IUserAgentProfileLoader;
   readonly pluginAgentProfiles: IPluginAgentProfileLoader;
-  readonly explicitAgentProfiles: IExplicitAgentProfileLoader;
   readonly extraAgentProfiles: IExtraAgentProfileLoader;
   readonly disposables: readonly { dispose(): void | Promise<void> }[];
   ready: boolean;
@@ -169,7 +165,6 @@ export class Program {
         fs: runtime.fs!,
         workspaceAgentProfiles: generation.agentProfiles,
         extraAgentProfiles: generation.extraAgentProfiles,
-        explicitAgentProfiles: generation.explicitAgentProfiles,
         userAgentProfiles: generation.userAgentProfiles,
         pluginAgentProfiles: generation.pluginAgentProfiles,
         dirs: generation.dirs,
@@ -293,16 +288,14 @@ export class Program {
       const mcp = own(new WorkspaceMcpService(this.context, this.resolver, mcpConfig, this.dependencies.oauth, this.dependencies.log, this.dependencies.telemetry, this.dependencies.identity, this.dependencies.sessionManager));
       const userAgentProfiles = own(new UserAgentProfileLoaderService(this.dependencies.bootstrap, runtime.fs!, this.dependencies.log, this.dependencies.builtinAgentProfiles, this.context, this.dependencies.agentProfiles));
       const pluginAgentProfiles = own(new PluginAgentProfileLoaderService(this.dependencies.plugins, runtime.fs!, this.dependencies.log, userAgentProfiles, this.context, this.dependencies.agentProfiles));
-      const explicitAgentProfiles = own(new ExplicitAgentProfileLoaderService(this.context, this.dependencies.bootstrap, runtime.fs!, this.dependencies.log, userAgentProfiles, this.dependencies.agentProfiles));
       const extraAgentProfiles = own(new ExtraAgentProfileLoaderService(this.dependencies.config, this.context, this.dependencies.bootstrap, runtime.fs!, this.dependencies.log, userAgentProfiles, this.dependencies.agentProfiles));
       const agentProfiles = own(new WorkspaceAgentProfileLoaderService(this.context, runtime.fs!, this.dependencies.log, userAgentProfiles, this.dependencies.agentProfiles));
       const skillDiscovery = new RuntimeSkillDiscovery(this.dependencies.log, runtime.fs!);
       const userSkills = this.dependencies.userSkills;
-      const explicitSkills = new ExplicitFileSkillSource(skillDiscovery, this.context, this.dependencies.bootstrap);
       const extraSkills = own(new ExtraFileSkillSource(skillDiscovery, this.dependencies.config, this.context, this.dependencies.bootstrap));
-      const workspaceSkills = own(new WorkspaceRootSkillSource(skillDiscovery, this.context, this.dependencies.config, this.dependencies.bootstrap));
+      const workspaceSkills = own(new WorkspaceRootSkillSource(skillDiscovery, this.context, this.dependencies.config));
       const pluginSkills = new PluginSkillSource(skillDiscovery, this.dependencies.plugins);
-      const skills = own(new WorkspaceSkillCatalogService(this.dependencies.builtinSkills, userSkills, explicitSkills, extraSkills, workspaceSkills, pluginSkills, state));
+      const skills = own(new WorkspaceSkillCatalogService(this.dependencies.builtinSkills, userSkills, extraSkills, workspaceSkills, pluginSkills, state));
       const trustDisclosure = new WorkspaceTrustDisclosureService(this.context, runtime.fs!, this.dependencies.bootstrap, this.dependencies.config, localConfig, trust, skills, agentProfiles, this.dependencies.agentProfiles, instructions, this.dependencies.log);
       return {
         id: runtime.identity.generation,
@@ -320,7 +313,6 @@ export class Program {
         agentProfiles,
         userAgentProfiles,
         pluginAgentProfiles,
-        explicitAgentProfiles,
         extraAgentProfiles,
         disposables,
         ready: false,

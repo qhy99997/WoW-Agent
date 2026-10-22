@@ -9,7 +9,6 @@ import { IUserFileSkillSource } from '#/features/skill/catalog/userFileSkillSour
 import type { ISessionSkillCatalogData } from '#/features/skill/session/skillCatalogData';
 import { IWorkspaceStateService } from '#/workspace/state/workspaceState';
 
-import { IExplicitFileSkillSource } from './explicitFileSkillSource';
 import { IExtraFileSkillSource } from './extraFileSkillSource';
 import { IPluginSkillSource } from './pluginSkillSource';
 import { IWorkspaceRootSkillSource } from './rootFileSkillSource';
@@ -35,7 +34,6 @@ export class WorkspaceSkillCatalogService extends Disposable implements IWorkspa
   constructor(
     @IBuiltinSkillSource builtin: IBuiltinSkillSource,
     @IUserFileSkillSource user: IUserFileSkillSource,
-    @IExplicitFileSkillSource explicit: IExplicitFileSkillSource,
     @IExtraFileSkillSource extra: IExtraFileSkillSource,
     @IWorkspaceRootSkillSource workspace: IWorkspaceRootSkillSource,
     @IPluginSkillSource plugin: IPluginSkillSource,
@@ -44,7 +42,7 @@ export class WorkspaceSkillCatalogService extends Disposable implements IWorkspa
     super();
     this.states.contributeState(workspaceSkillCatalogContributionsKey);
     this.states.contributeState(workspaceSkillCatalogMergedKey);
-    this.sources = [builtin, user, explicit, extra, workspace, plugin].toSorted(
+    this.sources = [builtin, user, extra, workspace, plugin].toSorted(
       (a, b) => a.priority - b.priority,
     );
     for (const s of this.sources) {

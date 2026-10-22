@@ -135,7 +135,6 @@ export class WorkspaceTrustDisclosureService implements IWorkspaceTrustDisclosur
   }
 
   private async readGatedSkillRoots(): Promise<readonly string[]> {
-    if ((this.bootstrap.args.skillDirs?.length ?? 0) > 0) return [];
     const mergeAllAvailableSkills =
       this.config.get<MergeAllAvailableSkillsConfig>(MERGE_ALL_AVAILABLE_SKILLS_SECTION) ?? true;
     const projectRoot =

@@ -27,5 +27,4 @@ export const AGENT_PROFILE_SOURCE_PRIORITY = {
   user: 10,
   extra: 20,
   workspace: 30,
-  explicit: 40,
 } as const;

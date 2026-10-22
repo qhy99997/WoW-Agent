@@ -50,16 +50,11 @@ export class UserFileSkillSource extends Disposable implements IUserFileSkillSou
         if (event.domain === MERGE_ALL_AVAILABLE_SKILLS_SECTION) this.onDidChangeEmitter.fire();
       }),
     );
-    if ((this.bootstrap.args.skillDirs?.length ?? 0) === 0) {
-      this.watchUserSkillRoots();
-    }
+    this.watchUserSkillRoots();
   }
 
   async load(): Promise<SkillContribution> {
     await this.watchReady;
-    if ((this.bootstrap.args.skillDirs?.length ?? 0) > 0) {
-      return { skills: [] };
-    }
     await this.config.ready;
     const mergeAllAvailableSkills =
       this.config.get<MergeAllAvailableSkillsConfig>(MERGE_ALL_AVAILABLE_SKILLS_SECTION) ?? true;

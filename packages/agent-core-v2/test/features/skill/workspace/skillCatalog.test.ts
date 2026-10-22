@@ -39,7 +39,6 @@ import {
   workspaceSkillCatalogContributionsKey,
   workspaceSkillCatalogMergedKey,
 } from '#/features/skill/workspace/workspaceSkillCatalogService';
-import { ExplicitFileSkillSource, IExplicitFileSkillSource } from '#/features/skill/workspace/explicitFileSkillSource';
 import { ExtraFileSkillSource, IExtraFileSkillSource } from '#/features/skill/workspace/extraFileSkillSource';
 import { IWorkspaceRootSkillSource, WorkspaceRootSkillSource } from '#/features/skill/workspace/rootFileSkillSource';
 import { IPluginSkillSource, PluginSkillSource } from '#/features/skill/workspace/pluginSkillSource';
@@ -174,14 +173,13 @@ function makeHost(
   store: ISkillDiscovery,
   ws: IWorkspaceContext,
   pluginRoots: readonly SkillRoot[] = [],
-  explicitDirs?: readonly string[],
   pluginReloadEmitter?: Emitter<PluginReloadEvent>,
 ) {
   const config = configStub();
   const host = createScopedTestHost([
     stubPair(ISkillDiscovery, store),
     stubPair(IFlagService, stubFlag(true)),
-    stubPair(IBootstrapService, stubBootstrap('/home', {}, { skillDirs: explicitDirs })),
+    stubPair(IBootstrapService, stubBootstrap('/home')),
     stubPair(IConfigService, config),
     stubPair(IPluginService, pluginStub(pluginRoots, pluginReloadEmitter)),
   ]);
@@ -246,7 +244,6 @@ describe('WorkspaceSkillCatalogService', () => {
       IWorkspaceSkillCatalog,
       WorkspaceSkillCatalogService,
     );
-    registerScopedService('program', IExplicitFileSkillSource, ExplicitFileSkillSource);
     registerScopedService('program', IExtraFileSkillSource, ExtraFileSkillSource);
     registerScopedService('program', IWorkspaceRootSkillSource, WorkspaceRootSkillSource);
     registerScopedService('program', IPluginSkillSource, PluginSkillSource);
@@ -339,37 +336,6 @@ describe('WorkspaceSkillCatalogService', () => {
     expect(catalog.catalog.getSkill('shared')?.description).toBe('from project');
     expect(catalog.catalog.getSkill('user-plugin')?.description).toBe('from user');
     expect(catalog.catalog.getSkill('extra-plugin')?.description).toBe('from extra');
-    host.dispose();
-  });
-
-  it('replaces default user and project discovery with explicitDirs', async () => {
-    const store = new InMemorySkillDiscovery();
-    store.setUserSkills([stubSkill('from-explicit', { description: 'from explicit' })]);
-    store.setProjectSkills([stubSkill('project-only', { description: 'from project' })]);
-    store.setExtraSkills([stubSkill('extra-only', { description: 'from extra', source: 'extra' })]);
-    store.setPluginSkills([
-      stubSkill('plugin-only', {
-        description: 'from plugin',
-        source: 'extra',
-        plugin: { id: 'demo' },
-      }),
-    ]);
-    const pluginRoot: SkillRoot = {
-      path: '/plugins/demo/skills',
-      source: 'extra',
-      plugin: { id: 'demo' },
-    };
-    const ws = workspaceContextStub('/work');
-    const { host, workspace, config } = makeHost(store, ws, [pluginRoot], ['/']);
-    config.setExtraSkillDirs(['/']);
-
-    const catalog = workspace.accessor.get(IWorkspaceSkillCatalog);
-    await catalog.load();
-
-    expect(catalog.catalog.getSkill('from-explicit')?.description).toBe('from explicit');
-    expect(catalog.catalog.getSkill('project-only')).toBeUndefined();
-    expect(catalog.catalog.getSkill('extra-only')?.description).toBe('from extra');
-    expect(catalog.catalog.getSkill('demo:plugin-only')?.description).toBe('from plugin');
     host.dispose();
   });
 
@@ -598,7 +564,7 @@ describe('WorkspaceSkillCatalogService', () => {
       plugin: { id: 'demo' },
     };
     const ws = workspaceContextStub('/work');
-    const { host, workspace } = makeHost(store, ws, [pluginRoot], undefined, reloadEmitter);
+    const { host, workspace } = makeHost(store, ws, [pluginRoot], reloadEmitter);
 
     try {
       const catalog = workspace.accessor.get(IWorkspaceSkillCatalog);
@@ -962,7 +928,7 @@ describe('WorkspaceSkillCatalogService', () => {
       plugin: { id: 'demo' },
     };
     const ws = workspaceContextStub('/work');
-    const { host, workspace, config } = makeHost(store, ws, [pluginRoot], ['/explicit']);
+    const { host, workspace, config } = makeHost(store, ws, [pluginRoot]);
     config.setExtraSkillDirs(['/']);
 
     try {
@@ -979,10 +945,10 @@ describe('WorkspaceSkillCatalogService', () => {
 
       const fired: string[] = [];
       const sub = catalog.onDidChange((id) => fired.push(id));
-      await catalog.reloadSources(['user', 'explicit', 'extra', 'plugin']);
+      await catalog.reloadSources(['user', 'workspace', 'extra', 'plugin']);
       sub.dispose();
 
-      expect([...fired].toSorted()).toEqual(['explicit', 'extra', 'plugin', 'user']);
+      expect([...fired].toSorted()).toEqual(['extra', 'plugin', 'user', 'workspace']);
       expect(catalog.catalog.getSkill('user-skill')?.description).toBe('v2');
       expect(catalog.catalog.getSkill('extra-skill')?.description).toBe('v2');
       expect(catalog.catalog.getPluginSkill('demo', 'demo-skill')).toBeUndefined();
@@ -1065,31 +1031,6 @@ describe('WorkspaceSkillCatalogService', () => {
       expect(ignored?.('/home/skills/demo/SKILL.md')).toBe(false);
       expect(ignored?.('/home/.agents/skills/demo/SKILL.md')).toBe(false);
       expect(ignored?.('/home/sessions/s1/state.json')).toBe(true);
-    } finally {
-      host.dispose();
-    }
-  });
-
-  it('does not watch the user skill roots when explicit skillDirs are set', async () => {
-    const host = createScopedTestHost([
-      stubPair(IFlagService, stubFlag(true)),
-      stubPair(IBootstrapService, stubBootstrap('/home', {}, { skillDirs: ['/explicit'] }, '/os-home')),
-      stubPair(IConfigService, configStub()),
-      stubPair(IPluginService, pluginStub()),
-      stubPair(ILogService, stubLog()),
-      stubPair(ISkillDiscovery, new FileSkillDiscovery(stubLog())),
-    ]);
-    const workspace = host.child('program', 'w1', [
-      stubPair(IWorkspaceContext, workspaceContextStub('/work')),
-    ]);
-
-    try {
-      const catalog = workspace.accessor.get(IWorkspaceSkillCatalog);
-      await catalog.load();
-
-      const watchedPaths = watchMockState.calls.map((call) => call.path);
-      expect(watchedPaths).not.toContain('/home');
-      expect(watchedPaths).not.toContain('/os-home');
     } finally {
       host.dispose();
     }
