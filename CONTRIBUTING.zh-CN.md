@@ -78,7 +78,7 @@ PR 标题必须遵循 [Conventional Commits](#提交规范)。本仓库没有配
 
 - 全仓库 TypeScript。
 - 使用 `oxlint`（配置见 `.oxlintrc.json`）。
-- 用 `pnpm lint:fix` 自动格式化。
+- 用 `pnpm lint:fix` 自动修复（即仓库 lint 规则加 `--fix`；本仓库没有单独配置格式化工具）。
 - lint 规则未覆盖的风格选择，跟随周边现有写法。
 
 ## 报告安全问题

@@ -78,7 +78,7 @@ PR titles must follow [Conventional Commits](#commit-convention). This repositor
 
 - TypeScript across the codebase.
 - Linting via `oxlint` (config in `.oxlintrc.json`).
-- Auto-formatting via `pnpm lint:fix`.
+- Auto-fixing via `pnpm lint:fix` (the repo lint rules with `--fix`; no separate formatter is configured).
 - Follow existing local patterns when the lint rules do not cover a style choice.
 
 ## Reporting Security Issues
