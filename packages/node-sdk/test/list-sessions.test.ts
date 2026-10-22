@@ -14,6 +14,7 @@ import {
 } from '@moonshot-ai/agent-core-v2';
 
 import { createKimiHarness, SDKRpcClientV2 } from '#/index';
+import { normalizeWorkDir } from '#/v2/session-mapper';
 
 import { TEST_IDENTITY } from './test-identity';
 
@@ -63,8 +64,12 @@ describe('KimiHarness.listSessions', () => {
       expect(sessions.map((session) => session.id).toSorted()).toEqual(
         [first.id, second.id].toSorted(),
       );
-      expect(sessions.find((session) => session.id === first.id)?.workDir).toBe(workDir);
-      expect(sessions.find((session) => session.id === second.id)?.workDir).toBe(otherWorkDir);
+      expect(sessions.find((session) => session.id === first.id)?.workDir).toBe(
+        normalizeWorkDir(workDir),
+      );
+      expect(sessions.find((session) => session.id === second.id)?.workDir).toBe(
+        normalizeWorkDir(otherWorkDir),
+      );
     } finally {
       await harness.close();
     }
@@ -81,7 +86,9 @@ describe('KimiHarness.listSessions', () => {
       const session = await harness.createSession({ workDir });
 
       const sessions = await harness.listSessions();
-      expect(sessions.map((item) => [item.id, item.workDir])).toEqual([[session.id, workDir]]);
+      expect(sessions.map((item) => [item.id, item.workDir])).toEqual([
+        [session.id, normalizeWorkDir(workDir)],
+      ]);
     } finally {
       await harness.close();
     }
