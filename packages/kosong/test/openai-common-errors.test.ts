@@ -406,9 +406,7 @@ describe('normalizeAPIStatusError thinking effort guidance', () => {
     const error = normalizeAPIStatusError(400, 'Invalid reasoning_effort: xhigh');
 
     expect(error.message).toContain('Non-Kimi providers receive effort strings');
-    expect(error.message).toContain(
-      'https://moonshotai.github.io/kimi-code/en/configuration/config-files.html#thinking',
-    );
+    expect(error.message).not.toContain('moonshotai.github.io');
   });
 });
 describe('convertOpenAIError: non-Error values', () => {

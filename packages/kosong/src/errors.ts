@@ -392,8 +392,8 @@ const REQUEST_TOO_LARGE_MESSAGE_PATTERNS = [
   /request (?:body )?too large/,
 ] as const;
 
-const THINKING_EFFORT_CONFIG_DOCS_URL =
-  'https://moonshotai.github.io/kimi-code/en/configuration/config-files.html#thinking';
+const THINKING_EFFORT_CONFIG_HINT =
+  'The provider rejected the configured thinking effort. Non-Kimi providers receive effort strings without client-side mapping; choose an effort supported by the selected model. For Kimi models, check support_efforts and default_effort.';
 
 const THINKING_EFFORT_STATUS_MESSAGE_PATTERNS = [
   /reasoning[_ .-]?effort/,
@@ -409,10 +409,10 @@ function appendThinkingEffortConfigHint(statusCode: number, message: string): st
   if (!THINKING_EFFORT_STATUS_MESSAGE_PATTERNS.some((pattern) => pattern.test(lowerMessage))) {
     return message;
   }
-  if (message.includes(THINKING_EFFORT_CONFIG_DOCS_URL)) return message;
+  if (message.includes(THINKING_EFFORT_CONFIG_HINT)) return message;
   return `${message}
 
-The provider rejected the configured thinking effort. Non-Kimi providers receive effort strings without client-side mapping; choose an effort supported by the selected model. For Kimi models, check support_efforts and default_effort. See ${THINKING_EFFORT_CONFIG_DOCS_URL}`;
+${THINKING_EFFORT_CONFIG_HINT}`;
 }
 
 export function isContextOverflowErrorCode(code: string | null | undefined): boolean {
