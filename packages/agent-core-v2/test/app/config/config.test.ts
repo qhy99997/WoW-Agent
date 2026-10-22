@@ -70,14 +70,9 @@ import {
   BASH_TASK_TIMEOUT_S_ENV,
   KEEP_ALIVE_ON_EXIT_ENV,
   MAX_RUNNING_TASKS_ENV,
-  PRINT_BACKGROUND_MODE_ENV,
-  PRINT_MAX_TURNS_ENV,
-  PRINT_WAIT_CEILING_S_ENV,
   resolveAgentTaskConfig,
-  resolvePrintBackgroundMode,
   type AgentTaskConfig,
 } from '#/agent/task/configSection';
-import { applyPrintModeConfigDefaults } from '#/agent/task/printDefaults';
 import '#/session/subagent/configSection';
 import {
   DEFAULT_SUBAGENT_TIMEOUT_MS,
@@ -1668,57 +1663,6 @@ describe('task config section', () => {
     return { config, disposables };
   }
 
-  it('parses print policy fields and merges legacy background with task overrides', async () => {
-    const { config, disposables } = await createTaskConfig(
-      {},
-      '[background]\nprint_background_mode = "steer"\nprint_wait_ceiling_s = 60\n\n' +
-        '[task]\nprint_max_turns = 5\n',
-    );
-
-    expect(resolveAgentTaskConfig(config)).toEqual({
-      printBackgroundMode: 'steer',
-      printWaitCeilingS: 60,
-      printMaxTurns: 5,
-    });
-
-    disposables.dispose();
-  });
-
-  it('drops the task section with a warning when a print policy value is invalid', async () => {
-    const { config, disposables } = await createTaskConfig(
-      {},
-      '[task]\nprint_background_mode = "wait"\n',
-    );
-    expect(config.get<AgentTaskConfig>('task')?.printBackgroundMode).toBeUndefined();
-    expect(
-      config
-        .diagnostics()
-        .some((d) => d.message.includes("Ignored invalid config section 'task'")),
-    ).toBe(true);
-    disposables.dispose();
-  });
-
-  it('resolvePrintBackgroundMode prefers the explicit mode over keepAliveOnExit', async () => {
-    const { config, disposables } = await createTaskConfig(
-      {},
-      '[task]\nprint_background_mode = "exit"\nkeep_alive_on_exit = true\n',
-    );
-    expect(resolvePrintBackgroundMode(config)).toBe('exit');
-    disposables.dispose();
-  });
-
-  it('resolvePrintBackgroundMode falls back to keepAliveOnExit then steer', async () => {
-    const env: Record<string, string> = {};
-    const { config, disposables } = await createTaskConfig(env);
-
-    expect(resolvePrintBackgroundMode(config)).toBe('steer');
-
-    env[KEEP_ALIVE_ON_EXIT_ENV] = 'true';
-    expect(resolvePrintBackgroundMode(config)).toBe('drain');
-
-    disposables.dispose();
-  });
-
   it('applies the bashTaskTimeoutS env binding, accepting 0 as no timeout', async () => {
     const env: Record<string, string> = {};
     const { config, disposables } = await createTaskConfig(env);
@@ -1740,185 +1684,15 @@ describe('task config section', () => {
     disposables.dispose();
   });
 
-  it('applies the print policy env bindings and ignores invalid values', async () => {
-    const env: Record<string, string> = {};
-    const { config, disposables } = await createTaskConfig(env);
-
-    env[PRINT_WAIT_CEILING_S_ENV] = '0';
-    expect(config.get<AgentTaskConfig>('task')?.printWaitCeilingS).toBeUndefined();
-    env[PRINT_WAIT_CEILING_S_ENV] = '3600';
-    expect(config.get<AgentTaskConfig>('task')?.printWaitCeilingS).toBe(3600);
-
-    env[PRINT_MAX_TURNS_ENV] = 'abc';
-    expect(config.get<AgentTaskConfig>('task')?.printMaxTurns).toBeUndefined();
-    env[PRINT_MAX_TURNS_ENV] = '7';
-    expect(config.get<AgentTaskConfig>('task')?.printMaxTurns).toBe(7);
-
-    env[PRINT_BACKGROUND_MODE_ENV] = 'wait';
-    expect(resolvePrintBackgroundMode(config)).toBe('steer');
-    env[PRINT_BACKGROUND_MODE_ENV] = 'exit';
-    expect(resolvePrintBackgroundMode(config)).toBe('exit');
-    env[PRINT_BACKGROUND_MODE_ENV] = ' drain ';
-    expect(resolvePrintBackgroundMode(config)).toBe('drain');
-
-    disposables.dispose();
-  });
-
-  it('lets the print policy env bindings override the config values', async () => {
-    const env: Record<string, string> = {
-      [PRINT_BACKGROUND_MODE_ENV]: 'exit',
-      [PRINT_WAIT_CEILING_S_ENV]: '3600',
-    };
-    const { config, disposables } = await createTaskConfig(
-      env,
-      '[task]\nprint_background_mode = "drain"\nprint_wait_ceiling_s = 60\n',
-    );
-
-    expect(resolvePrintBackgroundMode(config)).toBe('exit');
-    expect(resolveAgentTaskConfig(config)?.printWaitCeilingS).toBe(3600);
-
-    disposables.dispose();
-  });
-
   it('ignores unsafe integers without discarding sibling env bindings', async () => {
     const env: Record<string, string> = {
       [BASH_TASK_TIMEOUT_S_ENV]: '9007199254740992',
-      [PRINT_WAIT_CEILING_S_ENV]: '9007199254740992',
-      [PRINT_BACKGROUND_MODE_ENV]: 'exit',
+      [MAX_RUNNING_TASKS_ENV]: '3',
     };
     const { config, disposables } = await createTaskConfig(env);
 
     expect(config.get<AgentTaskConfig>('task')?.bashTaskTimeoutS).toBeUndefined();
-    expect(config.get<AgentTaskConfig>('task')?.printWaitCeilingS).toBeUndefined();
-    expect(resolvePrintBackgroundMode(config)).toBe('exit');
-
-    disposables.dispose();
-  });
-});
-
-describe('applyPrintModeConfigDefaults', () => {
-  async function createConfig(env: Record<string, string>, toml?: string) {
-    const disposables = new DisposableStore();
-    const ix = disposables.add(new TestInstantiationService());
-    const storage = new InMemoryStorageService();
-    if (toml !== undefined) {
-      await storage.write('', 'config.toml', new TextEncoder().encode(toml));
-    }
-    ix.stub(ILogService, stubLog());
-    ix.stub(IBootstrapService, stubBootstrap('/tmp/kimi-cfg', env));
-    ix.stub(IFileSystemStorageService, storage);
-    ix.set(IAtomicTomlDocumentStore, new SyncDescriptor(TomlAtomicDocumentStore));
-    ix.set(IConfigRegistry, new SyncDescriptor(ConfigRegistry));
-    ix.set(IConfigService, new SyncDescriptor(ConfigService));
-    const config = ix.get(IConfigService);
-    await config.ready;
-    return { config, disposables };
-  }
-
-  it('fills unset keys into the memory layer with effectively unbounded values', async () => {
-    const { config, disposables } = await createConfig({});
-
-    await applyPrintModeConfigDefaults(config);
-
-    expect(resolveAgentTaskConfig(config)?.bashTaskTimeoutS).toBe(0);
-    expect(config.get<LoopControl>(LOOP_CONTROL_SECTION)?.maxStepsPerTurn).toBe(0);
-    expect(resolveSubagentTimeoutMs(config)).toBe(0);
-    expect(resolveSwarmTimeoutMs(config)).toBe(0);
-    expect(config.inspect('task').memoryValue).toMatchObject({ bashTaskTimeoutS: 0 });
-    expect(config.inspect(LOOP_CONTROL_SECTION).memoryValue).toMatchObject({
-      maxStepsPerTurn: 0,
-    });
-    expect(config.inspect('subagent').memoryValue).toMatchObject({ timeoutMs: 0 });
-    expect(config.inspect('swarm').memoryValue).toMatchObject({ timeoutMs: 0 });
-
-    disposables.dispose();
-  });
-
-  it('does not override keys the user set explicitly', async () => {
-    const { config, disposables } = await createConfig(
-      {},
-      '[task]\nbash_task_timeout_s = 30\n\n' +
-        '[loop_control]\nmax_steps_per_turn = 7\n\n' +
-        '[subagent]\ntimeout_ms = 5000\n\n' +
-        '[swarm]\ntimeout_ms = 6000\n',
-    );
-
-    await applyPrintModeConfigDefaults(config);
-
-    expect(resolveAgentTaskConfig(config)?.bashTaskTimeoutS).toBe(30);
-    expect(config.get<LoopControl>(LOOP_CONTROL_SECTION)?.maxStepsPerTurn).toBe(7);
-    expect(resolveSubagentTimeoutMs(config)).toBe(5000);
-    expect(resolveSwarmTimeoutMs(config)).toBe(6000);
-    expect(config.inspect('task').memoryValue).toBeUndefined();
-    expect(config.inspect(LOOP_CONTROL_SECTION).memoryValue).toBeUndefined();
-    expect(config.inspect('subagent').memoryValue).toBeUndefined();
-    expect(config.inspect('swarm').memoryValue).toBeUndefined();
-
-    disposables.dispose();
-  });
-
-  it('treats a legacy [background] bash_task_timeout_s as user-set', async () => {
-    const { config, disposables } = await createConfig(
-      {},
-      '[background]\nbash_task_timeout_s = 15\n',
-    );
-
-    await applyPrintModeConfigDefaults(config);
-
-    expect(resolveAgentTaskConfig(config)?.bashTaskTimeoutS).toBe(15);
-
-    disposables.dispose();
-  });
-
-  it('does not override keys set via env bindings', async () => {
-    const { config, disposables } = await createConfig({
-      [BASH_TASK_TIMEOUT_S_ENV]: '30',
-    });
-
-    await applyPrintModeConfigDefaults(config);
-
-    expect(resolveAgentTaskConfig(config)?.bashTaskTimeoutS).toBe(30);
-    expect(config.inspect('task').memoryValue).toBeUndefined();
-
-    disposables.dispose();
-  });
-
-  it('keeps sibling user keys of a filled section visible', async () => {
-    const { config, disposables } = await createConfig(
-      {},
-      '[task]\nprint_background_mode = "drain"\n\n[loop_control]\nmax_attempts_per_step = 5\n',
-    );
-
-    await applyPrintModeConfigDefaults(config);
-
-    expect(resolvePrintBackgroundMode(config)).toBe('drain');
-    expect(resolveAgentTaskConfig(config)?.bashTaskTimeoutS).toBe(0);
-    expect(config.get<LoopControl>(LOOP_CONTROL_SECTION)).toMatchObject({
-      maxAttemptsPerStep: 5,
-      maxStepsPerTurn: 0,
-    });
-
-    disposables.dispose();
-  });
-
-  it('does not override the subagent timeout env override', async () => {
-    const env: Record<string, string> = { [SUBAGENT_TIMEOUT_ENV]: '3000' };
-    const { config, disposables } = await createConfig(env);
-
-    await applyPrintModeConfigDefaults(config);
-
-    expect(resolveSubagentTimeoutMs(config)).toBe(3000);
-
-    disposables.dispose();
-  });
-
-  it('does not override the swarm timeout env override', async () => {
-    const env: Record<string, string> = { [SWARM_TIMEOUT_ENV]: '3000' };
-    const { config, disposables } = await createConfig(env);
-
-    await applyPrintModeConfigDefaults(config);
-
-    expect(resolveSwarmTimeoutMs(config)).toBe(3000);
+    expect(config.get<AgentTaskConfig>('task')?.maxRunningTasks).toBe(3);
 
     disposables.dispose();
   });

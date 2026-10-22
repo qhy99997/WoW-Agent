@@ -156,9 +156,6 @@ export const BackgroundConfigSchema = z.object({
   bashAutoBackgroundOnTimeout: z.boolean().optional(),
   bashTaskTimeoutS: z.number().int().min(0).optional(),
   killGracePeriodMs: z.number().int().min(0).optional(),
-  printWaitCeilingS: z.number().int().min(1).optional(),
-  printBackgroundMode: z.enum(['exit', 'drain', 'steer']).optional(),
-  printMaxTurns: z.number().int().min(1).optional(),
 });
 
 export type BackgroundConfig = z.infer<typeof BackgroundConfigSchema>;

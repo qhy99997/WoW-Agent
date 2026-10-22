@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { KeyedResourceLeasePool } from '#/_base/lifecycle/keyedResource';
 import { IAgentContextMemoryService } from '#/agent/contextMemory/contextMemory';
 import { TurnStarted } from '#/agent/loop/turnEvents';
 import { TurnEnded } from '#/agent/loop/turnOps';
@@ -270,49 +269,3 @@ describe('AgentTodoService', () => {
   });
 });
 
-describe('KeyedResourceLeasePool', () => {
-  function nextTick(): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, 0));
-  }
-
-  it('deduplicates concurrent materialization by key', async () => {
-    let creates = 0;
-    const pool = new KeyedResourceLeasePool(
-      { owner: 'todo.test', generation: 1 },
-      async () => {
-        creates += 1;
-        await nextTick();
-        return { dispose: () => {} };
-      },
-    );
-
-    const [first, second] = await Promise.all([pool.acquire('main'), pool.acquire('main')]);
-    expect(creates).toBe(1);
-    expect(first.resource).toBe(second.resource);
-    first.release();
-    second.release();
-    await pool.withdraw();
-  });
-
-  it('rejects stale generation acquires while an existing lease drains', async () => {
-    let disposed = false;
-    const pool = new KeyedResourceLeasePool(
-      { owner: 'todo.test', generation: 2 },
-      () => ({
-        dispose: async () => {
-          await nextTick();
-          disposed = true;
-        },
-      }),
-    );
-    const lease = await pool.acquire('main');
-    const withdrawal = pool.withdraw();
-
-    await expect(pool.acquire('main')).rejects.toThrow('todo.test:2 is withdrawn');
-    await nextTick();
-    expect(disposed).toBe(false);
-    lease.release();
-    await withdrawal;
-    expect(disposed).toBe(true);
-  });
-});
