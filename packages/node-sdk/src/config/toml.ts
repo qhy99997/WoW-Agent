@@ -41,9 +41,9 @@ function camelToSnake(str: string): string {
 }
 
 const DEFAULT_CONFIG_FILE_TEXT = `# ~/.wow/config.toml
-# Runtime settings for Kimi Code.
+# Runtime settings for WoW.
 # This file starts empty so built-in defaults can apply.
-# Login will populate managed Kimi provider and model entries.
+# Providers and models are written here by the app's settings UI.
 `;
 
 export async function ensureConfigFile(filePath: string): Promise<void> {
@@ -75,7 +75,7 @@ export function readConfigFileForUpdate(filePath: string): KimiConfig {
     if (error instanceof KimiError && error.code === ErrorCodes.CONFIG_INVALID) {
       throw new KimiError(
         ErrorCodes.CONFIG_INVALID,
-        `Cannot change settings while ${filePath} is invalid — fix it first (run \`kimi doctor\` for details).`,
+        `Cannot change settings while ${filePath} is invalid — fix the file first, then reopen settings.`,
         { cause: error },
       );
     }
@@ -151,7 +151,7 @@ export function loadRuntimeConfigSafe(
         config = salvaged.config;
         if (salvaged.dropped.length > 0) {
           fileWarnings.push(
-            `Ignored invalid config in ${filePath}: ${salvaged.dropped.join(', ')}. Run \`kimi doctor\` for details.`,
+            `Ignored invalid config in ${filePath}: ${salvaged.dropped.join(', ')}. Fix the file to restore those settings.`,
           );
         }
       }

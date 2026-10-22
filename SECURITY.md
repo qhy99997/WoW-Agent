@@ -2,24 +2,20 @@
 
 ## Supported Versions
 
-Currently, Kimi Code only provides security support for the latest released version.
+WoW only provides security support for the latest released version.
 
 ## Reporting a Vulnerability
 
 We take security seriously. **Please do not open a public issue for security vulnerabilities.**
 
-Preferred channel:
+Report privately through GitHub Security Advisories on this repository:
 
-- GitHub Security Advisories — https://github.com/MoonshotAI/kimi-code/security/advisories/new
+- https://github.com/qhy99997/WoW-Agent/security/advisories/new
   (private disclosure, tracked with the codebase)
-
-Alternative channel:
-
-- Email: code@moonshot.ai (please include "[security]" in the subject)
 
 ## What to Include
 
-- Affected version (output of `kimi --version`)
+- Affected version — the installer artifact name you installed, for example `WoW-0.1.0-x64.exe`
 - Reproduction steps
 - Impact assessment
 - Any suggested mitigation

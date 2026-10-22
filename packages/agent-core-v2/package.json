@@ -5,14 +5,14 @@
   "description": "The unified agent engine for Kimi (v2 — DI Scope architecture)",
   "license": "MIT",
   "author": "Moonshot AI",
-  "homepage": "https://github.com/MoonshotAI/kimi-code/tree/main/packages/agent-core-v2#readme",
+  "homepage": "https://github.com/qhy99997/WoW-Agent/tree/main/packages/agent-core-v2#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/MoonshotAI/kimi-code.git",
+    "url": "git+https://github.com/qhy99997/WoW-Agent.git",
     "directory": "packages/agent-core-v2"
   },
   "bugs": {
-    "url": "https://github.com/MoonshotAI/kimi-code/issues"
+    "url": "https://github.com/qhy99997/WoW-Agent/issues"
   },
   "keywords": [
     "kimi",
@@ -53,7 +53,7 @@
     "gen:wire-manifest": "tsx --import ../../build/register-raw-text-loader.mjs scripts/gen-wire-manifest.mts",
     "gen:state-manifest": "tsx scripts/gen-state-manifest.mts",
     "lint:imports": "node scripts/check-import-boundaries.mjs",
-    "clean": "rm -rf dist"
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\""
   },
   "dependencies": {
     "@antfu/utils": "^9.3.0",

@@ -508,9 +508,9 @@ describe('sessionExport', () => {
       webLog,
     });
 
-    expect(result.entries).toContain('logs/kimi-web.jsonl');
-    expect(result.manifest.webLogPath).toBe('logs/kimi-web.jsonl');
-    await expect(readZipEntry(outputPath, 'logs/kimi-web.jsonl')).resolves.toEqual(
+    expect(result.entries).toContain('logs/wow-web.jsonl');
+    expect(result.manifest.webLogPath).toBe('logs/wow-web.jsonl');
+    await expect(readZipEntry(outputPath, 'logs/wow-web.jsonl')).resolves.toEqual(
       Buffer.from(webLog, 'utf8'),
     );
   });
@@ -539,9 +539,9 @@ describe('sessionExport', () => {
       desktopLogPath,
     });
 
-    expect(result.entries).toContain('logs/kimi-desktop.log');
-    expect(result.manifest.desktopLogPath).toBe('logs/kimi-desktop.log');
-    await expect(readZipEntry(outputPath, 'logs/kimi-desktop.log')).resolves.toEqual(
+    expect(result.entries).toContain('logs/wow-desktop.log');
+    expect(result.manifest.desktopLogPath).toBe('logs/wow-desktop.log');
+    await expect(readZipEntry(outputPath, 'logs/wow-desktop.log')).resolves.toEqual(
       Buffer.from(desktopLog, 'utf8'),
     );
   });
@@ -565,7 +565,7 @@ describe('sessionExport', () => {
       desktopLogPath: join(tmp, 'logs', 'does-not-exist.log'),
     });
 
-    expect(result.entries).not.toContain('logs/kimi-desktop.log');
+    expect(result.entries).not.toContain('logs/wow-desktop.log');
     expect(result.manifest.desktopLogPath).toBeUndefined();
   });
 

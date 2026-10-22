@@ -92,7 +92,70 @@ describe('probeHostEnvironment', () => {
     expect(rejected).toBeInstanceOf(ProbeShellNotFoundError);
     const probeError = rejected as ProbeShellNotFoundError;
     expect(probeError.message).toContain('https://gitforwindows.org/');
+    expect(probeError.message).toContain('WOW_SHELL_PATH');
     expect(probeError.message).not.toContain('Checked:');
     expect(probeError.checked.length).toBeGreaterThan(0);
+  });
+
+  it('honours WOW_SHELL_PATH as the bash.exe override', async () => {
+    const bash = 'D:\\tools\\Git\\bin\\bash.exe';
+    const env = await probeHostEnvironment(
+      stubDeps({
+        platform: 'win32',
+        env: { WOW_SHELL_PATH: bash, PATH: 'C:\\Windows\\System32' },
+        existingPaths: [bash],
+      }),
+    );
+
+    expect(env.shellName).toBe('bash');
+    expect(env.shellPath).toBe(bash);
+  });
+
+  it('still honours the legacy KIMI_SHELL_PATH override', async () => {
+    const bash = 'D:\\legacy\\Git\\bin\\bash.exe';
+    const env = await probeHostEnvironment(
+      stubDeps({
+        platform: 'win32',
+        env: { KIMI_SHELL_PATH: bash, PATH: 'C:\\Windows\\System32' },
+        existingPaths: [bash],
+      }),
+    );
+
+    expect(env.shellPath).toBe(bash);
+  });
+
+  it('prefers WOW_SHELL_PATH when both override variables are set', async () => {
+    const wowBash = 'D:\\new\\Git\\bin\\bash.exe';
+    const legacyBash = 'D:\\old\\Git\\bin\\bash.exe';
+    const env = await probeHostEnvironment(
+      stubDeps({
+        platform: 'win32',
+        env: {
+          WOW_SHELL_PATH: wowBash,
+          KIMI_SHELL_PATH: legacyBash,
+          PATH: 'C:\\Windows\\System32',
+        },
+        existingPaths: [wowBash, legacyBash],
+      }),
+    );
+
+    expect(env.shellPath).toBe(wowBash);
+  });
+
+  it('falls back to KIMI_SHELL_PATH when WOW_SHELL_PATH is blank', async () => {
+    const legacyBash = 'D:\\old\\Git\\bin\\bash.exe';
+    const env = await probeHostEnvironment(
+      stubDeps({
+        platform: 'win32',
+        env: {
+          WOW_SHELL_PATH: '   ',
+          KIMI_SHELL_PATH: legacyBash,
+          PATH: 'C:\\Windows\\System32',
+        },
+        existingPaths: [legacyBash],
+      }),
+    );
+
+    expect(env.shellPath).toBe(legacyBash);
   });
 });

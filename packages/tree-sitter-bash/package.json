@@ -5,14 +5,14 @@
   "description": "A pure-TypeScript bash parser producing a syntax tree whose named node types match tree-sitter-bash one-to-one.",
   "license": "MIT",
   "author": "Moonshot AI",
-  "homepage": "https://github.com/MoonshotAI/kimi-code/tree/main/packages/tree-sitter-bash#readme",
+  "homepage": "https://github.com/qhy99997/WoW-Agent/tree/main/packages/tree-sitter-bash#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/MoonshotAI/kimi-code.git",
+    "url": "git+https://github.com/qhy99997/WoW-Agent.git",
     "directory": "packages/tree-sitter-bash"
   },
   "bugs": {
-    "url": "https://github.com/MoonshotAI/kimi-code/issues"
+    "url": "https://github.com/qhy99997/WoW-Agent/issues"
   },
   "keywords": [
     "kimi",
@@ -38,7 +38,7 @@
     "build": "tsdown",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "clean": "rm -rf dist"
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\""
   },
   "devDependencies": {
     "tree-sitter-bash": "0.25.0",

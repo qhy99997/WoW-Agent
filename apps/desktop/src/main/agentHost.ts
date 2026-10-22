@@ -122,7 +122,10 @@ export class AgentHost {
     });
 
     if (process.platform === 'win32') {
-      const shellPath = process.env['WOW_SHELL_PATH'] ?? WINDOWS_GIT_BASH.find((c) => existsSync(c));
+      const override = process.env['WOW_SHELL_PATH'] ?? process.env['KIMI_SHELL_PATH'];
+      const shellPath =
+        (override !== undefined && existsSync(override) ? override : undefined) ??
+        WINDOWS_GIT_BASH.find((c) => existsSync(c));
       const found = shellPath !== undefined;
       checks.push({
         id: 'shell',

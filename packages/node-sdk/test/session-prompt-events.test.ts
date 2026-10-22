@@ -321,7 +321,7 @@ describe('Session.prompt events', () => {
           reason: 'completed',
         }),
       );
-      expect(fakeProviderState.calls[0]?.systemPrompt).toContain('You are Kimi Code CLI');
+      expect(fakeProviderState.calls[0]?.systemPrompt).toContain('You are WoW');
       expect(fakeProviderState.calls[0]?.systemPrompt).toContain('Available skills');
     } finally {
       await harness.close();

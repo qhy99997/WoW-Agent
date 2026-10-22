@@ -72,8 +72,8 @@ Note that MCP server definitions are not part of `config.toml`; only their timeo
 Environment variables:
 
 - `WOW_HOME` — use a different data directory instead of `~/.wow`.
-- `WOW_SHELL_PATH` — path to `bash.exe`, read by the startup environment check when Git Bash is installed in a non-standard location.
-- `KIMI_SHELL_PATH` — path to `bash.exe`, read by the agent engine when it launches shell commands. On a machine where Git Bash is not auto-detected, set both variables to the same absolute path.
+- `WOW_SHELL_PATH` — path to `bash.exe`, read both by the startup environment check and by the agent engine when it launches shell commands. Set it when Git Bash is installed in a non-standard location.
+- `KIMI_SHELL_PATH` — the pre-rebrand name for that same setting. It is still accepted as a fallback when `WOW_SHELL_PATH` is unset.
 
 ## Develop
 

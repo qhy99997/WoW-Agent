@@ -1,4 +1,4 @@
-# 为 kimi-code 贡献代码
+# 为 WoW 贡献代码
 
 [English version](CONTRIBUTING.md)
 
@@ -6,7 +6,7 @@
 
 ## 开始之前
 
-Kimi Code 对 CLI/TUI 行为、agent 工作流和公开 API 已有自己的主张。如果你的改动会改变这些方向，请先开 issue 对齐，再投入时间写 PR。
+WoW 对桌面端交互、agent 工作流和公开 API 已有自己的主张。如果你的改动会改变这些方向，请先开 issue 对齐，再投入时间写 PR。
 
 我们对 AI 辅助贡献与手写代码一视同仁。**你应该理解自己提交的内容**——改了什么、边界情况下表现如何、为什么适合这个代码库。如果你解释不清楚，这个 PR 就还没准备好接受评审。
 
@@ -23,36 +23,35 @@ Kimi Code 对 CLI/TUI 行为、agent 工作流和公开 API 已有自己的主�
 
 ## 项目结构
 
-本仓库是 pnpm monorepo，最常用的入口：
+本仓库是 pnpm monorepo，产物是一个桌面应用：
 
-- `apps/kimi-code` — CLI / TUI
-- `apps/vscode` — VS Code 插件
-- `apps/vis` — 会话调试可视化工具
-- `packages/node-sdk` — 公开 TypeScript SDK（`@moonshot-ai/kimi-code-sdk`）
-- `packages/agent-core-v2` — 当前的 agent 引擎（v2，DI Scope 架构）；`packages/agent-core` 为 v1，正在逐步废弃
-- `packages/klient`、`kap-server`、`protocol`、`transcript`、`kosong`、`oauth`、`telemetry` — 内部引擎包
-- `docs/` — VitePress 双语文档站
+- `apps/desktop` — Electron 桌面应用：`src/main`（主进程、agent host、IPC）、`src/preload`（context bridge）、`src/renderer`（React 界面）、`src/shared`（IPC 契约）
+- `packages/agent-core-v2` — agent 引擎
+- `packages/node-sdk` — 桌面应用驱动引擎所用的 SDK
+- `packages/klient`、`packages/kosong`、`packages/minidb`、`packages/oauth`、`packages/telemetry`、`packages/tree-sitter-bash` — 配套包
+- `plugins/` — 上游插件市场源码的快照；本仓库运行时不读取它，安装包也不包含它
 
-完整项目地图见 [AGENTS.md](AGENTS.md)。
+完整项目地图见 [README.md](README.md)，仓库约定见 [AGENTS.md](AGENTS.md)。
 
 ## 开发环境
 
 前置要求：Node.js >= 24.15.0、pnpm 10.33.0、Git。
 
 ```sh
-git clone https://github.com/MoonshotAI/kimi-code.git
-cd kimi-code
+git clone https://github.com/qhy99997/WoW-Agent.git
+cd WoW-Agent
 pnpm install
 ```
 
 常用脚本：
 
-- `pnpm dev:cli` — 开发模式运行 CLI
+- `pnpm dev` — 开发模式运行桌面应用
 - `pnpm test` — 运行测试（vitest）
 - `pnpm typecheck` — TypeScript 检查（注意：会先构建各包）
-- `pnpm lint` — oxlint
-- `pnpm lint:fix` — oxlint 自动修复
+- `pnpm lint` — 仓库 lint 规则 + oxlint
+- `pnpm lint:fix` — 同上，带自动修复
 - `pnpm build` — 构建全部包
+- `pnpm run dist` — 构建全部并打包 Windows 安装程序
 
 ## 提交规范
 
@@ -61,7 +60,7 @@ pnpm install
 | 类型     | 用途                                     | 示例                                   |
 |----------|------------------------------------------|----------------------------------------|
 | feat     | 新功能                                   | feat(agent-core-v2): add tool dedup       |
-| fix      | bug 修复                                 | fix(tui): correct status bar alignment |
+| fix      | bug 修复                                 | fix(desktop): keep transcript scrolled   |
 | docs     | 仅文档                                   | docs: clarify install instructions     |
 | chore    | 工具 / 杂务                              | chore: bump dependencies               |
 | refactor | 无行为变更的内部重构                     | refactor(kosong): extract retry helper |
@@ -71,20 +70,9 @@ pnpm install
 | perf     | 性能优化                                 | perf(session): batch event flushes     |
 | style    | 仅格式化（无逻辑变更）                   | style: apply oxlint --fix              |
 
-PR 标题由 `pr-title-checker` 工作流强制校验——不合规的标题会阻止合并。
-
-## Changesets
-
-本仓库使用 [changesets](https://github.com/changesets/changesets) 管理版本与发布。
-
-- 每个影响发布产物（代码、行为、公开 API）的 PR **必须**包含 changeset。
-- 仅文档、仅测试或仅 CI 的 PR 可以不加。
-- 用 `pnpm changeset` 生成并按提示操作（涉及哪些包、什么 bump 级别）。
-- 包选择与 bump 级别的仓库约定见 `.changeset/README.md`。在本仓库使用编程 agent 时，使用 `gen-changesets` 技能。
-
 ## Pull Requests
 
-PR 会自动套用 [PR 模板](.github/pull_request_template.md)。PR 标题必须遵循 [Conventional Commits](#提交规范)；每个 PR 的 CI 会运行 `pnpm lint`、`pnpm typecheck` 和 `pnpm test`。行为变更时请同步更新 `docs/` 下的用户文档——使用编程 agent 时使用 `gen-docs` 技能。
+PR 标题必须遵循 [Conventional Commits](#提交规范)。本仓库没有配置 CI，请在请求评审前自行运行 `pnpm lint`、`pnpm typecheck` 和 `pnpm test`。如果改动影响用户可见行为，请在同一个 PR 中更新面向用户的文档（`README.md`、`README.zh-CN.md`）。
 
 ## 代码风格
 

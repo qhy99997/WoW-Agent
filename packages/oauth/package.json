@@ -5,14 +5,14 @@
   "description": "Kimi OAuth toolkit for managed Kimi Code authentication",
   "license": "MIT",
   "author": "Moonshot AI",
-  "homepage": "https://github.com/MoonshotAI/kimi-code/tree/main/packages/oauth#readme",
+  "homepage": "https://github.com/qhy99997/WoW-Agent/tree/main/packages/oauth#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/MoonshotAI/kimi-code.git",
+    "url": "git+https://github.com/qhy99997/WoW-Agent.git",
     "directory": "packages/oauth"
   },
   "bugs": {
-    "url": "https://github.com/MoonshotAI/kimi-code/issues"
+    "url": "https://github.com/qhy99997/WoW-Agent/issues"
   },
   "keywords": [
     "kimi",
@@ -45,7 +45,7 @@
   "scripts": {
     "build": "tsdown",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "clean": "rm -rf dist"
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\""
   },
   "dependencies": {
     "proper-lockfile": "^4.1.2",

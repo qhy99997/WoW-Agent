@@ -1,5 +1,9 @@
 # Repository-level Agent Guide
 
+> **⚠️ Upstream snapshot — this document does not describe this repository.**
+>
+> It is a record of the architecture and conventions of the upstream [MoonshotAI/kimi-code](https://github.com/MoonshotAI/kimi-code) project, from which WoW is derived (see [README.md](README.md)). **This repository is not that project**: most of the applications, packages, paths, scripts, and workflows named below do not exist here, so do not follow its instructions as if they applied to this checkout. For this repository, read [README.md](README.md), [CONTRIBUTING.md](CONTRIBUTING.md), and [AGENTS.md](AGENTS.md) instead. The rest of this file is kept verbatim as a record of upstream.
+
 Reply in the same language as the user.
 
 This is a TypeScript monorepo built for agent-assisted development. Keep the root `AGENTS.md` limited to hot-path rules: the project map, hard constraints, and workflow requirements — things every task needs to know.

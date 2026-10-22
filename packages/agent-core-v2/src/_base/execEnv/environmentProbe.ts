@@ -116,11 +116,25 @@ export async function probeHostEnvironment(
   };
 }
 
+const SHELL_PATH_ENV_VARS = ['WOW_SHELL_PATH', 'KIMI_SHELL_PATH'] as const;
+
+export function resolveShellPathOverride(
+  env: Readonly<Record<string, string | undefined>>,
+): string | undefined {
+  for (const name of SHELL_PATH_ENV_VARS) {
+    const value = env[name]?.trim();
+    if (value !== undefined && value.length > 0) {
+      return value;
+    }
+  }
+  return undefined;
+}
+
 async function locateWindowsGitBash(deps: HostEnvironmentProbeDeps): Promise<string> {
   const checked: string[] = [];
 
-  const override = deps.env['KIMI_SHELL_PATH']?.trim();
-  if (override !== undefined && override.length > 0) {
+  const override = resolveShellPathOverride(deps.env);
+  if (override !== undefined) {
     checked.push(override);
     if (await deps.isFile(override)) {
       return override;
@@ -176,7 +190,7 @@ async function locateWindowsGitBash(deps: HostEnvironmentProbeDeps): Promise<str
   }
 
   throw new ProbeShellNotFoundError(
-    'Git Bash was not found on this Windows host. Install Git for Windows from https://gitforwindows.org/ or set KIMI_SHELL_PATH to a bash.exe.',
+    'Git Bash was not found on this Windows host. Install Git for Windows from https://gitforwindows.org/ or set WOW_SHELL_PATH to a bash.exe.',
     checked,
   );
 }

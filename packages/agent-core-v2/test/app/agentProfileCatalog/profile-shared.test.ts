@@ -12,6 +12,7 @@ import {
   registerAgentProfile,
 } from '#/app/agentProfileCatalog/contribution';
 import {
+  DEFAULT_PRODUCT_NAME,
   DEFAULT_REPLY_STYLE_GUIDE,
   NOTIFY_USER_GUIDANCE,
   renderAgentProfilePrompt,
@@ -105,20 +106,20 @@ describe('systemPromptVars', () => {
     expect(systemPromptVars({}, { skillActive: true })['plugin_sections']).toBe('');
   });
 
-  it('defaults host-identity variables to the CLI text', () => {
+  it('defaults host-identity variables to the product name', () => {
     const vars = systemPromptVars({}, { skillActive: true });
 
-    expect(vars['product_name']).toBe('Kimi Code CLI');
+    expect(vars['product_name']).toBe(DEFAULT_PRODUCT_NAME);
     expect(vars['reply_style_guide']).toBe(DEFAULT_REPLY_STYLE_GUIDE);
   });
 
   it('lets the context override host-identity variables', () => {
     const vars = systemPromptVars(
-      { productName: 'Kimi Desktop', replyStyleGuide: 'GUI_STYLE' },
+      { productName: 'Acme Agent', replyStyleGuide: 'GUI_STYLE' },
       { skillActive: true },
     );
 
-    expect(vars['product_name']).toBe('Kimi Desktop');
+    expect(vars['product_name']).toBe('Acme Agent');
     expect(vars['reply_style_guide']).toBe('GUI_STYLE');
   });
 });
@@ -262,19 +263,19 @@ describe('renderSystemPromptResult', () => {
     expect(prompt).not.toMatch(/\$\{[A-Za-z_][A-Za-z0-9_]*\}/);
   });
 
-  it('renders the host identity from the context, defaulting to the CLI text', () => {
+  it('renders the host identity from the context, defaulting to the product name', () => {
     const fallback = renderSystemPromptResult('', {}, { skillActive: true }).text;
-    expect(fallback).toContain('Kimi Code CLI');
+    expect(fallback).toContain(DEFAULT_PRODUCT_NAME);
     expect(fallback).toContain(DEFAULT_REPLY_STYLE_GUIDE);
 
     const overridden = renderSystemPromptResult(
       '',
-      { productName: 'Kimi Desktop', replyStyleGuide: 'GUI_STYLE' },
+      { productName: 'Acme Agent', replyStyleGuide: 'GUI_STYLE' },
       { skillActive: true },
     ).text;
-    expect(overridden).toContain('Kimi Desktop');
+    expect(overridden).toContain('Acme Agent');
     expect(overridden).toContain('GUI_STYLE');
-    expect(overridden).not.toContain('Kimi Code CLI');
+    expect(overridden).not.toContain(DEFAULT_PRODUCT_NAME);
   });
 });
 

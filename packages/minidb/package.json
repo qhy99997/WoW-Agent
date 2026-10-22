@@ -5,14 +5,14 @@
   "description": "A pure-Node.js embedded key-value database mixing Redis-style in-memory KV with SQLite-style durable persistence (WAL + snapshot).",
   "license": "MIT",
   "author": "Moonshot AI",
-  "homepage": "https://github.com/MoonshotAI/kimi-code/tree/main/packages/minidb#readme",
+  "homepage": "https://github.com/qhy99997/WoW-Agent/tree/main/packages/minidb#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/MoonshotAI/kimi-code.git",
+    "url": "git+https://github.com/qhy99997/WoW-Agent.git",
     "directory": "packages/minidb"
   },
   "bugs": {
-    "url": "https://github.com/MoonshotAI/kimi-code/issues"
+    "url": "https://github.com/qhy99997/WoW-Agent/issues"
   },
   "keywords": [
     "kimi",
@@ -50,6 +50,6 @@
     "bench": "node --import tsx bench/bench.ts",
     "bench:cluster": "node --import tsx bench/cluster.ts",
     "bench:open": "node --import tsx bench/open-lifecycle.ts",
-    "clean": "rm -rf dist"
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\""
   }
 }

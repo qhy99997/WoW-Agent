@@ -1,4 +1,4 @@
-# Contributing to kimi-code
+# Contributing to WoW
 
 [中文版](CONTRIBUTING.zh-CN.md)
 
@@ -6,7 +6,7 @@ Thanks for taking the time to contribute! This project moves quickly, and though
 
 ## Before You Start
 
-Kimi Code already has opinions on CLI/TUI behavior, agent workflows, and public APIs. If your change shifts that direction, open an issue first so we can align before you invest time in a PR.
+WoW already has opinions on desktop UX, agent workflows, and public APIs. If your change shifts that direction, open an issue first so we can align before you invest time in a PR.
 
 We hold AI-assisted contributions to the same standard as hand-written ones. **You should understand what you submit** — what changed, how it behaves at the edges, and why it fits this codebase. If you cannot explain that, the PR is not ready for review.
 
@@ -23,36 +23,35 @@ We only merge PRs aligned with the roadmap. Drive-by refactors without context a
 
 ## Project Layout
 
-This is a pnpm monorepo. The most relevant entry points are:
+This is a pnpm monorepo whose product is a desktop application:
 
-- `apps/kimi-code` — CLI / TUI
-- `apps/vscode` — VS Code extension
-- `apps/vis` — session debug visualizer
-- `packages/node-sdk` — public TypeScript SDK (`@moonshot-ai/kimi-code-sdk`)
-- `packages/agent-core-v2` — the agent engine (v2, DI Scope architecture); `packages/agent-core` is v1 and being phased out
-- `packages/klient`, `kap-server`, `protocol`, `transcript`, `kosong`, `oauth`, `telemetry` — internal engine packages
-- `docs/` — VitePress bilingual docs site
+- `apps/desktop` — the Electron application: `src/main` (main process, agent host, IPC), `src/preload` (context bridge), `src/renderer` (React UI), `src/shared` (IPC contract)
+- `packages/agent-core-v2` — the agent engine
+- `packages/node-sdk` — the SDK the desktop app drives the engine through
+- `packages/klient`, `packages/kosong`, `packages/minidb`, `packages/oauth`, `packages/telemetry`, `packages/tree-sitter-bash` — supporting packages
+- `plugins/` — a snapshot of upstream plugin marketplace sources; nothing reads it at runtime and it is not included in the installer
 
-For the full project map, see [AGENTS.md](AGENTS.md).
+See [README.md](README.md) for the full project map and [AGENTS.md](AGENTS.md) for repository conventions.
 
 ## Development Setup
 
 Prerequisites: Node.js >= 24.15.0, pnpm 10.33.0, Git.
 
 ```sh
-git clone https://github.com/MoonshotAI/kimi-code.git
-cd kimi-code
+git clone https://github.com/qhy99997/WoW-Agent.git
+cd WoW-Agent
 pnpm install
 ```
 
 Useful scripts:
 
-- `pnpm dev:cli` — run the CLI in dev mode
+- `pnpm dev` — run the desktop app in dev mode
 - `pnpm test` — run tests (vitest)
 - `pnpm typecheck` — TypeScript check (note: builds packages first)
-- `pnpm lint` — oxlint
-- `pnpm lint:fix` — oxlint with auto-fix
+- `pnpm lint` — repo lint rules plus oxlint
+- `pnpm lint:fix` — same, with auto-fix
 - `pnpm build` — build all packages
+- `pnpm run dist` — build everything and package the Windows installer
 
 ## Commit Convention
 
@@ -61,7 +60,7 @@ All commits and PR titles must follow [Conventional Commits](https://www.convent
 | Type     | Use for                                     | Example                                   |
 |----------|---------------------------------------------|-------------------------------------------|
 | feat     | A new feature                               | feat(agent-core-v2): add tool dedup       |
-| fix      | A bug fix                                   | fix(tui): correct status bar alignment    |
+| fix      | A bug fix                                   | fix(desktop): keep transcript scrolled   |
 | docs     | Documentation only                          | docs: clarify install instructions        |
 | chore    | Tooling / housekeeping                      | chore: bump dependencies                  |
 | refactor | Internal refactor without behavior change   | refactor(kosong): extract retry helper    |
@@ -71,20 +70,9 @@ All commits and PR titles must follow [Conventional Commits](https://www.convent
 | perf     | Performance improvement                     | perf(session): batch event flushes        |
 | style    | Formatting only (no logic)                  | style: apply oxlint --fix                 |
 
-PR titles are enforced by the `pr-title-checker` workflow — a non-conforming title will block merge.
-
-## Changesets
-
-This repo uses [changesets](https://github.com/changesets/changesets) to manage versioning and releases.
-
-- Every PR that affects release artifacts (code, behavior, public API) **must** include a changeset.
-- Docs-only, test-only, or CI-only PRs may skip changesets.
-- Generate one with `pnpm changeset` and follow the prompts (which packages are touched, which bump level).
-- For repo-specific conventions on package selection and bump levels, see `.changeset/README.md`. When working in this repo with coding agents, use the `gen-changesets` skill.
-
 ## Pull Requests
 
-Every PR opens with the [PR template](.github/pull_request_template.md). PR titles must follow [Conventional Commits](#commit-convention); CI runs `pnpm lint`, `pnpm typecheck`, and `pnpm test` on every PR. Update user-facing docs in `docs/` when behavior changes — use the `gen-docs` skill when working with coding agents.
+PR titles must follow [Conventional Commits](#commit-convention). This repository has no CI configured, so run `pnpm lint`, `pnpm typecheck`, and `pnpm test` locally before you ask for review. If your change alters user-visible behavior, update the user-facing documentation (`README.md`, `README.zh-CN.md`) in the same PR.
 
 ## Code Style
 

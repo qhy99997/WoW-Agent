@@ -5,14 +5,14 @@
   "description": "Shared telemetry infrastructure for Kimi Code",
   "license": "MIT",
   "author": "Moonshot AI",
-  "homepage": "https://github.com/MoonshotAI/kimi-code/tree/main/packages/telemetry#readme",
+  "homepage": "https://github.com/qhy99997/WoW-Agent/tree/main/packages/telemetry#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/MoonshotAI/kimi-code.git",
+    "url": "git+https://github.com/qhy99997/WoW-Agent.git",
     "directory": "packages/telemetry"
   },
   "bugs": {
-    "url": "https://github.com/MoonshotAI/kimi-code/issues"
+    "url": "https://github.com/qhy99997/WoW-Agent/issues"
   },
   "keywords": [
     "kimi",
@@ -38,6 +38,6 @@
     "build": "tsdown",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "clean": "rm -rf dist"
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\""
   }
 }

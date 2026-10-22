@@ -36,8 +36,8 @@ import { FILE_HISTORY_BLOB_PREFIX } from '#/features/fileHistory/fileHistoryServ
 
 const SESSION_LOG_REL = 'logs/wow.log';
 const GLOBAL_LOG_REL = 'logs/global/wow.log';
-const WEB_LOG_REL = 'logs/kimi-web.jsonl';
-const DESKTOP_LOG_REL = 'logs/kimi-desktop.log';
+const WEB_LOG_REL = 'logs/wow-web.jsonl';
+const DESKTOP_LOG_REL = 'logs/wow-desktop.log';
 
 export class SessionExportService implements ISessionExportService {
   declare readonly _serviceBrand: undefined;
