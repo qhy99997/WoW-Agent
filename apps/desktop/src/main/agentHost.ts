@@ -15,6 +15,7 @@ import type {
 } from '@moonshot-ai/kimi-code-sdk';
 
 import { projectHistory } from './history';
+import { nativeWorkDir } from './workDir';
 import type {
   AddMcpServerInput,
   AddModelInput,
@@ -678,7 +679,7 @@ function toSummary(row: SdkSessionSummary): SessionSummary {
   return {
     id: row.id,
     title: row.title ?? row.lastPrompt ?? 'Untitled',
-    workDir: row.workDir,
+    workDir: nativeWorkDir(row.workDir),
     updatedAt: row.updatedAt,
     status: row.lastTurnReason ?? 'idle',
   };
