@@ -97,8 +97,6 @@ import {
   SERVICES_SECTION,
   WEB_FETCH_API_KEY_ENV,
   WEB_FETCH_BASE_URL_ENV,
-  WEB_SEARCH_API_KEY_ENV,
-  WEB_SEARCH_BASE_URL_ENV,
   type ServicesConfig,
 } from '#/app/auth/configSection';
 import '#/app/mcpConfig/configSection';
@@ -664,17 +662,14 @@ describe('services config section env bindings', () => {
     return { config: ix.get(IConfigService), disposables };
   }
 
-  it('resolves moonshot_search / moonshot_fetch fields from KIMI_WEB_* env vars', async () => {
+  it('resolves moonshot_fetch fields from KIMI_WEB_FETCH_* env vars', async () => {
     const { config, disposables } = createConfig({
-      [WEB_SEARCH_BASE_URL_ENV]: 'https://search-env.example/search',
-      [WEB_SEARCH_API_KEY_ENV]: 'env-search-key',
       [WEB_FETCH_BASE_URL_ENV]: 'https://fetch-env.example/fetch',
       [WEB_FETCH_API_KEY_ENV]: 'env-fetch-key',
     });
     await config.ready;
 
     expect(config.get<ServicesConfig>(SERVICES_SECTION)).toEqual({
-      moonshotSearch: { baseUrl: 'https://search-env.example/search', apiKey: 'env-search-key' },
       moonshotFetch: { baseUrl: 'https://fetch-env.example/fetch', apiKey: 'env-fetch-key' },
     });
 
@@ -686,12 +681,6 @@ describe('services config section env bindings', () => {
     const { config, disposables } = createConfig(env);
     await config.ready;
     await config.set(SERVICES_SECTION, {
-      moonshotSearch: {
-        baseUrl: 'https://file.example/search',
-        apiKey: 'file-search-key',
-        oauth: { storage: 'file', key: 'oauth/search' },
-        customHeaders: { Authorization: 'Bearer configured-search-secret' },
-      },
       moonshotFetch: {
         baseUrl: 'https://file.example/fetch',
         apiKey: 'file-fetch-key',
@@ -700,17 +689,11 @@ describe('services config section env bindings', () => {
       },
     });
     Object.assign(env, {
-      [WEB_SEARCH_BASE_URL_ENV]: 'https://search-env.example/search',
-      [WEB_SEARCH_API_KEY_ENV]: 'env-search-key',
       [WEB_FETCH_BASE_URL_ENV]: 'https://fetch-env.example/fetch',
       [WEB_FETCH_API_KEY_ENV]: 'env-fetch-key',
     });
 
     expect(config.get<ServicesConfig>(SERVICES_SECTION)).toEqual({
-      moonshotSearch: {
-        baseUrl: 'https://search-env.example/search',
-        apiKey: 'env-search-key',
-      },
       moonshotFetch: {
         baseUrl: 'https://fetch-env.example/fetch',
         apiKey: 'env-fetch-key',
@@ -725,32 +708,32 @@ describe('services config section env bindings', () => {
     const { config, disposables } = createConfig(env);
     await config.ready;
     await config.set(SERVICES_SECTION, {
-      moonshotSearch: {
-        baseUrl: 'https://file.example/search',
-        oauth: { storage: 'file', key: 'oauth/search' },
-        customHeaders: { 'X-Service': 'search' },
+      moonshotFetch: {
+        baseUrl: 'https://file.example/fetch',
+        oauth: { storage: 'file', key: 'oauth/fetch' },
+        customHeaders: { 'X-Service': 'fetch' },
       },
     });
-    env[WEB_SEARCH_API_KEY_ENV] = 'env-search-key';
+    env[WEB_FETCH_API_KEY_ENV] = 'env-fetch-key';
 
-    expect(config.get<ServicesConfig>(SERVICES_SECTION)?.moonshotSearch).toEqual({
-      baseUrl: 'https://file.example/search',
-      apiKey: 'env-search-key',
-      customHeaders: { 'X-Service': 'search' },
+    expect(config.get<ServicesConfig>(SERVICES_SECTION)?.moonshotFetch).toEqual({
+      baseUrl: 'https://file.example/fetch',
+      apiKey: 'env-fetch-key',
+      customHeaders: { 'X-Service': 'fetch' },
     });
 
     disposables.dispose();
   });
 
   it('ignores blank env values instead of masking the file value', async () => {
-    const { config, disposables } = createConfig({ [WEB_SEARCH_BASE_URL_ENV]: '   ' });
+    const { config, disposables } = createConfig({ [WEB_FETCH_BASE_URL_ENV]: '   ' });
     await config.ready;
     await config.set(SERVICES_SECTION, {
-      moonshotSearch: { baseUrl: 'https://file.example/search' },
+      moonshotFetch: { baseUrl: 'https://file.example/fetch' },
     });
 
-    expect(config.get<ServicesConfig>(SERVICES_SECTION)?.moonshotSearch).toEqual({
-      baseUrl: 'https://file.example/search',
+    expect(config.get<ServicesConfig>(SERVICES_SECTION)?.moonshotFetch).toEqual({
+      baseUrl: 'https://file.example/fetch',
     });
 
     disposables.dispose();
@@ -758,23 +741,22 @@ describe('services config section env bindings', () => {
 
   it('strips env-derived fields before persisting a round-tripped effective value', async () => {
     const { config, disposables } = createConfig({
-      [WEB_FETCH_BASE_URL_ENV]: 'https://fetch-env.example/fetch',
       [WEB_FETCH_API_KEY_ENV]: 'env-fetch-key',
     });
     await config.ready;
     await config.set(SERVICES_SECTION, {
-      moonshotSearch: { baseUrl: 'https://file.example/search' },
+      moonshotFetch: { baseUrl: 'https://file.example/fetch' },
     });
 
     const effective = config.get<ServicesConfig>(SERVICES_SECTION);
     expect(effective?.moonshotFetch).toEqual({
-      baseUrl: 'https://fetch-env.example/fetch',
+      baseUrl: 'https://file.example/fetch',
       apiKey: 'env-fetch-key',
     });
 
     await config.replace(SERVICES_SECTION, effective);
     expect(config.inspect<ServicesConfig>(SERVICES_SECTION).userValue).toEqual({
-      moonshotSearch: { baseUrl: 'https://file.example/search' },
+      moonshotFetch: { baseUrl: 'https://file.example/fetch' },
     });
 
     disposables.dispose();
@@ -782,18 +764,18 @@ describe('services config section env bindings', () => {
 
   it('clears the section on replace(undefined) even with env vars set', async () => {
     const { config, disposables } = createConfig({
-      [WEB_SEARCH_BASE_URL_ENV]: 'https://search-env.example/search',
+      [WEB_FETCH_BASE_URL_ENV]: 'https://fetch-env.example/fetch',
     });
     await config.ready;
     await config.set(SERVICES_SECTION, {
-      moonshotSearch: { baseUrl: 'https://file.example/search' },
+      moonshotFetch: { baseUrl: 'https://file.example/fetch' },
     });
 
     await config.replace(SERVICES_SECTION, undefined);
 
     expect(config.inspect<ServicesConfig>(SERVICES_SECTION).userValue).toBeUndefined();
-    expect(config.get<ServicesConfig>(SERVICES_SECTION)?.moonshotSearch?.baseUrl).toBe(
-      'https://search-env.example/search',
+    expect(config.get<ServicesConfig>(SERVICES_SECTION)?.moonshotFetch?.baseUrl).toBe(
+      'https://fetch-env.example/fetch',
     );
 
     disposables.dispose();

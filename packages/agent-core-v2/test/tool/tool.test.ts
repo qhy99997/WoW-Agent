@@ -69,7 +69,7 @@ import { IEventBus } from '#/app/event/eventBus';
 import type { Event2 } from '#/app/event/event2';
 import { IConfigService } from '#/app/config/config';
 import { IFlagService } from '#/app/flag/flag';
-import { IWebSearchProviderService } from '#/app/auth/webSearch/webSearch';
+import { WAIT_FOR_FLAG_ID } from '#/agent/tools/task/task-wait/flag';
 import { IAgentToolActivationService } from '#/agent/toolActivation/toolActivation';
 import { TOOL_SELECT_FLAG_ID } from '#/agent/toolSelect/flag';
 import { ISessionNotify } from '#/features/notify/sessionNotify';
@@ -682,29 +682,18 @@ describe('Agent tool description', () => {
     return tool!.description;
   }
 
-  it('omits WebSearch from every subagent when no search provider is configured', () => {
-    ctx = createTestAgent();
-
-    expect(ctx.get(IWebSearchProviderService).hasWebSearchProvider()).toBe(false);
-    expect(ctx.get(IAgentToolRegistryService).resolve('WebSearch')).toBeUndefined();
-    expect(agentDescription()).not.toContain('WebSearch');
-    expect(agentDescription()).toContain('FetchURL');
-  });
-
   it('keeps an unavailable contribution registered but omits it from descriptions', async () => {
     let available = true;
-    ctx = createTestAgent(appService(IWebSearchProviderService, {
-      _serviceBrand: undefined,
-      hasWebSearchProvider: () => available,
-      getWebSearchProvider: () => undefined,
-    }));
-    expect(agentDescription()).toContain('WebSearch');
-    expect(ctx.get(IAgentToolRegistryService).resolve('WebSearch')).toBeDefined();
+    ctx = createTestAgent(
+      appService(IFlagService, stubFlag((id) => id !== WAIT_FOR_FLAG_ID || available)),
+    );
+    expect(agentDescription()).toContain('WaitFor');
+    expect(ctx.get(IAgentToolRegistryService).resolve('WaitFor')).toBeDefined();
 
     available = false;
     await ctx.get(IAgentToolActivationService).activate();
-    expect(ctx.get(IAgentToolRegistryService).resolve('WebSearch')).toBeDefined();
-    expect(agentDescription()).not.toContain('WebSearch');
+    expect(ctx.get(IAgentToolRegistryService).resolve('WaitFor')).toBeDefined();
+    expect(agentDescription()).not.toContain('WaitFor');
   });
 
   it.each([
@@ -748,20 +737,20 @@ describe('Agent tool description', () => {
   });
 
   it('preserves a user tool overriding an unavailable built-in contribution', async () => {
-    ctx = createTestAgent();
-    expect(ctx.get(IWebSearchProviderService).hasWebSearchProvider()).toBe(false);
+    ctx = createTestAgent(appService(IFlagService, stubFlag((id) => id !== WAIT_FOR_FLAG_ID)));
+    expect(ctx.get(IAgentToolRegistryService).resolve('WaitFor')).toBeUndefined();
     ctx.get(IAgentUserToolService).register({
-      name: 'WebSearch',
-      description: 'Search with a user-provided service.',
+      name: 'WaitFor',
+      description: 'Wait with a user-provided service.',
       parameters: { type: 'object', properties: {} },
     });
 
     await ctx.get(IAgentToolActivationService).activate();
 
     expect(ctx.get(IAgentToolRegistryService).listReferences()).toContainEqual({
-      name: 'WebSearch', source: 'user',
+      name: 'WaitFor', source: 'user',
     });
-    expect(agentDescription()).toContain('WebSearch');
+    expect(agentDescription()).toContain('WaitFor');
   });
 
   it('filters descriptions by the inherited runtime capabilities without churning the registry', async () => {
@@ -1089,7 +1078,6 @@ describe('Agent tool description', () => {
       .find((line) => line.startsWith('  Tools:') && line.includes('TaskList'));
     expect(allowAllExceptTools).toBeDefined();
     expect(allowAllExceptTools).not.toContain('Bash');
-    expect(allowAllExceptTools).not.toContain('WebSearch');
     expect(description).not.toContain('Tools: Bash, Read, mcp__github__*');
   });
 

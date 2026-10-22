@@ -22,7 +22,6 @@ const WALL_TIME_TOOL_NAMES: ReadonlySet<string> = new Set([
   'FetchURL',
   'Glob',
   'Grep',
-  'WebSearch',
 ]);
 
 export function shouldRenderWallTime(toolName: string): boolean {

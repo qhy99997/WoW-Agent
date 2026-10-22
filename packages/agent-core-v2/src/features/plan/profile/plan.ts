@@ -11,7 +11,6 @@ const PLAN_TOOLS = [
   'ReadMediaFile',
   'Glob',
   'Grep',
-  'WebSearch',
   'FetchURL',
 ] as const;
 

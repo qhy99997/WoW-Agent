@@ -44,15 +44,12 @@ export type MoonshotServiceConfig = z.infer<typeof MoonshotServiceConfigSchema>;
 
 export const ServicesConfigSchema = z
   .object({
-    moonshotSearch: MoonshotServiceConfigSchema.optional(),
     moonshotFetch: MoonshotServiceConfigSchema.optional(),
   })
   .passthrough();
 
 export type ServicesConfig = z.infer<typeof ServicesConfigSchema>;
 
-export const WEB_SEARCH_BASE_URL_ENV = 'KIMI_WEB_SEARCH_BASE_URL';
-export const WEB_SEARCH_API_KEY_ENV = 'KIMI_WEB_SEARCH_API_KEY';
 export const WEB_FETCH_BASE_URL_ENV = 'KIMI_WEB_FETCH_BASE_URL';
 export const WEB_FETCH_API_KEY_ENV = 'KIMI_WEB_FETCH_API_KEY';
 
@@ -60,11 +57,6 @@ const nonBlankEnv = (raw: string): string | undefined => {
   const trimmed = raw.trim();
   return trimmed.length > 0 ? trimmed : undefined;
 };
-
-const moonshotSearchEnvBindings = envBindings(MoonshotServiceConfigSchema, {
-  baseUrl: { env: WEB_SEARCH_BASE_URL_ENV, parse: nonBlankEnv },
-  apiKey: { env: WEB_SEARCH_API_KEY_ENV, parse: nonBlankEnv },
-});
 
 const moonshotFetchEnvBindings = envBindings(MoonshotServiceConfigSchema, {
   baseUrl: { env: WEB_FETCH_BASE_URL_ENV, parse: nonBlankEnv },
@@ -74,7 +66,6 @@ const moonshotFetchEnvBindings = envBindings(MoonshotServiceConfigSchema, {
 export const servicesEnvBindings: EnvBindings<ServicesConfig> = envBindings(
   ServicesConfigSchema,
   {
-    moonshotSearch: moonshotSearchEnvBindings,
     moonshotFetch: moonshotFetchEnvBindings,
   },
 );
@@ -83,29 +74,14 @@ const servicesCredentialEnvOverlay: ConfigEffectiveOverlay = {
   apply(effective, getEnv, validate) {
     const services = effective[SERVICES_SECTION];
     if (!isPlainObject(services)) return [];
-    const moonshotSearch = isolateEnvServiceCredentials(
-      services['moonshotSearch'],
-      getEnv,
-      WEB_SEARCH_BASE_URL_ENV,
-      WEB_SEARCH_API_KEY_ENV,
-    );
     const moonshotFetch = isolateEnvServiceCredentials(
       services['moonshotFetch'],
       getEnv,
       WEB_FETCH_BASE_URL_ENV,
       WEB_FETCH_API_KEY_ENV,
     );
-    if (
-      moonshotSearch === services['moonshotSearch'] &&
-      moonshotFetch === services['moonshotFetch']
-    ) {
-      return [];
-    }
-    effective[SERVICES_SECTION] = validate(SERVICES_SECTION, {
-      ...services,
-      moonshotSearch,
-      moonshotFetch,
-    });
+    if (moonshotFetch === services['moonshotFetch']) return [];
+    effective[SERVICES_SECTION] = validate(SERVICES_SECTION, { ...services, moonshotFetch });
     return [SERVICES_SECTION];
   },
 };
@@ -125,28 +101,25 @@ function isolateEnvServiceCredentials(
   return { ...rest, apiKey };
 }
 
-const stripMoonshotSearchEnv = stripEnvBoundFields(moonshotSearchEnvBindings);
 const stripMoonshotFetchEnv = stripEnvBoundFields(moonshotFetchEnvBindings);
 
 export const stripServicesEnv: ConfigStripEnv<ServicesConfig> = (value, raw, getEnv) => {
   if (!isPlainObject(value)) return value;
-  let out: ServicesConfig | undefined;
-  for (const [key, strip] of [
-    ['moonshotSearch', stripMoonshotSearchEnv],
-    ['moonshotFetch', stripMoonshotFetchEnv],
-  ] as const) {
-    const entry = value[key];
-    if (entry === undefined) continue;
-    const stripped = strip(entry, isPlainObject(raw) ? raw[key] : undefined, getEnv);
-    if (stripped === entry) continue;
-    out ??= { ...value };
-    if (stripped === undefined) {
-      delete out[key];
-    } else {
-      out[key] = stripped;
-    }
+  const entry = value.moonshotFetch;
+  if (entry === undefined) return value;
+  const stripped = stripMoonshotFetchEnv(
+    entry,
+    isPlainObject(raw) ? raw['moonshotFetch'] : undefined,
+    getEnv,
+  );
+  if (stripped === entry) return value;
+  const out: ServicesConfig = { ...value };
+  if (stripped === undefined) {
+    delete out.moonshotFetch;
+  } else {
+    out.moonshotFetch = stripped;
   }
-  return out ?? value;
+  return out;
 };
 
 export const servicesFromToml = (rawSnake: unknown): unknown => {
@@ -176,7 +149,6 @@ function serviceEntryFromToml(data: Record<string, unknown>): Record<string, unk
 export const servicesToToml = (value: unknown, rawSnake: unknown): unknown => {
   if (!isPlainObject(value)) return value;
   const out = cloneRecord(rawSnake);
-  writeService(out, 'moonshot_search', value['moonshotSearch']);
   writeService(out, 'moonshot_fetch', value['moonshotFetch']);
   return out;
 };

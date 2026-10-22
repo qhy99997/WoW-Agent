@@ -15,7 +15,6 @@ const DEFAULT_APPROVE_TOOLS = new Set([
   'TaskOutput',
   'WaitFor',
   'CronList',
-  'WebSearch',
   'FetchURL',
   'Agent',
   'AgentSwarm',

@@ -133,7 +133,7 @@ export class SDKRpcClientV2 extends SDKRpcClientBase {
         clientIdentity: this.identity,
         args: {
           // Host identity headers for the engine's outbound requests (model,
-          // web search, registry refresh).
+          // URL fetch, registry refresh).
           requestHeaders: createKimiDefaultHeaders({ homeDir: this.homeDir, ...this.identity }),
         },
       },

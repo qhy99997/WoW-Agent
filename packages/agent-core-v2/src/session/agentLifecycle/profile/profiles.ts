@@ -25,7 +25,6 @@ const AGENT_TOOLS = [
   'ReadMediaFile',
   'TodoList',
   'Skill',
-  'WebSearch',
   'Agent',
   'AgentSwarm',
   'FetchURL',
@@ -59,7 +58,6 @@ const CODER_TOOLS = [
   'TaskStop',
   'TodoList',
   'WaitFor',
-  'WebSearch',
   'FetchURL',
   'Write',
   'mcp__*',
@@ -72,7 +70,6 @@ const EXPLORE_TOOLS = [
   'ReadMediaFile',
   'Glob',
   'Grep',
-  'WebSearch',
   'FetchURL',
 ] as const;
 

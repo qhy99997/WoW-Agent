@@ -215,7 +215,6 @@ export const MoonshotServiceConfigSchema = z.object({
 export type MoonshotServiceConfig = z.infer<typeof MoonshotServiceConfigSchema>;
 
 export const ServicesConfigSchema = z.object({
-  moonshotSearch: MoonshotServiceConfigSchema.optional(),
   moonshotFetch: MoonshotServiceConfigSchema.optional(),
 });
 
@@ -327,7 +326,6 @@ const ModelCatalogConfigPatchSchema = ModelCatalogConfigSchema.partial();
 const ExperimentalConfigPatchSchema = ExperimentalConfigSchema;
 const MoonshotServiceConfigPatchSchema = MoonshotServiceConfigSchema.partial();
 const ServicesConfigPatchSchema = z.object({
-  moonshotSearch: MoonshotServiceConfigPatchSchema.optional(),
   moonshotFetch: MoonshotServiceConfigPatchSchema.optional(),
 });
 

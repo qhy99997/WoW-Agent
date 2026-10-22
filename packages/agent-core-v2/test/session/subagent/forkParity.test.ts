@@ -33,7 +33,6 @@ import { IAgentToolRegistryService } from '#/agent/toolRegistry/toolRegistry';
 import { IAgentToolPolicyService } from '#/agent/toolPolicy/toolPolicy';
 import { SELECT_TOOLS_TOOL_NAME } from '#/agent/toolSelect/toolSelect';
 import { WAIT_FOR_FLAG_ID } from '#/agent/tools/task/task-wait/flag';
-import { IWebSearchProviderService } from '#/app/auth/webSearch/webSearch';
 import { IFlagService } from '#/app/flag/flag';
 import { ISessionNotify } from '#/features/notify/sessionNotify';
 import { IAgentReminderService } from '#/features/reminder/reminderService';
@@ -284,11 +283,6 @@ describe('subagent task reminders and fork request parity', () => {
     ctx = testAgent(
       appService(IAppendLogStore, store),
       appService(IFlagService, flags),
-      appService(IWebSearchProviderService, {
-        _serviceBrand: undefined,
-        hasWebSearchProvider: () => true,
-        getWebSearchProvider: () => ({ search: () => Promise.resolve([]) }),
-      }),
       telemetryServices(recordingTelemetry(telemetry)),
       sessionServices((reg) => {
         reg.defineDescriptor(IRuntimeResolver, new SyncDescriptor(TestRuntimeResolver));

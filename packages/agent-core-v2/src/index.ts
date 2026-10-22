@@ -498,14 +498,9 @@ export * from '#/app/watch/configSection';
 import '#/app/watch/configSection';
 export * from '#/persistence/backends/minidb/miniDbQueryStore';
 export * from '#/persistence/backends/memory/inMemoryStorageService';
-export * from '#/agent/tools/web-search/web-search';
-import '#/agent/tools/web-search/webSearchTool';
 export * from '#/app/auth/auth';
 export * from '#/app/auth/authService';
 export * from '#/app/auth/configSection';
-export * from '#/app/auth/webSearch/webSearch';
-export * from '#/app/auth/webSearch/webSearchService';
-export * from '#/app/auth/webSearch/providers/moonshot-web-search';
 export * from '#/app/file/fileService';
 export * from '#/app/file/fileServiceImpl';
 export {

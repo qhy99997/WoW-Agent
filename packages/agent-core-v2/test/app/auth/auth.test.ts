@@ -21,8 +21,6 @@ import {
   ServicesConfigSchema,
   type ServicesConfig,
 } from '#/app/auth/configSection';
-import { IWebSearchProviderService } from '#/app/auth/webSearch/webSearch';
-import { WebSearchProviderService } from '#/app/auth/webSearch/webSearchService';
 import { IConfigService } from '#/app/config/config';
 import { ConfigRegistry } from '#/app/config/configService';
 import { IEventService } from '#/app/event/event';
@@ -827,11 +825,6 @@ describe('OAuthService', () => {
 
   it('logout removes managed web services while preserving unrelated services', async () => {
     services = ServicesConfigSchema.parse({
-      moonshotSearch: {
-        baseUrl: 'https://api.example.com/search',
-        apiKey: '',
-        oauth: { storage: 'file', key: 'oauth/kimi-code' },
-      },
       moonshotFetch: {
         baseUrl: 'https://api.example.com/fetch',
         apiKey: '',
@@ -1192,266 +1185,6 @@ describe('OAuthService', () => {
   });
 });
 
-describe('WebSearchProviderService', () => {
-  let disposables: DisposableStore;
-  let ix: TestInstantiationService;
-  let providers: Record<string, ProviderConfig>;
-  let servicesConfig: ServicesConfig | undefined;
-  let resolveTokenProvider: ReturnType<typeof vi.fn>;
-
-  beforeEach(() => {
-    disposables = new DisposableStore();
-    providers = {};
-    servicesConfig = undefined;
-    resolveTokenProvider = vi
-      .fn()
-      .mockReturnValue({ getAccessToken: async () => 'access-token' });
-    ix = createServices(disposables, {
-      additionalServices: (reg) => {
-        reg.definePartialInstance(IProviderService, {
-          get: ((name: string) => providers[name]) as IProviderService['get'],
-        });
-        reg.definePartialInstance(IOAuthService, {
-          resolveTokenProvider:
-            resolveTokenProvider as unknown as IOAuthService['resolveTokenProvider'],
-        });
-        const hostHeaders = {
-          'User-Agent': 'kimi-code-cli/test',
-          'X-Msh-Device-Id': 'device-test',
-        };
-        reg.defineInstance(
-          IAgentIdentity,
-          stubAgentIdentity({ hostRequestHeaders: hostHeaders }),
-        );
-        reg.definePartialInstance(IBootstrapService, {
-          args: { requestHeaders: hostHeaders },
-        });
-        reg.definePartialInstance(IConfigService, {
-          get: ((domain: string) =>
-            domain === SERVICES_SECTION ? servicesConfig : undefined) as IConfigService['get'],
-        });
-        reg.define(IWebSearchProviderService, WebSearchProviderService);
-      },
-    });
-  });
-  afterEach(() => {
-    disposables.dispose();
-    vi.unstubAllGlobals();
-  });
-
-  function createService(): IWebSearchProviderService {
-    return ix.get(IWebSearchProviderService);
-  }
-
-  it('returns undefined when the managed provider is not configured', () => {
-    providers = { [NON_OAUTH_PROVIDER]: { type: 'openai', apiKey: 'sk-test' } };
-    expect(createService().getWebSearchProvider()).toBeUndefined();
-    expect(resolveTokenProvider).not.toHaveBeenCalled();
-  });
-
-  it('returns undefined when the managed provider is not an OAuth kimi provider', () => {
-    providers = { [OAUTH_PROVIDER]: { type: 'kimi', apiKey: 'sk-test' } };
-    expect(createService().getWebSearchProvider()).toBeUndefined();
-    expect(resolveTokenProvider).not.toHaveBeenCalled();
-  });
-
-  it('returns undefined when the oauth service yields no token provider', () => {
-    providers = {
-      [OAUTH_PROVIDER]: {
-        type: 'kimi',
-        baseUrl: 'https://api.example.com',
-        oauth: { storage: 'file', key: 'oauth/kimi-code' },
-      },
-    };
-    resolveTokenProvider.mockReturnValue(undefined);
-    expect(createService().getWebSearchProvider()).toBeUndefined();
-  });
-
-  it('builds a search provider from the managed provider oauth ref', () => {
-    providers = {
-      [OAUTH_PROVIDER]: {
-        type: 'kimi',
-        baseUrl: 'https://api.example.com/v1',
-        oauth: { storage: 'file', key: 'oauth/kimi-code' },
-      },
-    };
-    expect(createService().getWebSearchProvider()).not.toBeUndefined();
-    expect(resolveTokenProvider).toHaveBeenCalledWith(OAUTH_PROVIDER, {
-      storage: 'file',
-      key: 'oauth/kimi-code',
-    });
-  });
-
-  it('searches against /search with the OAuth access token, host identity headers, and custom headers', async () => {
-    providers = {
-      [OAUTH_PROVIDER]: {
-        type: 'kimi',
-        baseUrl: 'https://api.example.com/v1/',
-        oauth: { storage: 'file', key: 'oauth/kimi-code' },
-        customHeaders: { 'X-Custom': 'yes' },
-      },
-    };
-    const fetchMock = vi.fn().mockResolvedValue({
-      status: 200,
-      json: async () => ({
-        search_results: [{ title: 'Title', url: 'https://example.com', snippet: 'Snippet' }],
-      }),
-    });
-    vi.stubGlobal('fetch', fetchMock);
-
-    const provider = createService().getWebSearchProvider();
-    expect(provider).not.toBeUndefined();
-    const results = await provider!.search('hello');
-
-    expect(results).toEqual([
-      { title: 'Title', url: 'https://example.com', snippet: 'Snippet' },
-    ]);
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe('https://api.example.com/v1/search');
-    const headers = init.headers as Record<string, string>;
-    expect(headers['Authorization']).toBe('Bearer access-token');
-    expect(headers['User-Agent']).toBe('kimi-code-cli/test');
-    expect(headers['X-Msh-Device-Id']).toBe('device-test');
-    expect(headers['X-Custom']).toBe('yes');
-    expect(JSON.parse(init.body as string)).toEqual({ text_query: 'hello' });
-  });
-
-  it('builds a search provider from the services.moonshot_search api_key config', async () => {
-    servicesConfig = {
-      moonshotSearch: {
-        baseUrl: 'https://search.example.com/search',
-        apiKey: 'search-key',
-        customHeaders: { 'X-Custom': 'yes' },
-      },
-    };
-    const fetchMock = vi.fn().mockResolvedValue({
-      status: 200,
-      json: async () => ({
-        search_results: [{ title: 'Title', url: 'https://example.com', snippet: 'Snippet' }],
-      }),
-    });
-    vi.stubGlobal('fetch', fetchMock);
-
-    const provider = createService().getWebSearchProvider();
-    expect(provider).not.toBeUndefined();
-    expect(resolveTokenProvider).not.toHaveBeenCalled();
-    const results = await provider!.search('hello');
-
-    expect(results).toEqual([
-      { title: 'Title', url: 'https://example.com', snippet: 'Snippet' },
-    ]);
-    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe('https://search.example.com/search');
-    const headers = init.headers as Record<string, string>;
-    expect(headers['Authorization']).toBe('Bearer search-key');
-    expect(headers['User-Agent']).toBe('kimi-code-cli/test');
-    expect(headers['X-Msh-Device-Id']).toBe('device-test');
-    expect(headers['X-Custom']).toBe('yes');
-  });
-
-  it('prefers the services.moonshot_search config over the managed oauth provider', async () => {
-    servicesConfig = {
-      moonshotSearch: { baseUrl: 'https://config.example.com/search', apiKey: 'config-key' },
-    };
-    providers = {
-      [OAUTH_PROVIDER]: {
-        type: 'kimi',
-        baseUrl: 'https://managed.example.com/v1',
-        oauth: { storage: 'file', key: 'oauth/kimi-code' },
-      },
-    };
-    const fetchMock = vi.fn().mockResolvedValue({
-      status: 200,
-      json: async () => ({ search_results: [] }),
-    });
-    vi.stubGlobal('fetch', fetchMock);
-
-    const provider = createService().getWebSearchProvider();
-    expect(provider).not.toBeUndefined();
-    await provider!.search('hello');
-
-    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe('https://config.example.com/search');
-    const headers = init.headers as Record<string, string>;
-    expect(headers['Authorization']).toBe('Bearer config-key');
-    expect(resolveTokenProvider).not.toHaveBeenCalled();
-  });
-
-  it('builds a search provider from the services.moonshot_search oauth ref', async () => {
-    servicesConfig = {
-      moonshotSearch: {
-        baseUrl: 'https://search.example.com/search',
-        oauth: { storage: 'file', key: 'oauth/kimi-code' },
-      },
-    };
-    const fetchMock = vi.fn().mockResolvedValue({
-      status: 200,
-      json: async () => ({ search_results: [] }),
-    });
-    vi.stubGlobal('fetch', fetchMock);
-
-    const provider = createService().getWebSearchProvider();
-    expect(provider).not.toBeUndefined();
-    expect(resolveTokenProvider).toHaveBeenCalledWith(OAUTH_PROVIDER, {
-      storage: 'file',
-      key: 'oauth/kimi-code',
-    });
-    await provider!.search('hello');
-
-    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect((init.headers as Record<string, string>)['Authorization']).toBe('Bearer access-token');
-  });
-
-  it('returns undefined when services.moonshot_search has no baseUrl and no managed oauth', () => {
-    servicesConfig = { moonshotSearch: { apiKey: 'search-key' } };
-    expect(createService().getWebSearchProvider()).toBeUndefined();
-    expect(resolveTokenProvider).not.toHaveBeenCalled();
-  });
-
-  it('answers presence without touching a not-yet-frozen identity', () => {
-    const notFrozen: IAgentIdentity = {
-      _serviceBrand: undefined,
-      resolved: () => new Promise(() => undefined),
-      current: () => {
-        throw new Error('identity read before freeze');
-      },
-    };
-    servicesConfig = {
-      moonshotSearch: { baseUrl: 'https://search.example.com/search', apiKey: 'k' },
-    };
-    const svc = new WebSearchProviderService(
-      { get: ((name: string) => providers[name]) as IProviderService['get'] } as IProviderService,
-      {
-        resolveTokenProvider:
-          resolveTokenProvider as unknown as IOAuthService['resolveTokenProvider'],
-      } as IOAuthService,
-      { args: { requestHeaders: {} } } as unknown as IBootstrapService,
-      {
-        get: ((domain: string) =>
-          domain === SERVICES_SECTION ? servicesConfig : undefined) as IConfigService['get'],
-      } as IConfigService,
-      notFrozen,
-    );
-
-    expect(svc.hasWebSearchProvider()).toBe(true);
-    expect(() => svc.getWebSearchProvider()).toThrow(/before freeze/);
-
-    servicesConfig = undefined;
-    providers = {};
-    expect(svc.hasWebSearchProvider()).toBe(false);
-
-    providers = {
-      [OAUTH_PROVIDER]: {
-        type: 'kimi',
-        baseUrl: 'https://api.example.com/v1',
-        oauth: { storage: 'file', key: 'oauth/kimi-code' },
-      },
-    };
-    expect(svc.hasWebSearchProvider()).toBe(true);
-  });
-});
-
 describe('services config section', () => {
   it('registers the services section and validates its schema', () => {
     const registry = new ConfigRegistry();
@@ -1459,39 +1192,35 @@ describe('services config section', () => {
     expect(registry.getSection(SERVICES_SECTION)).toBeDefined();
     expect(
       registry.validate(SERVICES_SECTION, {
-        moonshotSearch: { baseUrl: 'https://api.example.com/search', apiKey: 'search-key' },
-        moonshotFetch: { baseUrl: 'https://api.example.com/fetch' },
+        moonshotFetch: { baseUrl: 'https://api.example.com/fetch', apiKey: 'fetch-key' },
         customService: { baseUrl: 'https://service.example.com', retries: 3 },
       }),
     ).toEqual({
-      moonshotSearch: { baseUrl: 'https://api.example.com/search', apiKey: 'search-key' },
-      moonshotFetch: { baseUrl: 'https://api.example.com/fetch' },
+      moonshotFetch: { baseUrl: 'https://api.example.com/fetch', apiKey: 'fetch-key' },
       customService: { baseUrl: 'https://service.example.com', retries: 3 },
     });
     expect(() =>
-      registry.validate(SERVICES_SECTION, { moonshotSearch: { baseUrl: 42 } }),
+      registry.validate(SERVICES_SECTION, { moonshotFetch: { baseUrl: 42 } }),
     ).toThrow();
   });
 
   it('maps services from TOML snake_case to camelCase', () => {
     expect(
       servicesFromToml({
-        moonshot_search: {
-          base_url: 'https://api.example.com/search',
-          api_key: 'search-key',
-          custom_headers: { 'X-Search': '1' },
+        moonshot_fetch: {
+          base_url: 'https://api.example.com/fetch',
+          api_key: 'fetch-key',
+          custom_headers: { 'X-Fetch': '1' },
           oauth: { storage: 'file', key: 'oauth/kimi-code', oauth_host: 'https://auth.example.com' },
         },
-        moonshot_fetch: { base_url: 'https://api.example.com/fetch', api_key: 'fetch-key' },
       }),
     ).toEqual({
-      moonshotSearch: {
-        baseUrl: 'https://api.example.com/search',
-        apiKey: 'search-key',
-        customHeaders: { 'X-Search': '1' },
+      moonshotFetch: {
+        baseUrl: 'https://api.example.com/fetch',
+        apiKey: 'fetch-key',
+        customHeaders: { 'X-Fetch': '1' },
         oauth: { storage: 'file', key: 'oauth/kimi-code', oauthHost: 'https://auth.example.com' },
       },
-      moonshotFetch: { baseUrl: 'https://api.example.com/fetch', apiKey: 'fetch-key' },
     });
   });
 
@@ -1499,10 +1228,10 @@ describe('services config section', () => {
     expect(
       servicesToToml(
         {
-          moonshotSearch: {
-            baseUrl: 'https://api.example.com/search',
-            apiKey: 'search-key',
-            customHeaders: { 'X-Search': '1' },
+          moonshotFetch: {
+            baseUrl: 'https://api.example.com/fetch',
+            apiKey: 'fetch-key',
+            customHeaders: { 'X-Fetch': '1' },
             oauth: {
               storage: 'file',
               key: 'oauth/kimi-code',
@@ -1513,10 +1242,10 @@ describe('services config section', () => {
         { custom_service: { base_url: 'https://service.example.com' } },
       ),
     ).toEqual({
-      moonshot_search: {
-        base_url: 'https://api.example.com/search',
-        api_key: 'search-key',
-        custom_headers: { 'X-Search': '1' },
+      moonshot_fetch: {
+        base_url: 'https://api.example.com/fetch',
+        api_key: 'fetch-key',
+        custom_headers: { 'X-Fetch': '1' },
         oauth: { storage: 'file', key: 'oauth/kimi-code', oauth_host: 'https://auth.example.com' },
       },
       custom_service: { base_url: 'https://service.example.com' },
@@ -1525,10 +1254,6 @@ describe('services config section', () => {
 
   it('preserves unknown services when managed services are removed', () => {
     const rawServices = {
-      moonshot_search: {
-        base_url: 'https://api.example.com/search',
-        oauth: { storage: 'file', key: 'oauth/kimi-code' },
-      },
       moonshot_fetch: {
         base_url: 'https://api.example.com/fetch',
         oauth: { storage: 'file', key: 'oauth/kimi-code' },

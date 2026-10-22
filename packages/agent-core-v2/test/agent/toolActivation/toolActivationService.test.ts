@@ -54,7 +54,6 @@ import '#/agent/tools/task/task-list/taskListTool';
 import '#/agent/tools/task/task-output/taskOutputTool';
 import '#/agent/tools/task/task-stop/taskStopTool';
 import '#/features/todo/tools/todo-list/todoListTool';
-import '#/agent/tools/web-search/webSearchTool';
 
 class StubTool implements AgentTool {
   declare readonly _serviceBrand: undefined;
@@ -577,7 +576,7 @@ describe('AgentToolActivationService', () => {
     });
 
     it('feeds every built-in contribution through the App-scope assembly unchanged', async () => {
-      expect(savedContributions).toHaveLength(14);
+      expect(savedContributions).toHaveLength(13);
       for (const contribution of savedContributions) {
         registerAgentToolService(contribution.id, contribution.ctor, contribution.options);
       }
