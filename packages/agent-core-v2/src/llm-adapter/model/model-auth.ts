@@ -1,8 +1,5 @@
 import { Error2 } from '#/_base/errors/errors';
-import {
-  credentialConflictMessage,
-  declaredProviderCredential,
-} from '@moonshot-ai/kimi-code-oauth/provider-credential';
+import { declaredProviderCredential } from '@moonshot-ai/kimi-code-oauth/provider-credential';
 import {
   BUDGET_THINKING_EFFORTS,
   matchKnownAnthropicModelProfile,
@@ -19,26 +16,13 @@ import type { ResolvedModelAuthMaterial } from './model.types';
 import { drivesThinkingThroughTraits } from './thinking';
 
 export function resolveModelAuthMaterial(args: {
-  readonly modelId: string;
   readonly model: ModelRecord;
   readonly provider: ProviderConfig | undefined;
   readonly providerName: string;
 }): ResolvedModelAuthMaterial {
   const modelApiKey = nonEmpty(args.model.apiKey);
-  if (modelApiKey !== undefined && args.model.oauth !== undefined) {
-    throw new Error2(
-      CONFIG_INVALID_ERROR_CODE,
-      credentialConflictMessage('Model', args.modelId, 'apiKey', 'oauth'),
-    );
-  }
   if (modelApiKey !== undefined) {
     return { apiKey: modelApiKey };
-  }
-  if (args.model.oauth !== undefined) {
-    return {
-      oauth: args.model.oauth,
-      oauthProviderKey: args.model.providerId ?? args.model.provider,
-    };
   }
 
   const providerAuthType = args.provider?.type ?? args.model.protocol;
@@ -57,20 +41,8 @@ export function resolveModelAuthMaterial(args: {
     return { apiKeyEnv: declared.apiKeyEnv };
   }
   const endpointApiKey = nonEmpty(providerEndpoint.apiKey);
-  if (endpointApiKey !== undefined && args.provider?.oauth !== undefined) {
-    throw new Error2(
-      CONFIG_INVALID_ERROR_CODE,
-      credentialConflictMessage('Provider', args.providerName, 'apiKey', 'oauth'),
-    );
-  }
   if (endpointApiKey !== undefined) {
     return { apiKey: endpointApiKey };
-  }
-  if (args.provider?.oauth !== undefined) {
-    return {
-      oauth: args.provider.oauth,
-      oauthProviderKey: args.model.providerId ?? args.model.provider,
-    };
   }
   return {};
 }

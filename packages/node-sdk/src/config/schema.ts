@@ -31,14 +31,6 @@ export const ProviderTypeSchema = z.enum([
 
 export type ProviderType = z.infer<typeof ProviderTypeSchema>;
 
-export const OAuthRefSchema = z.object({
-  storage: z.enum(['file', 'keyring']),
-  key: z.string().min(1),
-  oauthHost: z.string().min(1).optional(),
-});
-
-export type OAuthRef = z.infer<typeof OAuthRefSchema>;
-
 const StringRecordSchema = z.record(z.string(), z.string());
 
 export const ProviderConfigSchema = z.object({
@@ -47,7 +39,6 @@ export const ProviderConfigSchema = z.object({
   apiKeyEnv: z.string().optional(),
   baseUrl: z.string().optional(),
   defaultModel: z.string().optional(),
-  oauth: OAuthRefSchema.optional(),
   env: StringRecordSchema.optional(),
   customHeaders: StringRecordSchema.optional(),
   source: z.record(z.string(), z.unknown()).optional(),
@@ -208,7 +199,6 @@ export type HookDefConfig = z.infer<typeof HookDefSchema>;
 export const MoonshotServiceConfigSchema = z.object({
   baseUrl: z.string().optional(),
   apiKey: z.string().optional(),
-  oauth: OAuthRefSchema.optional(),
   customHeaders: StringRecordSchema.optional(),
 });
 

@@ -20,7 +20,7 @@ export interface KimiHostIdentity {
   readonly productName: string;
   readonly version: string;
   /**
-   * `X-Msh-Platform` value reported to the OAuth host and managed endpoints
+   * `X-Msh-Platform` value reported to Kimi endpoints
    * (e.g. `kimi_code_cli`, `kimi_code_desktop`). Every host must state its own
    * explicitly — `KIMI_CODE_PLATFORM` is the CLI's value, not a default to
    * inherit silently.

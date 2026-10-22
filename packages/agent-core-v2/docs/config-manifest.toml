@@ -263,10 +263,6 @@ merge_all_available_skills = true
   # provider_id: string
   # base_url: string
   # api_key: string
-  # oauth: object
-    # storage: "file" | "keyring"
-    # key: string
-    # oauth_host: string
   # protocol: "anthropic" | "openai" | "openai_responses" | "google-genai"
   # name: string
   # aliases: string[]
@@ -338,10 +334,6 @@ merge_all_available_skills = true
   # type: string
   # api_key: string
   # api_key_env: string
-  # oauth: object
-    # storage: "file" | "keyring"
-    # key: string
-    # oauth_host: string
   # env: record<string, string>
   # source: record<string, any>
 
@@ -392,10 +384,6 @@ merge_all_available_skills = true
 # [services.moonshot_fetch]
   # base_url: string
   # api_key: string
-  # oauth: object
-    # storage: "file" | "keyring"
-    # key: string
-    # oauth_host: string
   # custom_headers: record<string, string>
 
 # ##########################################################################

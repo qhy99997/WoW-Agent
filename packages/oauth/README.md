@@ -1,6 +1,6 @@
 # @moonshot-ai/kimi-code-oauth
 
-OAuth toolkit for Kimi Code managed authentication.
+Kimi host identity headers, shared provider credential rules, and the OAuth token transaction used by MCP server sign-in.
 
 Part of the [Kimi Code](https://github.com/MoonshotAI/kimi-code) monorepo.
 

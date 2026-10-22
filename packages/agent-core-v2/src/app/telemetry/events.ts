@@ -543,23 +543,6 @@ export interface ExitEvent {
   duration_ms: number;
 }
 
-export interface OauthLoginFinishedEvent {
-  provider: string;
-  status: 'authenticated' | 'cancelled' | 'expired' | 'denied';
-  duration_ms: number;
-}
-
-export interface OauthModelsRefreshFinishedEvent {
-  changed_count: number;
-  unchanged_count: number;
-  failed_count: number;
-}
-
-export interface AuthEnsureReadyFailedEvent {
-  reason: 'provisioning_required' | 'model_not_resolved' | 'token_missing' | 'unexpected';
-  has_model_override: boolean;
-}
-
 export interface AgentCreateFailedEvent {
   agent_id: string;
   stage: string;
@@ -1285,32 +1268,6 @@ export const telemetryEventDefinitions = {
     owner: 'kimi-code',
     comment: 'A CLI run exits.',
     properties: { duration_ms: 'Run wall-clock time in milliseconds' },
-  }),
-  oauth_login_finished: defineTelemetryEvent<OauthLoginFinishedEvent>({
-    owner: 'kimi-code',
-    comment: 'An OAuth login flow reaches a terminal status.',
-    properties: {
-      provider: 'OAuth provider name',
-      status: 'Terminal status of the login flow',
-      duration_ms: 'Login flow wall-clock time in milliseconds',
-    },
-  }),
-  oauth_models_refresh_finished: defineTelemetryEvent<OauthModelsRefreshFinishedEvent>({
-    owner: 'kimi-code',
-    comment: 'A refresh of the managed OAuth provider model catalog finishes.',
-    properties: {
-      changed_count: 'Number of models added or updated by the refresh',
-      unchanged_count: 'Number of models left unchanged',
-      failed_count: 'Number of models that failed to refresh',
-    },
-  }),
-  auth_ensure_ready_failed: defineTelemetryEvent<AuthEnsureReadyFailedEvent>({
-    owner: 'kimi-code',
-    comment: 'Auth readiness check fails before a turn can start.',
-    properties: {
-      reason: 'Why auth is not ready',
-      has_model_override: 'Whether a model override is configured',
-    },
   }),
   agent_create_failed: defineTelemetryEvent<AgentCreateFailedEvent>({
     owner: 'kimi-code',

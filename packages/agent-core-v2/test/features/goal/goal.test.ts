@@ -1865,7 +1865,7 @@ describe('goal pause classification on provider errors', () => {
 
     expect(goal).toMatchObject({
       status: 'paused',
-      terminalReason: 'Paused after model configuration error: LLM not set, send "/login" to login',
+      terminalReason: 'Paused after model configuration error: LLM not set, configure a model provider first',
     });
   });
 

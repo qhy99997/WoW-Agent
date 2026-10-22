@@ -1,5 +1,4 @@
 import type { ModelCapability } from '../contract/capability';
-import type { OAuthRef } from '../provider/provider';
 
 export interface ModelOverrides {
   readonly temperature?: number;
@@ -17,8 +16,6 @@ export interface CompletionBudgetParams {
 export interface ResolvedModelAuthMaterial {
   readonly apiKey?: string;
   readonly apiKeyEnv?: string;
-  readonly oauth?: OAuthRef;
-  readonly oauthProviderKey?: string;
 }
 
 export interface ThinkingDefaults {

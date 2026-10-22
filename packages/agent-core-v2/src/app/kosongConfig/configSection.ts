@@ -23,7 +23,7 @@ import {
   type ModelsSection,
 } from '#/llm-adapter/model/model';
 import type { ThinkingConfig } from '#/llm-adapter/model/thinking';
-import type { OAuthRef, ProviderConfig, ProvidersSection } from '#/llm-adapter/provider/provider';
+import type { ProviderConfig, ProvidersSection } from '#/llm-adapter/provider/provider';
 import { ProtocolSchema } from '#/llm-adapter/protocol/protocol';
 
 export const PROVIDERS_SECTION = 'providers';
@@ -33,12 +33,6 @@ export const DEFAULT_PROVIDER_SECTION = 'defaultProvider';
 export const ENV_MODEL_PROVIDER_KEY = '__kimi_env__';
 
 export const ProviderTypeSchema = z.string();
-
-export const OAuthRefSchema = z.object({
-  storage: z.enum(['file', 'keyring']),
-  key: z.string().min(1),
-  oauthHost: z.string().min(1).optional(),
-});
 
 export const ModelSourceSchema = z.enum(['static', 'discover', 'oauth-catalog']);
 
@@ -54,14 +48,12 @@ export const ProviderConfigSchema = z.object({
   type: ProviderTypeSchema.optional(),
   apiKey: z.string().optional(),
   apiKeyEnv: z.string().optional(),
-  oauth: OAuthRefSchema.optional(),
   env: StringRecordSchema.optional(),
   source: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const ProvidersSectionSchema = z.record(z.string(), ProviderConfigSchema);
 
-type _AssertOAuthRef = AssertExact<Equal<z.infer<typeof OAuthRefSchema>, OAuthRef>>;
 type _AssertProviderConfig = AssertExact<
   Equal<z.infer<typeof ProviderConfigSchema>, ProviderConfig>
 >;
@@ -98,9 +90,7 @@ function providerEntryFromToml(data: Record<string, unknown>): Record<string, un
   const out: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(data)) {
     const targetKey = snakeToCamel(key);
-    if (targetKey === 'oauth') {
-      out[targetKey] = isPlainObject(value) ? transformPlainObject(value) : value;
-    } else if (targetKey === 'env' || targetKey === 'customHeaders') {
+    if (targetKey === 'env' || targetKey === 'customHeaders') {
       out[targetKey] = isPlainObject(value) ? cloneRecord(value) : value;
     } else {
       out[targetKey] = value;
@@ -128,9 +118,7 @@ function providerEntryToToml(
     if (provider[key] === undefined) delete out[camelToSnake(key)];
   }
   for (const [key, value] of Object.entries(provider)) {
-    if (key === 'oauth' && isPlainObject(value)) {
-      out[camelToSnake(key)] = plainObjectToToml(value, undefined);
-    } else if ((key === 'env' || key === 'customHeaders') && value !== undefined) {
+    if ((key === 'env' || key === 'customHeaders') && value !== undefined) {
       out[camelToSnake(key)] = cloneRecord(value);
     } else {
       setDefined(out, camelToSnake(key), value);
@@ -139,7 +127,7 @@ function providerEntryToToml(
   return out;
 }
 
-const PROVIDER_CREDENTIAL_FIELDS = ['apiKey', 'oauth', 'apiKeyEnv'] as const;
+const PROVIDER_CREDENTIAL_FIELDS = ['apiKey', 'apiKeyEnv'] as const;
 
 registerConfigSection(PROVIDERS_SECTION, ProvidersSectionSchema, {
   defaultValue: {},
@@ -158,7 +146,6 @@ const ModelBaseSchema = z.object({
 
   baseUrl: z.string().optional(),
   apiKey: z.string().optional(),
-  oauth: OAuthRefSchema.optional(),
 
   protocol: ProtocolSchema.optional(),
 
@@ -185,7 +172,6 @@ export const ModelOverrideSchema = ModelBaseSchema.omit({
   providerId: true,
   baseUrl: true,
   apiKey: true,
-  oauth: true,
   protocol: true,
   name: true,
   aliases: true,

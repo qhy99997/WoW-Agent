@@ -193,7 +193,6 @@ import {
 import { IModelCatalog, type Model } from '#/llm-adapter/model/catalog';
 import { ModelCatalog } from '#/llm-adapter/model/catalog-service';
 import { IProviderCatalogRuntime } from '#/llm-adapter/model/catalog-runtime';
-import { IModelOAuthTokens } from '#/llm-adapter/model/model-oauth';
 import type { ModelRequestParams, ModelRequester } from '#/llm-adapter/model/model-requester';
 import { IHostRequestHeaders } from '#/llm-adapter/model/host-request-headers';
 import {
@@ -269,11 +268,6 @@ interface ProviderConfigForConfig {
   readonly type: ProviderConfig['type'];
   readonly apiKey?: string;
   readonly baseUrl?: string;
-  readonly oauth?: {
-    readonly storage: 'file' | 'keyring';
-    readonly key: string;
-    readonly oauthHost?: string;
-  };
 }
 
 interface TestProviderConfig {
@@ -1023,11 +1017,10 @@ class ConfigBackedModelCatalog extends ModelCatalog {
     @IProviderCatalogRuntime runtime: IProviderCatalogRuntime,
     @IProviderService private readonly providerRegistry: IProviderService,
     @IModelService private readonly modelRegistry: IModelService,
-    @IModelOAuthTokens oauthTokens: IModelOAuthTokens,
     @IProtocolAdapterRegistry protocolRegistry: IProtocolAdapterRegistry,
     @IHostRequestHeaders hostRequestHeaders: IHostRequestHeaders,
   ) {
-    super(runtime, providerRegistry, modelRegistry, oauthTokens, protocolRegistry, hostRequestHeaders);
+    super(runtime, providerRegistry, modelRegistry, protocolRegistry, hostRequestHeaders);
   }
 
   private syncRegistriesFromConfig(): void {
@@ -1148,19 +1141,6 @@ export class AgentTestContext {
             createGenerateBackedGateway(
               options.generate ?? this.scriptedGenerate.requester,
             ),
-          );
-          reg.defineInstance(
-            IModelOAuthTokens,
-            {
-              _serviceBrand: undefined,
-              hasCachedAccessToken: () => Promise.resolve(false),
-              getAccessToken: () =>
-                Promise.reject(
-                  new Error(
-                    'IModelOAuthTokens.getAccessToken is not supported in the test harness',
-                  ),
-                ),
-            } satisfies IModelOAuthTokens,
           );
           reg.defineDescriptor(
             IModelCatalog,

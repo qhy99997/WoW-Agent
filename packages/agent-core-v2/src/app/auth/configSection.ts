@@ -13,30 +13,17 @@ import {
   camelToSnake,
   cloneRecord,
   isPlainObject,
-  plainObjectToToml,
   setDefined,
   snakeToCamel,
-  transformPlainObject,
 } from '#/app/config/toml';
-import { type AssertExact, type Equal } from '#/_base/utils/typeEquality';
-import type { OAuthRef } from '#/llm-adapter/provider/provider';
 
 export const SERVICES_SECTION = 'services';
 
 const StringRecordSchema = z.record(z.string(), z.string());
 
-const OAuthRefSchema = z.object({
-  storage: z.enum(['file', 'keyring']),
-  key: z.string().min(1),
-  oauthHost: z.string().min(1).optional(),
-});
-
-type _AssertOAuthRef = AssertExact<Equal<z.infer<typeof OAuthRefSchema>, OAuthRef>>;
-
 export const MoonshotServiceConfigSchema = z.object({
   baseUrl: z.string().optional(),
   apiKey: z.string().optional(),
-  oauth: OAuthRefSchema.optional(),
   customHeaders: StringRecordSchema.optional(),
 });
 
@@ -97,8 +84,7 @@ function isolateEnvServiceCredentials(
   if (baseUrl !== undefined) return { baseUrl, apiKey };
   if (apiKey === undefined) return service;
   if (!isPlainObject(service)) return { apiKey };
-  const { apiKey: _apiKey, oauth: _oauth, ...rest } = service;
-  return { ...rest, apiKey };
+  return { ...service, apiKey };
 }
 
 const stripMoonshotFetchEnv = stripEnvBoundFields(moonshotFetchEnvBindings);
@@ -135,9 +121,7 @@ function serviceEntryFromToml(data: Record<string, unknown>): Record<string, unk
   const out: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(data)) {
     const targetKey = snakeToCamel(key);
-    if (targetKey === 'oauth') {
-      out[targetKey] = isPlainObject(value) ? transformPlainObject(value) : value;
-    } else if (targetKey === 'customHeaders') {
+    if (targetKey === 'customHeaders') {
       out[targetKey] = isPlainObject(value) ? cloneRecord(value) : value;
     } else {
       out[targetKey] = value;
@@ -164,9 +148,7 @@ function writeService(out: Record<string, unknown>, snakeKey: string, service: u
 function serviceEntryToToml(service: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(service)) {
-    if (key === 'oauth' && isPlainObject(value)) {
-      out[camelToSnake(key)] = plainObjectToToml(value, undefined);
-    } else if (key === 'customHeaders' && value !== undefined) {
+    if (key === 'customHeaders' && value !== undefined) {
       out[camelToSnake(key)] = cloneRecord(value);
     } else {
       setDefined(out, camelToSnake(key), value);

@@ -51,7 +51,6 @@ describe('provider config section helpers', () => {
           api_key: 'sk',
           base_url: 'https://api.example.com/v1',
           custom_headers: { 'X-Test': '1' },
-          oauth: { storage: 'file', key: 'token', oauth_host: 'https://auth.example.com' },
         },
       }),
     ).toEqual({
@@ -60,7 +59,6 @@ describe('provider config section helpers', () => {
         apiKey: 'sk',
         baseUrl: 'https://api.example.com/v1',
         customHeaders: { 'X-Test': '1' },
-        oauth: { storage: 'file', key: 'token', oauthHost: 'https://auth.example.com' },
       },
     });
   });
@@ -74,7 +72,6 @@ describe('provider config section helpers', () => {
             apiKey: 'sk',
             baseUrl: 'https://api.example.com/v1',
             customHeaders: { 'X-Test': '1' },
-            oauth: { storage: 'file', key: 'token', oauthHost: 'https://auth.example.com' },
           },
         },
         {},
@@ -85,7 +82,6 @@ describe('provider config section helpers', () => {
         api_key: 'sk',
         base_url: 'https://api.example.com/v1',
         custom_headers: { 'X-Test': '1' },
-        oauth: { storage: 'file', key: 'token', oauth_host: 'https://auth.example.com' },
       },
     });
   });

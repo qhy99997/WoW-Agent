@@ -13,7 +13,7 @@ WoW 是一个桌面端 AI 编程 agent。指定一个项目目录，用自然语
 - **动手前先征求同意。** 需要授权的工具调用会弹出一张卡片，提供「允许一次」「本会话允许」「拒绝」三个选项；并发的授权请求会排队，不会互相顶掉。
 - **提问能被回答。** `AskUserQuestion` 会渲染成可交互的卡片，不会出现一轮对话卡死在等待输入上的情况。
 - **进度可见。** 回复以 Markdown 流式呈现；每个工具调用都会标明成功还是失败；轮次失败和模型重试会作为错误暴露出来，而不是悄无声息地卡住。如果模型长时间没有输出，WoW 会提示你，并允许你中止这一轮。
-- **自带模型。** 在设置里添加 Provider：名称、协议、Base URL、API Key。预设覆盖 OpenAI 兼容、Anthropic、Google Gemini、OpenAI Responses 和 Kimi 端点，也可以同时注册一个模型 ID。当前模型可以按会话切换。这个 API Key 是应用使用的唯一凭据，不需要登录。引擎里仍保留着上游的 Kimi OAuth 实现，因此引擎消息偶尔会提到 `/login`——本应用并没有这个命令。
+- **自带模型。** 在设置里添加 Provider：名称、协议、Base URL、API Key。预设覆盖 OpenAI 兼容、Anthropic、Google Gemini、OpenAI Responses 和 Kimi 端点，也可以同时注册一个模型 ID。当前模型可以按会话切换。这个 API Key 是应用使用的唯一凭据，不需要登录。
 - **MCP 服务器。** 在设置里添加 Model Context Protocol 服务器——支持 stdio（命令 + 参数）或 HTTP 端点——并且可以在真正使用之前先测试配置是否可用。
 - **启动环境检查。** 启动时会检查 Node.js 运行环境、Windows 上的 Git Bash 以及数据目录，并把需要处理的问题列出来。
 

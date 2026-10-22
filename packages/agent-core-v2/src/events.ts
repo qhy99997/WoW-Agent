@@ -7,7 +7,6 @@ import type { McpServerStatusEvent, ToolCallDeltaEvent, ToolCallStartedEvent, To
 import type { ToolResultEventPayload } from '#/agent/toolExecutor/toolExecutorEvents';
 import type { AgentStatusUpdatedEvent } from '#/agent/usage/usageEvents';
 import type { ConfigChangedEvent, ConfigWarningEvent } from '#/app/config/configEvents';
-import type { ModelCatalogChangedEvent } from '#/app/kosongConfig/discovery';
 import type { PluginChangedEvent } from '#/app/plugin/pluginEvents';
 import type { WorkspaceCreatedEvent, WorkspaceDeletedEvent, WorkspaceUpdatedEvent } from '#/app/workspace/workspaceProtocol';
 import type { CronFiredEvent } from '#/features/cron/cronOps';
@@ -34,7 +33,6 @@ export type AgentEvent =
   | WorkspaceDeletedEvent
   | ConfigChangedEvent
   | ConfigWarningEvent
-  | ModelCatalogChangedEvent
   | PluginChangedEvent
   | GoalUpdatedEvent
   | SkillActivatedEvent

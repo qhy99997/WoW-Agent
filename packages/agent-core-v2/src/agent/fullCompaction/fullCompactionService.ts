@@ -804,11 +804,7 @@ export class AgentFullCompactionService extends Service implements IAgentFullCom
         trace_id: findAPIStatusError(error)?.traceId ?? active.traceId,
       };
       this.telemetry.track2('compaction_failed', properties);
-      if (
-        isError2(error) &&
-        (error.code === ErrorCodes.AUTH_LOGIN_REQUIRED ||
-          error.code === ErrorCodes.PROVIDER_AUTH_ERROR)
-      ) {
+      if (isError2(error) && error.code === ErrorCodes.PROVIDER_AUTH_ERROR) {
         throw error;
       }
       throw new Error2(ErrorCodes.COMPACTION_FAILED, String(error), { cause: error });

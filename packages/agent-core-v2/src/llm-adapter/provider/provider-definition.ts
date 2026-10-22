@@ -97,13 +97,6 @@ export function hasProviderDefinition(id: string): boolean {
   return providerDefinitions.has(id);
 }
 
-export function isOAuthCatalogVendor(id: string | undefined): boolean {
-  if (id === undefined) return false;
-  return getProviderDefinitions(id).some(
-    (definition) => definition.modelSource === 'oauth-catalog',
-  );
-}
-
 export function listProviderDefinitions(): readonly ProviderDefinition[] {
   return [...providerDefinitions.values()].flatMap((byProtocol) => [...byProtocol.values()]);
 }

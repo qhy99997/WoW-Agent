@@ -1,16 +1,15 @@
 /**
  * Shared provider-credential rules for every layer that reads or rewrites a
- * provider record: this package's refresh orchestrator, the agent-core-v2
- * runtime (model-auth / catalog / auth readiness), and the kap-server provider
- * write routes. The precedence chain (inline `apiKey` vs declared `apiKeyEnv`),
- * the mutual-exclusion conflicts, and the user-facing messages live here once
- * so no layer re-derives — and silently diverges on — the same rules.
+ * provider record: the agent-core-v2 runtime (model-auth / catalog) and the
+ * provider write routes. The precedence chain (inline `apiKey` vs declared
+ * `apiKeyEnv`), the mutual-exclusion conflict, and the user-facing messages
+ * live here once so no layer re-derives — and silently diverges on — the same
+ * rules.
  */
 
 export interface ProviderCredentialView {
   readonly apiKey?: unknown;
   readonly apiKeyEnv?: unknown;
-  readonly oauth?: unknown;
 }
 
 export type DeclaredProviderCredential =
@@ -21,9 +20,9 @@ export type DeclaredProviderCredential =
 
 /**
  * Reads the credential a provider record declares, without resolving any
- * environment variable. Conflict kinds mirror what the chat path rejects:
- * `apiKey`+`apiKeyEnv`, `apiKeyEnv`+`oauth`, and `apiKey`+`oauth` — refresh
- * and write paths must not honor a configuration the runtime would refuse.
+ * environment variable. Declaring both `apiKey` and `apiKeyEnv` is a conflict
+ * the chat path rejects — write paths must not honor a configuration the
+ * runtime would refuse.
  */
 export function declaredProviderCredential(
   provider: ProviderCredentialView,
@@ -31,23 +30,10 @@ export function declaredProviderCredential(
 ): DeclaredProviderCredential {
   const inlineApiKey = nonEmptyString(provider.apiKey);
   const apiKeyEnv = nonEmptyString(provider.apiKeyEnv);
-  const hasOAuth = provider.oauth !== undefined;
   if (inlineApiKey !== undefined && apiKeyEnv !== undefined) {
     return {
       kind: 'conflict',
       message: credentialConflictMessage('Provider', providerName, 'apiKey', 'apiKeyEnv'),
-    };
-  }
-  if (apiKeyEnv !== undefined && hasOAuth) {
-    return {
-      kind: 'conflict',
-      message: credentialConflictMessage('Provider', providerName, 'apiKeyEnv', 'oauth'),
-    };
-  }
-  if (inlineApiKey !== undefined && hasOAuth) {
-    return {
-      kind: 'conflict',
-      message: credentialConflictMessage('Provider', providerName, 'apiKey', 'oauth'),
     };
   }
   if (inlineApiKey !== undefined) return { kind: 'inline', apiKey: inlineApiKey };

@@ -82,7 +82,6 @@ export function toCatalogModelDefinition(
     betaApi: record.betaApi,
     name: record.name,
     aliases: record.aliases,
-    oauth: record.oauth,
     overrides: toCatalogOverrides(record.overrides),
     extras: { record },
   };

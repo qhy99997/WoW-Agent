@@ -34,17 +34,13 @@ describe('declaredProviderCredential', () => {
     });
   });
 
-  it.each([
-    [{ apiKey: 'sk-a', apiKeyEnv: 'ACME_KEY' }, 'apiKey', 'apiKeyEnv'],
-    [{ apiKeyEnv: 'ACME_KEY', oauth: { storage: 'file', key: 'k' } }, 'apiKeyEnv', 'oauth'],
-    [{ apiKey: 'sk-a', oauth: { storage: 'file', key: 'k' } }, 'apiKey', 'oauth'],
-  ])('rejects %o as a conflict naming both fields', (provider, first, second) => {
-    const declared = declaredProviderCredential(provider, 'acme');
+  it('rejects apiKey+apiKeyEnv as a conflict naming both fields', () => {
+    const declared = declaredProviderCredential({ apiKey: 'sk-a', apiKeyEnv: 'ACME_KEY' }, 'acme');
     expect(declared.kind).toBe('conflict');
     if (declared.kind !== 'conflict') return;
     expect(declared.message).toContain('acme');
-    expect(declared.message).toContain(first);
-    expect(declared.message).toContain(second);
+    expect(declared.message).toContain('apiKey');
+    expect(declared.message).toContain('apiKeyEnv');
   });
 });
 

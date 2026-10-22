@@ -6,12 +6,6 @@ import type { Provider } from '#/llm/provider/definition';
 import type { LlmRequester } from '#/llm/requester/requester';
 import { assign, createActor, emit, enqueueActions, fromPromise, setup, type Actor } from '#/xstate2';
 
-export interface CatalogOAuthRef {
-  readonly storage: 'file' | 'keyring';
-  readonly key: string;
-  readonly oauthHost?: string;
-}
-
 export interface CatalogModelOverrides {
   readonly maxContextSize?: number;
   readonly maxInputSize?: number;
@@ -38,7 +32,6 @@ export interface CatalogModelDefinition extends LlmModel {
   readonly adaptiveThinking?: boolean;
   readonly name?: string;
   readonly aliases?: readonly string[];
-  readonly oauth?: CatalogOAuthRef;
   readonly overrides?: CatalogModelOverrides;
   readonly extras?: Readonly<Record<string, unknown>>;
 }
@@ -50,7 +43,6 @@ export interface CatalogProviderInfo {
   readonly baseUrl?: string;
   readonly customHeaders?: Readonly<Record<string, string>>;
   readonly defaultModel?: string;
-  readonly oauth?: CatalogOAuthRef;
   readonly env?: Readonly<Record<string, string>>;
   readonly modelSource?: 'static' | 'discover' | 'oauth-catalog';
   readonly source?: Readonly<Record<string, unknown>>;
@@ -647,7 +639,6 @@ function mergeModel(
     vertexai: record.vertexai,
     name: record.name,
     aliases: record.aliases,
-    oauth: record.oauth,
     extras: record.extras,
   };
   return applyModelOverrides(merged, record.overrides);

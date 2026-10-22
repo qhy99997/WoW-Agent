@@ -4,7 +4,6 @@ import { createDecorator, type ServiceIdentifier } from '#/_base/di/instantiatio
 import type { Event, IWaitUntil } from '#/_base/event';
 
 import type { Protocol } from '../protocol/protocol';
-import type { OAuthRef } from '../provider/provider';
 
 export const modelUpgradeSchema = z.object({
   model: z.string().min(1),
@@ -31,7 +30,6 @@ export interface ModelRecord {
 
   baseUrl?: string;
   apiKey?: string;
-  oauth?: OAuthRef;
 
   protocol?: Protocol;
 

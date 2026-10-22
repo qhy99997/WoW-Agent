@@ -64,7 +64,6 @@ import {
   THINKING_SECTION,
 } from '#/app/kosongConfig/configSection';
 import '#/app/kosongConfig/envOverlay';
-import { IOAuthService } from '#/app/auth/auth';
 import { type ThinkingConfig } from '#/llm-adapter/model/thinking';
 import {
   BASH_TASK_TIMEOUT_S_ENV,
@@ -684,7 +683,6 @@ describe('services config section env bindings', () => {
       moonshotFetch: {
         baseUrl: 'https://file.example/fetch',
         apiKey: 'file-fetch-key',
-        oauth: { storage: 'file', key: 'oauth/fetch' },
         customHeaders: { Authorization: 'Bearer configured-fetch-secret' },
       },
     });
@@ -703,14 +701,14 @@ describe('services config section env bindings', () => {
     disposables.dispose();
   });
 
-  it('uses an env API key instead of persisted OAuth for a configured endpoint', async () => {
+  it('uses an env API key instead of the persisted API key for a configured endpoint', async () => {
     const env: Record<string, string> = {};
     const { config, disposables } = createConfig(env);
     await config.ready;
     await config.set(SERVICES_SECTION, {
       moonshotFetch: {
         baseUrl: 'https://file.example/fetch',
-        oauth: { storage: 'file', key: 'oauth/fetch' },
+        apiKey: 'file-fetch-key',
         customHeaders: { 'X-Service': 'fetch' },
       },
     });

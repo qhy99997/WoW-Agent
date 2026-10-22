@@ -31,11 +31,10 @@ import '#/llm-adapter/model/errors';
 import { IHostRequestHeaders } from '#/llm-adapter/model/host-request-headers';
 import { IModelService, type ModelRecord, type ModelsSection } from '#/llm-adapter/model/model';
 import '#/llm-adapter/model/model-service';
-import { IModelOAuthTokens } from '#/llm-adapter/model/model-oauth';
 
 import { HostRequestHeadersAdapter } from '#/app/kosongConfig/hostRequestHeadersAdapter';
 
-import { StubConfigService, stubModelOAuthTokens, stubTokenProvider } from '../../stubs';
+import { StubConfigService } from '../../stubs';
 import { stubAgentIdentity } from '../../app/agentIdentity/stubs';
 import { stubBootstrap } from '../../app/bootstrap/stubs';
 
@@ -53,7 +52,6 @@ function hostHeadersPort(spec: {
 
 function createHost(
   sections: Record<string, unknown> = {},
-  oauthTokens: IModelOAuthTokens = stubModelOAuthTokens(),
   hostHeaders: { headers: Record<string, string>; identitySlug?: string } = {
     headers: HOST_HEADERS,
   },
@@ -67,7 +65,6 @@ function createHost(
   const config = new StubConfigService(sections);
   const host = createScopedTestHost([
     [IConfigService, config],
-    [IModelOAuthTokens, oauthTokens],
     [IHostRequestHeaders, hostHeadersPort(hostHeaders)],
   ]);
   const providers = host.app.accessor.get(IProviderService);
@@ -182,7 +179,7 @@ describe('Model assembly (pure data)', () => {
     };
 
     it('rewrites the User-Agent product token for third-party vendors', () => {
-      const { host, catalog } = createHost(THIRD_PARTY, stubModelOAuthTokens(), {
+      const { host, catalog } = createHost(THIRD_PARTY, {
         headers: HOST_HEADERS,
         identitySlug: 'acme-dev',
       });
@@ -194,7 +191,7 @@ describe('Model assembly (pure data)', () => {
     });
 
     it('preserves a parenthesized User-Agent suffix while rewriting', () => {
-      const { host, catalog } = createHost(THIRD_PARTY, stubModelOAuthTokens(), {
+      const { host, catalog } = createHost(THIRD_PARTY, {
         headers: { 'User-Agent': 'kimi-test/1.0 (web)' },
         identitySlug: 'acme-dev',
       });
@@ -206,7 +203,7 @@ describe('Model assembly (pure data)', () => {
     });
 
     it('leaves full-header vendor requests byte-for-byte unchanged', () => {
-      const { host, catalog } = createHost(OFFICIAL, stubModelOAuthTokens(), {
+      const { host, catalog } = createHost(OFFICIAL, {
         headers: HOST_HEADERS,
         identitySlug: 'acme-dev',
       });
@@ -227,7 +224,7 @@ describe('Model assembly (pure data)', () => {
     });
 
     it('never synthesizes a User-Agent the host did not provide', () => {
-      const { host, catalog } = createHost(THIRD_PARTY, stubModelOAuthTokens(), {
+      const { host, catalog } = createHost(THIRD_PARTY, {
         headers: {},
         identitySlug: 'acme-dev',
       });
@@ -239,7 +236,7 @@ describe('Model assembly (pure data)', () => {
     });
 
     it('rewrites the User-Agent for a lowercase host spelling', () => {
-      const { host, catalog } = createHost(THIRD_PARTY, stubModelOAuthTokens(), {
+      const { host, catalog } = createHost(THIRD_PARTY, {
         headers: { 'user-agent': 'kimi-test/1.0' },
         identitySlug: 'acme-dev',
       });
@@ -493,28 +490,6 @@ describe('Model assembly (pure data)', () => {
     }
   });
 
-  it('builds recoverable OAuth credentials for oauth-backed models', async () => {
-    const tokenProvider = stubTokenProvider(['tok-1']);
-    const { host, catalog } = createHost(
-      {
-        providers: {
-          kimi: { type: 'kimi', oauth: { storage: 'file', key: 'kimi' }, baseUrl: 'https://api.moonshot.ai/v1' },
-        },
-        models: { k1: { provider: 'kimi', model: 'kimi-k2', maxContextSize: 1 } },
-      },
-      stubModelOAuthTokens(tokenProvider),
-    );
-    try {
-      const model = catalog.get('k1');
-      expect(model.credentialProvider?.canRecover?.(Object.assign(new Error('x'), { status: 401 }))).toBe(
-        true,
-      );
-      await expect(model.credentialProvider?.resolve()).resolves.toEqual({ apiKey: 'tok-1' });
-    } finally {
-      host.dispose();
-    }
-  });
-
   it('resolves api_key_env credentials from process.env on every request', async () => {
     vi.stubEnv('KIMI_TEST_ACME_ENV_KEY', 'sk-first');
     const { host, catalog } = createHost({
@@ -645,7 +620,7 @@ describe('headers merge order', () => {
 
 describe('ModelCatalog ping', () => {
   it('returns the streamed text and usage on a live success', async () => {
-    const { host, models, providers } = createHost(kimiSections, stubModelOAuthTokens());
+    const { host, models, providers } = createHost(kimiSections);
     try {
       const fakeRequester: LlmRequester = {
         generate: (_config, _content, control) => {
@@ -692,7 +667,6 @@ describe('ModelCatalog ping', () => {
         new ProviderCatalogRuntimeService(models, providers),
         providers,
         models,
-        stubModelOAuthTokens(),
         registry,
         { headers: {}, thirdPartyHeaders: {} },
       );
@@ -814,7 +788,6 @@ describe('wire projection (pure)', () => {
     expect(
       toProtocolProvider('p1', provider, models, 'a', {
         hasApiKey: true,
-        hasOAuthToken: false,
         hasCredentialConflict: false,
       }),
     ).toEqual({
@@ -831,25 +804,23 @@ describe('wire projection (pure)', () => {
         'p1',
         {
           ...provider,
+          apiKey: 'sk-inline',
           apiKeyEnv: 'ACME_KEY',
-          oauth: { storage: 'file', key: 'oauth/p1' },
         },
         models,
         'a',
-        { hasApiKey: true, hasOAuthToken: true, hasCredentialConflict: true },
+        { hasApiKey: true, hasCredentialConflict: true },
       ),
     ).toMatchObject({ status: 'error', has_api_key: true });
     expect(
       toProtocolProvider('p1', { ...provider, defaultModel: 'own' }, models, 'a', {
         hasApiKey: false,
-        hasOAuthToken: false,
         hasCredentialConflict: false,
       }).default_model,
     ).toBe('own');
     expect(
       toProtocolProvider('p1', { ...provider, type: undefined }, models, undefined, {
         hasApiKey: false,
-        hasOAuthToken: false,
         hasCredentialConflict: false,
       }),
     ).toMatchObject({ type: 'openai', status: 'unconfigured', default_model: undefined });
@@ -1077,7 +1048,6 @@ describe('ModelCatalog enumeration', () => {
           model: 'bad-model',
           baseUrl: 'https://x.test/v1',
           apiKey: 'sk',
-          oauth: { storage: 'file', key: 'oauth/bad' },
           maxContextSize: 1000,
           displayName: 'Bad',
         },
@@ -1133,22 +1103,6 @@ describe('ModelCatalog enumeration', () => {
       expect(byId['kimi']).toMatchObject({ has_api_key: true, status: 'connected' });
       expect(byId['claude']).toMatchObject({ has_api_key: true, status: 'connected' });
       expect(byId['empty']).toMatchObject({ has_api_key: false, status: 'unconfigured' });
-    } finally {
-      host.dispose();
-    }
-  });
-
-  it('marks an OAuth provider connected when a cached token exists', async () => {
-    const { host, catalog } = createHost(
-      {
-        providers: { acme: { type: 'kimi', oauth: { storage: 'file', key: 'oauth/acme' } } },
-        models: {},
-      },
-      stubModelOAuthTokens(undefined, 'cached-token'),
-    );
-    try {
-      const [provider] = await catalog.listProviders();
-      expect(provider).toMatchObject({ id: 'acme', has_api_key: false, status: 'connected' });
     } finally {
       host.dispose();
     }
@@ -1211,7 +1165,6 @@ describe('ModelCatalog setDefaultModel', () => {
           model: 'bad-model',
           baseUrl: 'https://x.test/v1',
           apiKey: 'sk',
-          oauth: { storage: 'file', key: 'oauth/bad' },
         },
       },
     });

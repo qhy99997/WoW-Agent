@@ -3,12 +3,6 @@ import type { Event, IWaitUntil } from '#/_base/event';
 
 export type ProviderType = string;
 
-export interface OAuthRef {
-  storage: 'file' | 'keyring';
-  key: string;
-  oauthHost?: string;
-}
-
 export type ModelSource = 'static' | 'discover' | 'oauth-catalog';
 
 export interface ProviderConfig {
@@ -21,7 +15,6 @@ export interface ProviderConfig {
   type?: ProviderType;
   apiKey?: string;
   apiKeyEnv?: string;
-  oauth?: OAuthRef;
   env?: Record<string, string>;
   source?: Record<string, unknown>;
 }

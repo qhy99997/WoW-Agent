@@ -37,8 +37,7 @@ llm/
 │   │                     LlmRequestConfig.credentialProvider：凭证贡献点
 │   │                     （resolve/canRecover/invalidate），由调用方在每次 attempt 前解析；
 │   │                     工厂与 credentialsRecovery 策略位于 human/credentials
-│   │                     （createStaticCredentialProvider / createOAuthCredentialProvider；createKimiOAuthCredentialProvider
-│   │                     适配 Kimi OAuth token）；供 direct 调用方使用的
+│   │                     （createStaticCredentialProvider / createOAuthCredentialProvider）；供 direct 调用方使用的
 │   │                     runWithCredentialRecovery / streamWithCredentialRecovery 执行器
 │   │                     位于 llm-adapter/model/credential-recovery
 │   ├── actor.ts          请求 actor：包装单次请求的 fromCallback

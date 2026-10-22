@@ -3,12 +3,7 @@ import { Error2, ErrorCodes, isError2 } from '#/errors';
 
 import { HttpFetchError, type UrlFetcher, type UrlFetchResult } from '../tools/fetch-url-types';
 
-interface BearerTokenProvider {
-  getAccessToken(options?: { readonly force?: boolean | undefined }): Promise<string>;
-}
-
 export interface MoonshotFetchURLProviderOptions {
-  tokenProvider?: BearerTokenProvider;
   apiKey?: string;
   baseUrl: string;
   defaultHeaders?: Record<string, string>;
@@ -19,7 +14,6 @@ export interface MoonshotFetchURLProviderOptions {
 }
 
 export class MoonshotFetchURLProvider implements UrlFetcher {
-  private readonly tokenProvider: BearerTokenProvider | undefined;
   private readonly apiKey: string | undefined;
   private readonly baseUrl: string;
   private readonly defaultHeaders: Record<string, string>;
@@ -29,7 +23,6 @@ export class MoonshotFetchURLProvider implements UrlFetcher {
   private readonly telemetry: ITelemetryService;
 
   constructor(options: MoonshotFetchURLProviderOptions) {
-    this.tokenProvider = options.tokenProvider;
     this.apiKey = options.apiKey;
     this.baseUrl = options.baseUrl;
     this.defaultHeaders = options.defaultHeaders ?? {};
@@ -91,7 +84,7 @@ export class MoonshotFetchURLProvider implements UrlFetcher {
     signal: AbortSignal | undefined,
     attempt: { credentialResolved: boolean },
   ): Promise<Response> {
-    const accessToken = await this.resolveApiKey();
+    const accessToken = this.resolveApiKey();
     attempt.credentialResolved = true;
     return this.fetchImpl(this.baseUrl, {
       method: 'POST',
@@ -110,21 +103,11 @@ export class MoonshotFetchURLProvider implements UrlFetcher {
     });
   }
 
-  private async resolveApiKey(): Promise<string> {
-    if (this.tokenProvider !== undefined) {
-      try {
-        const token = await this.tokenProvider.getAccessToken();
-        if (token.trim().length > 0) return token;
-        if (this.apiKey !== undefined && this.apiKey.length > 0) return this.apiKey;
-      } catch (error) {
-        if (this.apiKey !== undefined && this.apiKey.length > 0) return this.apiKey;
-        throw error;
-      }
-    }
+  private resolveApiKey(): string {
     if (this.apiKey !== undefined && this.apiKey.length > 0) return this.apiKey;
     throw new Error2(
       ErrorCodes.AUTH_TOKEN_MISSING,
-      'Moonshot fetch service is not configured: missing API key or token provider.',
+      'Moonshot fetch service is not configured: missing API key.',
     );
   }
 }

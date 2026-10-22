@@ -15,7 +15,6 @@ function authMaterial(args: {
   provider?: ProviderConfig;
 }): ReturnType<typeof resolveModelAuthMaterial> {
   return resolveModelAuthMaterial({
-    modelId: 'm1',
     model: args.model,
     provider: args.provider,
     providerName: 'p1',
@@ -30,24 +29,6 @@ describe('resolveModelAuthMaterial', () => {
         provider: { type: 'openai', apiKey: 'provider-key' },
       }),
     ).toEqual({ apiKey: 'model-key' });
-    expect(
-      authMaterial({
-        model: { model: 'm', oauth: { storage: 'file', key: 'k' }, providerId: 'p1' },
-        provider: { type: 'openai', apiKey: 'provider-key' },
-      }),
-    ).toEqual({ oauth: { storage: 'file', key: 'k' }, oauthProviderKey: 'p1' });
-  });
-
-  it('rejects apiKey+oauth on the same level as config.invalid', () => {
-    expect(() =>
-      authMaterial({ model: { model: 'm', apiKey: 'k', oauth: { storage: 'file', key: 'k' } } }),
-    ).toThrowError(expect.objectContaining({ code: ConfigErrors.codes.CONFIG_INVALID }));
-    expect(() =>
-      authMaterial({
-        model: { model: 'm' },
-        provider: { type: 'openai', apiKey: 'k', oauth: { storage: 'file', key: 'k' } },
-      }),
-    ).toThrowError(expect.objectContaining({ code: ConfigErrors.codes.CONFIG_INVALID }));
   });
 
   it('returns the declared variable name for provider api_key_env without reading the value', () => {
@@ -68,17 +49,11 @@ describe('resolveModelAuthMaterial', () => {
     ).toEqual({ apiKeyEnv: 'ACME_API_KEY' });
   });
 
-  it('rejects apiKey+apiKeyEnv and apiKeyEnv+oauth on a provider as config.invalid', () => {
+  it('rejects apiKey+apiKeyEnv on a provider as config.invalid', () => {
     expect(() =>
       authMaterial({
         model: { model: 'm' },
         provider: { type: 'openai', apiKey: 'k', apiKeyEnv: 'ACME_API_KEY' },
-      }),
-    ).toThrowError(expect.objectContaining({ code: ConfigErrors.codes.CONFIG_INVALID }));
-    expect(() =>
-      authMaterial({
-        model: { model: 'm' },
-        provider: { type: 'openai', apiKeyEnv: 'ACME_API_KEY', oauth: { storage: 'file', key: 'k' } },
       }),
     ).toThrowError(expect.objectContaining({ code: ConfigErrors.codes.CONFIG_INVALID }));
   });

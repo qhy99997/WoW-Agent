@@ -37,8 +37,7 @@ llm/
 │   │                     LlmRequestConfig.credentialProvider: credential contribution point
 │   │                     (resolve/canRecover/invalidate), resolved per attempt by the caller;
 │   │                     factories and the credentialsRecovery strategy live in human/credentials
-│   │                     (createStaticCredentialProvider / createOAuthCredentialProvider; createKimiOAuthCredentialProvider adapts
-│   │                     Kimi OAuth tokens); the runWithCredentialRecovery /
+│   │                     (createStaticCredentialProvider / createOAuthCredentialProvider); the runWithCredentialRecovery /
 │   │                     streamWithCredentialRecovery executors for direct callers live in
 │   │                     llm-adapter/model/credential-recovery
 │   ├── actor.ts          request actor: a fromCallback wrapping a single request

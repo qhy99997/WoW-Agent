@@ -10,10 +10,7 @@ import { ScopeActivation, registerScopedService } from '#/_base/di/scope';
 import { Error2 } from '#/_base/errors/errors';
 
 import type { CatalogModel, CatalogProviderInfo } from '#human/llm/provider-catalog';
-import {
-  createOAuthCredentialProvider,
-  createStaticCredentialProvider,
-} from '#human/credentials/credentials';
+import { createStaticCredentialProvider } from '#human/credentials/credentials';
 import type { LlmCredentialProvider } from '#human/llm/requester/requester';
 import type { ModelCapability } from '../contract/capability';
 import { CONFIG_INVALID_ERROR_CODE } from '../contract/errors';
@@ -57,7 +54,6 @@ import {
   resolveModelProtocol,
   withAnthropicProfile,
 } from './model-auth';
-import { IModelOAuthTokens } from './model-oauth';
 import type { ResolvedModelAuthMaterial } from './model.types';
 import type {
   ModelRequestEvent,
@@ -85,7 +81,6 @@ export class ModelCatalog extends Disposable implements IModelCatalog {
     @IProviderCatalogRuntime private readonly runtime: IProviderCatalogRuntime,
     @IProviderService private readonly providers: IProviderService,
     @IModelService private readonly models: IModelService,
-    @IModelOAuthTokens private readonly oauth: IModelOAuthTokens,
     @IProtocolAdapterRegistry
     private readonly protocolRegistry: IProtocolAdapterRegistry,
     @IHostRequestHeaders private readonly hostRequestHeaders: IHostRequestHeaders,
@@ -227,7 +222,7 @@ export class ModelCatalog extends Disposable implements IModelCatalog {
     for (const providerId of this.runtime.providerIds()) {
       const provider = this.runtime.providerInfo(providerId);
       if (provider === undefined) continue;
-      out.push(await this.toCatalogProvider(providerId, provider, records, globalDefaultModel));
+      out.push(this.toCatalogProvider(providerId, provider, records, globalDefaultModel));
     }
     return out;
   }
@@ -274,31 +269,25 @@ export class ModelCatalog extends Disposable implements IModelCatalog {
     return out;
   }
 
-  private async toCatalogProvider(
+  private toCatalogProvider(
     providerId: string,
     provider: CatalogProviderInfo,
     models: Readonly<Record<string, ModelRecord>>,
     globalDefaultModel: string | undefined,
-  ): Promise<ProviderCatalogItem> {
-    const credential = await this.resolveCredential(providerId, provider);
+  ): ProviderCatalogItem {
+    const credential = this.resolveCredential(providerId, provider);
     return toProtocolProvider(providerId, provider, models, globalDefaultModel, credential);
   }
 
-  private async resolveCredential(
+  private resolveCredential(
     providerId: string,
     provider: CatalogProviderInfo,
-  ): Promise<ProviderCredentialState> {
+  ): ProviderCredentialState {
     const declared = declaredProviderCredential(provider, providerId);
     return {
       hasApiKey: hasConfiguredApiKey(provider),
-      hasOAuthToken: await this.hasCachedToken(providerId, provider),
       hasCredentialConflict: declared.kind === 'conflict',
     };
-  }
-
-  private async hasCachedToken(providerId: string, provider: CatalogProviderInfo): Promise<boolean> {
-    if (provider.oauth === undefined) return false;
-    return this.oauth.hasCachedAccessToken(providerId, provider.oauth);
   }
 
   private providerTypeOf(record: ModelRecord): string | undefined {
@@ -329,7 +318,6 @@ export class ModelCatalog extends Disposable implements IModelCatalog {
     const wireName = model.name ?? model.model;
 
     const auth = resolveModelAuthMaterial({
-      modelId: id,
       model,
       provider: providerConfig,
       providerName,
@@ -476,14 +464,6 @@ export class ModelCatalog extends Disposable implements IModelCatalog {
           return { apiKey };
         },
       };
-    }
-    if (auth.oauth !== undefined) {
-      const oauthRef = auth.oauth;
-      const providerKey = auth.oauthProviderKey ?? providerName;
-      const tokens = this.oauth;
-      return createOAuthCredentialProvider((options) =>
-        tokens.getAccessToken(providerKey, oauthRef, { force: options?.force === true }),
-      );
     }
     return createStaticCredentialProvider(undefined);
   }

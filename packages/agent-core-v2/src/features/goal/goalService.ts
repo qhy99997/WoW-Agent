@@ -112,7 +112,7 @@ const GOAL_RUNTIME_PAUSE_PREFIX = 'Paused after runtime error';
 const GOAL_CONTINUATION_FAILURE_PAUSE_PREFIX = 'Paused after goal continuation failure';
 const GOAL_PROVIDER_FILTERED_PAUSE_REASON = 'Paused after provider safety policy block';
 const GOAL_BUDGET_BLOCK_PREFIX = 'Blocked after goal budget reached';
-const LLM_NOT_SET_MESSAGE = 'LLM not set, send "/login" to login';
+const LLM_NOT_SET_MESSAGE = 'LLM not set, configure a model provider first';
 
 const GOAL_BUDGET_STOP_REMINDER_NAME = 'goal_budget_stop';
 

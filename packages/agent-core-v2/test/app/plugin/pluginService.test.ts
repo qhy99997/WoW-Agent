@@ -2,7 +2,6 @@ import { mkdir, mkdtemp, readdir, readFile, realpath, rm, writeFile } from 'node
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-import { KIMI_CODE_PROVIDER_NAME } from '@moonshot-ai/kimi-code-oauth';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -25,10 +24,8 @@ import {
 } from '#/app/telemetry/telemetry';
 import { TelemetryService } from '#/app/telemetry/telemetryService';
 import { ISkillDiscovery } from '#/features/skill/catalog/skillDiscovery';
-import { IProviderService, type ProviderConfig } from '#/llm-adapter/provider/provider';
 
 import { stubBootstrap } from '../bootstrap/stubs';
-import { stubProviderService } from '../provider/stubs';
 
 vi.mock('#/app/plugin/store', async (importOriginal) => {
   const actual = await importOriginal<typeof import('#/app/plugin/store')>();
@@ -44,13 +41,11 @@ const writeInstalled = vi.mocked(pluginStore.writeInstalled);
 
 function makeHost(
   homeDir: string,
-  providers = stubProviderService(),
   env: NodeJS.ProcessEnv = {},
   telemetry: ITelemetryService = noopTelemetryService,
 ): ScopedTestHost {
   return createScopedTestHost([
     stubPair(IBootstrapService, stubBootstrap(homeDir, env)),
-    stubPair(IProviderService, providers),
     stubPair(ISkillDiscovery, {
       _serviceBrand: undefined,
       discover: async () => ({
@@ -233,7 +228,7 @@ describe('PluginService (plugin boundary)', () => {
     const home = await makeHome();
     await writeInstalledFile(home, '{ not json');
     const telemetry = new TelemetryService();
-    const host = makeHost(home, stubProviderService(), {}, telemetry);
+    const host = makeHost(home, {}, telemetry);
     try {
       const svc = host.app.accessor.get(IPluginService);
       expect(svc.enabledPluginIds()).toBeUndefined();
@@ -322,7 +317,7 @@ describe('PluginService (plugin boundary)', () => {
     const telemetry = new TelemetryService();
     const events: TelemetryAppenderRecord[] = [];
     telemetry.addAppender({ track: (record) => events.push(record) });
-    const host = makeHost(home, stubProviderService(), {}, telemetry);
+    const host = makeHost(home, {}, telemetry);
     try {
       const svc = host.app.accessor.get(IPluginService);
       await svc.installPlugin({ source: pluginRoot });
@@ -357,7 +352,7 @@ describe('PluginService (plugin boundary)', () => {
     const telemetry = new TelemetryService();
     const events: TelemetryAppenderRecord[] = [];
     telemetry.addAppender({ track: (record) => events.push(record) });
-    const host = makeHost(home, stubProviderService(), {}, telemetry);
+    const host = makeHost(home, {}, telemetry);
     try {
       const svc = host.app.accessor.get(IPluginService);
       await svc.listPlugins();
@@ -382,7 +377,7 @@ describe('PluginService (plugin boundary)', () => {
     const telemetry = new TelemetryService();
     const events: TelemetryAppenderRecord[] = [];
     telemetry.addAppender({ track: (record) => events.push(record) });
-    const host = makeHost(home, stubProviderService(), {}, telemetry);
+    const host = makeHost(home, {}, telemetry);
     try {
       const svc = host.app.accessor.get(IPluginService);
       await svc.listPlugins();
@@ -411,7 +406,7 @@ describe('PluginService (plugin boundary)', () => {
     }
     await writeInstalledFile(home, JSON.stringify({ version: 1, plugins: installed }));
     const telemetry = new TelemetryService();
-    const host = makeHost(home, stubProviderService(), {}, telemetry);
+    const host = makeHost(home, {}, telemetry);
     try {
       const svc = host.app.accessor.get(IPluginService);
       await svc.listPlugins();
@@ -429,7 +424,7 @@ describe('PluginService (plugin boundary)', () => {
     const telemetry = new TelemetryService();
     const events: TelemetryAppenderRecord[] = [];
     telemetry.addAppender({ track: (record) => events.push(record) });
-    const host = makeHost(home, stubProviderService(), {}, telemetry);
+    const host = makeHost(home, {}, telemetry);
     try {
       const svc = host.app.accessor.get(IPluginService);
       await expect(svc.listPlugins()).resolves.toHaveLength(1);
@@ -784,18 +779,10 @@ describe('PluginService (plugin boundary)', () => {
     }
   });
 
-  it('injects the managed Kimi endpoint env into stdio plugin MCP servers only', async () => {
+  it('exposes enabled stdio plugin MCP servers with the plugin env', async () => {
     const home = await makeHome();
     await writeValidInstalledFile(home);
-    const host = makeHost(
-      home,
-      stubProviderService({
-        [KIMI_CODE_PROVIDER_NAME]: {
-          baseUrl: 'https://api.example.test/',
-          oauth: { storage: 'file', key: 'kimi', oauthHost: 'https://auth.example.test' },
-        },
-      }),
-    );
+    const host = makeHost(home);
     try {
       const svc = host.app.accessor.get(IPluginService);
       const pluginRoot = await makePluginDir('demo', {
@@ -812,32 +799,22 @@ describe('PluginService (plugin boundary)', () => {
       expect(servers['plugin-demo:finance']).toEqual(
         expect.objectContaining({
           env: expect.objectContaining({
-            KIMI_CODE_BASE_URL: 'https://api.example.test/',
-            KIMI_CODE_OAUTH_HOST: 'https://auth.example.test',
             CUSTOM: '1',
             WOW_HOME: home,
             KIMI_PLUGIN_ROOT: await realpath(managedRoot),
           }),
         }),
       );
-      expect(JSON.stringify(servers['plugin-demo:docs'])).not.toContain('KIMI_CODE_BASE_URL');
+      expect(servers['plugin-demo:docs']).toBeDefined();
     } finally {
       host.dispose();
     }
   });
 
-  it('merges the managed Kimi endpoint env into stdio MCP server entries with provenance', async () => {
+  it('lists plugin MCP server entries with provenance', async () => {
     const home = await makeHome();
     await writeValidInstalledFile(home);
-    const host = makeHost(
-      home,
-      stubProviderService({
-        [KIMI_CODE_PROVIDER_NAME]: {
-          baseUrl: 'https://api.example.test/',
-          oauth: { storage: 'file', key: 'kimi', oauthHost: 'https://auth.example.test' },
-        },
-      }),
-    );
+    const host = makeHost(home);
     try {
       const svc = host.app.accessor.get(IPluginService);
       const pluginRoot = await makePluginDir('demo', {
@@ -858,8 +835,6 @@ describe('PluginService (plugin boundary)', () => {
         expect.objectContaining({
           enabled: false,
           env: expect.objectContaining({
-            KIMI_CODE_BASE_URL: 'https://api.example.test/',
-            KIMI_CODE_OAUTH_HOST: 'https://auth.example.test',
             CUSTOM: '1',
             WOW_HOME: home,
             KIMI_PLUGIN_ROOT: managedRoot,
@@ -869,110 +844,6 @@ describe('PluginService (plugin boundary)', () => {
       const docs = entries.find((entry) => entry.name === 'plugin-demo:docs');
       expect(docs).toEqual(expect.objectContaining({ pluginId: 'demo', serverName: 'docs' }));
       expect(docs?.config.enabled).toBe(true);
-      expect(JSON.stringify(docs?.config)).not.toContain('KIMI_CODE_BASE_URL');
-    } finally {
-      host.dispose();
-    }
-  });
-
-  it('waits for provider config before injecting persisted managed endpoints', async () => {
-    const home = await makeHome();
-    await writeValidInstalledFile(home);
-    const providerConfigs: Record<string, ProviderConfig> = {};
-    const readyAccessed = deferred<void>();
-    const readyGate = deferred<void>();
-    const providers = stubProviderService(providerConfigs, readyGate.promise);
-    Object.defineProperty(providers, 'ready', {
-      get: () => {
-        readyAccessed.resolve(undefined);
-        return readyGate.promise;
-      },
-    });
-    const host = makeHost(home, providers);
-    try {
-      const svc = host.app.accessor.get(IPluginService);
-      const pluginRoot = await makePluginDir('ready-demo', {
-        mcpServers: { finance: { command: 'finance-mcp' } },
-      });
-      createdDirs.push(pluginRoot);
-      await svc.installPlugin({ source: pluginRoot });
-
-      const servers = svc.enabledMcpServers();
-      await readyAccessed.promise;
-      providerConfigs[KIMI_CODE_PROVIDER_NAME] = {
-        baseUrl: 'https://ready.example.test/',
-        oauth: { storage: 'file', key: 'kimi', oauthHost: 'https://auth.ready.example.test' },
-      };
-      readyGate.resolve(undefined);
-
-      await expect(servers).resolves.toMatchObject({
-        'plugin-ready-demo:finance': {
-          env: {
-            KIMI_CODE_BASE_URL: 'https://ready.example.test/',
-            KIMI_CODE_OAUTH_HOST: 'https://auth.ready.example.test',
-          },
-        },
-      });
-    } finally {
-      host.dispose();
-    }
-  });
-
-  it('prefers explicit KIMI_CODE_BASE_URL / KIMI_OAUTH_HOST env over the persisted provider', async () => {
-    const home = await makeHome();
-    await writeValidInstalledFile(home);
-    const host = makeHost(
-      home,
-      stubProviderService({
-        [KIMI_CODE_PROVIDER_NAME]: {
-          baseUrl: 'https://api.example.test',
-          oauth: { storage: 'file', key: 'kimi', oauthHost: 'https://auth.example.test' },
-        },
-      }),
-      {
-        KIMI_CODE_BASE_URL: 'https://env.example.test/',
-        KIMI_OAUTH_HOST: 'https://legacy.example.test',
-      },
-    );
-    try {
-      const svc = host.app.accessor.get(IPluginService);
-      const pluginRoot = await makePluginDir('demo', {
-        mcpServers: { finance: { command: 'finance-mcp' } },
-      });
-      createdDirs.push(pluginRoot);
-      await svc.installPlugin({ source: pluginRoot });
-
-      const servers = await svc.enabledMcpServers();
-      expect(servers['plugin-demo:finance']).toEqual(
-        expect.objectContaining({
-          env: expect.objectContaining({
-            KIMI_CODE_BASE_URL: 'https://env.example.test',
-            KIMI_CODE_OAUTH_HOST: 'https://legacy.example.test',
-          }),
-        }),
-      );
-    } finally {
-      host.dispose();
-    }
-  });
-
-  it('does not inject managed env when neither env nor the kimi provider supplies it', async () => {
-    const home = await makeHome();
-    await writeValidInstalledFile(home);
-    const host = makeHost(home);
-    try {
-      const svc = host.app.accessor.get(IPluginService);
-      const pluginRoot = await makePluginDir('demo', {
-        mcpServers: { finance: { command: 'finance-mcp', env: { CUSTOM: '1' } } },
-      });
-      createdDirs.push(pluginRoot);
-      await svc.installPlugin({ source: pluginRoot });
-
-      const servers = await svc.enabledMcpServers();
-      const env = (servers['plugin-demo:finance'] as { env?: Record<string, string> }).env ?? {};
-      expect(env['CUSTOM']).toBe('1');
-      expect(env).not.toHaveProperty('KIMI_CODE_BASE_URL');
-      expect(env).not.toHaveProperty('KIMI_CODE_OAUTH_HOST');
     } finally {
       host.dispose();
     }

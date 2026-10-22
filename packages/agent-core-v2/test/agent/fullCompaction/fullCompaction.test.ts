@@ -29,7 +29,7 @@ import { MASTER_ENV } from '#/app/flag/flagService';
 import { estimateTokensForMessages } from '#/llm-adapter/contract/tokens';
 import { recordingTelemetry, type TelemetryRecord } from '../../app/telemetry/stubs';
 import type { TestAgentContext, TestAgentOptions, TestAgentServiceOverride } from '../../harness';
-import { agentService, appService, appServices, createCommandRunner, execEnvServices, hostEnvironmentServices, requesterFromGenerateFn, sessionServices, testAgent as createTestAgent, type LegacyGenerateResult } from '../../harness';
+import { agentService, appService, createCommandRunner, execEnvServices, hostEnvironmentServices, requesterFromGenerateFn, sessionServices, testAgent as createTestAgent, type LegacyGenerateResult } from '../../harness';
 import { IFileSystemStorageService } from '#/persistence/interface/storage';
 import { InMemoryStorageService } from '#/persistence/backends/memory/inMemoryStorageService';
 import { ISessionTokenCountingService } from '#/session/tokenCounting/sessionTokenCounting';
@@ -37,7 +37,6 @@ import { renderCompactionInstruction } from '#/agent/fullCompaction/compactionIn
 import { IAgentToolSelectAnnouncementsService } from '#/agent/toolSelect/toolSelectAnnouncements';
 import {
   IAgentFullCompactionService,
-  IModelOAuthTokens,
   IAgentProfileService,
   ITelemetryService,
   IAgentToolRegistryService,
@@ -464,83 +463,6 @@ describe('FullCompaction', () => {
           message.toolCalls.length === 0,
       ),
     ).toBe(false);
-  });
-
-  it('force-refreshes OAuth credentials on compaction 401 and treats replay 401 as provider auth error', async () => {
-    const tokenCalls: Array<boolean | undefined> = [];
-    const authKeys: string[] = [];
-    const oauthOptions = oauthTestAgentOptions(async (options) => {
-      tokenCalls.push(options?.force);
-      return options?.force === true ? 'forced-refresh-token' : 'fresh-token';
-    });
-    const generate: GenerateFn = requesterFromGenerateFn(async (
-      _provider,
-      _system,
-      _tools,
-      _history,
-      _callbacks,
-      options,
-    ) => {
-      authKeys.push(options?.auth?.apiKey ?? '<missing>');
-      if (authKeys.length <= 2) {
-        throw new APIStatusError(401, 'Unauthorized', 'req-compact-401');
-      }
-      return textResult('Recovered compacted summary.');
-    });
-    const ctx = testAgent(oauthOptions.services, {
-      initialConfig: oauthOptions.initialConfig,
-      generate,
-    });
-    ctx.configure();
-    await ctx.rpc.setModel({ model: 'kimi-code' });
-    ctx.newEvents();
-    ctx.appendExchange(1, 'old user one', 'old assistant one', 20);
-    ctx.appendExchange(2, 'recent user two', 'recent assistant two', 80);
-    const outcome = ctx.onceAny(['full_compaction.complete', 'error']);
-
-    await ctx.rpc.beginCompaction({});
-
-    expect(await outcome).toBe('error');
-    expect(ctx.newEvents()).toContainEqual(
-      expect.objectContaining({
-        event: 'error',
-        args: expect.objectContaining({
-          code: 'provider.auth_error',
-          details: expect.objectContaining({
-            statusCode: 401,
-            requestId: 'req-compact-401',
-          }),
-        }),
-      }),
-    );
-    expect(authKeys).toEqual(['fresh-token', 'forced-refresh-token']);
-    expect(tokenCalls).toEqual([undefined, true]);
-    expect(ctx.compactHistory()).toEqual([
-      { role: 'user', text: 'old user one' },
-      { role: 'assistant', text: 'old assistant one' },
-      { role: 'user', text: 'recent user two' },
-      { role: 'assistant', text: 'recent assistant two' },
-    ]);
-
-    const retryOutcome = ctx.onceAny(['full_compaction.complete', 'error']);
-    const completed = ctx.once('compaction.completed');
-
-    await ctx.rpc.beginCompaction({});
-
-    expect(await retryOutcome).toBe('full_compaction.complete');
-    await completed;
-    expect(authKeys).toEqual(['fresh-token', 'forced-refresh-token', 'fresh-token']);
-    expect(tokenCalls).toEqual([undefined, true, undefined]);
-    expect(ctx.compactHistory()).toEqual([
-      { role: 'user', text: 'old user one' },
-      { role: 'user', text: 'recent user two' },
-      {
-        role: 'user',
-        text: expect.stringContaining('Recovered compacted summary.'),
-      },
-      { role: 'user', text: buildCompactionContinuationText() },
-    ]);
-    await ctx.expectResumeMatches();
   });
 
   it('fires PreCompact and PostCompact hooks from the compaction module', async () => {
@@ -3707,41 +3629,6 @@ function exactCompactionPrompt(workDir: string, agentsMd: string): string {
   ].join('\n');
 }
 
-function oauthTestAgentOptions(
-  getAccessToken: (options?: { readonly force?: boolean }) => Promise<string>,
-): {
-  readonly initialConfig: TestAgentOptions['initialConfig'];
-  readonly services: TestAgentServiceOverride;
-} {
-  return {
-    initialConfig: {
-      defaultModel: 'kimi-code',
-      providers: {
-        'managed:kimi-code': {
-          type: 'google-genai',
-          baseUrl: 'https://api.example/v1',
-          oauth: { storage: 'file', key: 'oauth/kimi-code' },
-        },
-      },
-      models: {
-        'kimi-code': {
-          provider: 'managed:kimi-code',
-          model: 'kimi-for-coding',
-          maxContextSize: 1_000_000,
-        },
-      },
-    },
-    services: appServices((reg) => {
-      reg.defineInstance(IModelOAuthTokens, {
-        _serviceBrand: undefined,
-        hasCachedAccessToken: () => Promise.resolve(true),
-        getAccessToken: (_provider, _oauthRef, options) =>
-          getAccessToken(options?.force === true ? { force: true } : undefined),
-      } satisfies IModelOAuthTokens);
-    }),
-  };
-}
-
 type MutableKimiConfig = {
   kimiConfig: {
     models?: Record<string, { maxOutputSize?: number }>;
@@ -3750,7 +3637,7 @@ type MutableKimiConfig = {
 
 function textResult(text: string, traceId: string | null = null): LegacyGenerateResult {
   return {
-    id: 'mock-compaction-oauth-retry',
+    id: 'mock-compaction-retry',
     message: {
       role: 'assistant',
       content: [{ type: 'text', text }],
