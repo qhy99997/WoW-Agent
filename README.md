@@ -13,7 +13,7 @@ It is a GUI application, not a terminal program, and it does not ask you to crea
 - **Approval before it acts.** Tool calls that need consent appear as a card offering *allow once*, *allow for this session*, or *reject*. Concurrent requests are queued rather than allowed to collide.
 - **Questions get answered.** `AskUserQuestion` prompts render as an interactive card, so a turn never hangs waiting for input it cannot receive.
 - **Visible progress.** Replies stream in as Markdown; each tool call shows whether it succeeded or failed; turn failures and model retries surface as errors instead of silence. If the model goes quiet for too long, WoW says so and offers to stop the turn.
-- **Bring your own model.** Add providers in Settings with a name, a wire protocol, a Base URL, and an API key. Presets cover OpenAI-compatible, Anthropic, Google Gemini, OpenAI Responses, and Kimi endpoints, and you can register a model ID alongside the provider. The active model can be switched per session.
+- **Bring your own model.** Add providers in Settings with a name, a wire protocol, a Base URL, and an API key. Presets cover OpenAI-compatible, Anthropic, Google Gemini, OpenAI Responses, and Kimi endpoints, and you can register a model ID alongside the provider. The active model can be switched per session. This API key is the only credential the app uses — there is no sign-in. The engine still carries a Kimi OAuth implementation from upstream, so engine messages may occasionally mention `/login`, which is not a command this app has.
 - **MCP servers.** Add Model Context Protocol servers from Settings — either a stdio server (command plus arguments) or an HTTP endpoint — and test the configuration before relying on it.
 - **Startup environment check.** On launch WoW verifies the Node.js runtime, Git Bash on Windows, and the data directory, and lists anything that needs fixing.
 
@@ -62,11 +62,12 @@ WoW keeps everything under a single home directory:
 
 | What | Where |
 | --- | --- |
-| Configuration | `~/.wow/config.toml` — providers, models, default model, MCP servers |
+| Configuration | `~/.wow/config.toml` — providers, models, default model |
+| MCP servers | `~/.wow/mcp.json` (user level, editable in Settings), plus the read-only `<project>/.mcp.json` and `<project>/.wow/mcp.json` |
 | Sessions | `~/.wow/sessions/` |
 | Logs | `~/.wow/logs/wow.log` |
 
-You normally edit providers and MCP servers through Settings rather than by hand, but `config.toml` is a plain TOML file and the app reloads it.
+Note that MCP server definitions are not part of `config.toml`; only their timeouts are. You normally edit providers and MCP servers through Settings rather than by hand, but the underlying files are plain TOML and JSON, and the app reloads them. The UI can only remove a server it owns at the user level; entries coming from the project-level files are read-only there.
 
 Environment variables:
 
@@ -96,7 +97,7 @@ Additional scripts: `pnpm build:packages`, `pnpm dev:packages`, `pnpm test:watch
 - `packages/agent-core-v2` — the agent engine.
 - `packages/node-sdk` — the SDK the desktop app drives the engine through.
 - `packages/klient`, `packages/kosong`, `packages/minidb`, `packages/oauth`, `packages/telemetry`, `packages/tree-sitter-bash` — supporting packages.
-- `plugins/` — the bundled plugin marketplace.
+- `plugins/` — an upstream snapshot of the kimi-code plugin marketplace sources. Nothing in this repository reads it at runtime, and it is not included in the installer.
 
 See [AGENTS.md](AGENTS.md) for repository conventions.
 
