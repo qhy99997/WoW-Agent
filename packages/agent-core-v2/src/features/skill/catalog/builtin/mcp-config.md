@@ -40,7 +40,7 @@ tools exist and the user didn't name one, ask which.
 Config lives in three files; on key collision, later entries in this
 precedence order override earlier ones.
 
-The kimi-code runtime resolves the user-global directory as `WOW_HOME`
+The WoW runtime resolves the user-global directory as `WOW_HOME`
 first, falling back to `~/.wow`. Before touching the user-global file,
 resolve the actual directory with Bash so you don't read or write the wrong
 one. Check whether `WOW_HOME` is set and fall back to `~/.wow`
@@ -119,8 +119,7 @@ For changes, the flow is:
    is no prompt, which is those modes' explicit contract.
 3. **Write and tell them how to reload MCP servers.** Preserve unrelated
    entries and the `mcpServers` wrapper. MCP servers load at session
-   start, so tell the user to start a new session (for example `/new`) or
-   restart `kimi-code` for the change to take effect.
+   start, so tell the user to start a new session or restart WoW for the change to take effect.
 
 ## Secrets
 

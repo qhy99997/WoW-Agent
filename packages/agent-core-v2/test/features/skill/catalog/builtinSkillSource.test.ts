@@ -13,9 +13,6 @@ import { StubConfigService } from '../../../stubs';
 const PRODUCT_SKILLS = [
   'mcp-config',
   'import-from-cc-codex',
-  'update-config',
-  'custom-theme',
-  'check-kimi-code-docs',
 ];
 const NEUTRAL_SKILLS = BUILTIN_SKILLS.map((s) => s.name).filter(
   (name) => !PRODUCT_SKILLS.includes(name),

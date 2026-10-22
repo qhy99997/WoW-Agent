@@ -22,7 +22,7 @@ export function collectKeyDeprecations(
           `[${snakeDomain}] '${deprecation.key}' is deprecated and no longer used; ` +
           `rename it to '${deprecation.replacement}'.` +
           (deprecation.message === undefined ? '' : ` ${deprecation.message}`) +
-          ' Run /update-config to fix it.',
+          ' Edit config.toml to fix it.',
       });
     }
   }

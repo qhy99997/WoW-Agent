@@ -9,7 +9,7 @@ export class MaxStepsExceededError extends Error {
   constructor(maxSteps: number, message?: string) {
     super(
       message ??
-        `Turn exceeded maxSteps=${maxSteps}. If max_steps_per_turn is too small, raise it in config.toml (loop_control.max_steps_per_turn), or run "/update-config" to update it, then "/reload".`,
+        `Turn exceeded maxSteps=${maxSteps}. If max_steps_per_turn is too small, raise it in config.toml (loop_control.max_steps_per_turn), then restart WoW.`,
     );
     this.name = 'MaxStepsExceededError';
     this.details = { maxSteps };
