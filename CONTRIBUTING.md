@@ -28,7 +28,7 @@ This is a pnpm monorepo whose product is a desktop application:
 - `apps/desktop` — the Electron application: `src/main` (main process, agent host, IPC), `src/preload` (context bridge), `src/renderer` (React UI), `src/shared` (IPC contract)
 - `packages/agent-core-v2` — the agent engine
 - `packages/node-sdk` — the SDK the desktop app drives the engine through
-- `packages/klient`, `packages/kosong`, `packages/minidb`, `packages/oauth`, `packages/telemetry`, `packages/tree-sitter-bash` — supporting packages
+- `packages/minidb`, `packages/oauth`, `packages/tree-sitter-bash` — supporting packages
 - `plugins/` — a snapshot of upstream plugin marketplace sources; nothing reads it at runtime and it is not included in the installer
 
 See [README.md](README.md) for the full project map and [AGENTS.md](AGENTS.md) for repository conventions.
@@ -63,7 +63,7 @@ All commits and PR titles must follow [Conventional Commits](https://www.convent
 | fix      | A bug fix                                   | fix(desktop): keep transcript scrolled   |
 | docs     | Documentation only                          | docs: clarify install instructions        |
 | chore    | Tooling / housekeeping                      | chore: bump dependencies                  |
-| refactor | Internal refactor without behavior change   | refactor(kosong): extract retry helper    |
+| refactor | Internal refactor without behavior change   | refactor(minidb): extract retry helper    |
 | test     | Adding or improving tests                   | test(agent-core-v2): cover skill resolver |
 | ci       | CI / build pipeline changes                 | ci: cache pnpm store                      |
 | build    | Build system / artifact changes             | build(native): add win32-arm64 target     |

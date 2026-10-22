@@ -96,7 +96,7 @@ Additional scripts: `pnpm build:packages`, `pnpm dev:packages`, `pnpm test:watch
 - `apps/desktop` — the Electron application: `src/main` (main process, agent host, IPC), `src/preload` (context bridge), `src/renderer` (React UI), `src/shared` (IPC contract).
 - `packages/agent-core-v2` — the agent engine.
 - `packages/node-sdk` — the SDK the desktop app drives the engine through.
-- `packages/klient`, `packages/kosong`, `packages/minidb`, `packages/oauth`, `packages/telemetry`, `packages/tree-sitter-bash` — supporting packages.
+- `packages/minidb`, `packages/oauth`, `packages/tree-sitter-bash` — supporting packages.
 - `plugins/` — an upstream snapshot of the kimi-code plugin marketplace sources. Nothing in this repository reads it at runtime, and it is not included in the installer.
 
 See [AGENTS.md](AGENTS.md) for repository conventions.

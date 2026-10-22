@@ -96,7 +96,7 @@ pnpm run dist        # 构建全部内容并打包 Windows 安装包
 - `apps/desktop`——Electron 应用：`src/main`（主进程、agent host、IPC）、`src/preload`（context bridge）、`src/renderer`（React 界面）、`src/shared`（IPC 契约）。
 - `packages/agent-core-v2`——agent 引擎。
 - `packages/node-sdk`——桌面应用用来驱动引擎的 SDK。
-- `packages/klient`、`packages/kosong`、`packages/minidb`、`packages/oauth`、`packages/telemetry`、`packages/tree-sitter-bash`——配套包。
+- `packages/minidb`、`packages/oauth`、`packages/tree-sitter-bash`——配套包。
 - `plugins/`——kimi-code 插件市场源码的上游快照。本仓库运行时不会读取它，安装包也不包含它。
 
 仓库约定见 [AGENTS.md](AGENTS.md)。

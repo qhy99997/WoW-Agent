@@ -28,7 +28,7 @@ WoW 对桌面端交互、agent 工作流和公开 API 已有自己的主张。�
 - `apps/desktop` — Electron 桌面应用：`src/main`（主进程、agent host、IPC）、`src/preload`（context bridge）、`src/renderer`（React 界面）、`src/shared`（IPC 契约）
 - `packages/agent-core-v2` — agent 引擎
 - `packages/node-sdk` — 桌面应用驱动引擎所用的 SDK
-- `packages/klient`、`packages/kosong`、`packages/minidb`、`packages/oauth`、`packages/telemetry`、`packages/tree-sitter-bash` — 配套包
+- `packages/minidb`、`packages/oauth`、`packages/tree-sitter-bash` — 配套包
 - `plugins/` — 上游插件市场源码的快照；本仓库运行时不读取它，安装包也不包含它
 
 完整项目地图见 [README.md](README.md)，仓库约定见 [AGENTS.md](AGENTS.md)。
@@ -63,7 +63,7 @@ pnpm install
 | fix      | bug 修复                                 | fix(desktop): keep transcript scrolled   |
 | docs     | 仅文档                                   | docs: clarify install instructions     |
 | chore    | 工具 / 杂务                              | chore: bump dependencies               |
-| refactor | 无行为变更的内部重构                     | refactor(kosong): extract retry helper |
+| refactor | 无行为变更的内部重构                     | refactor(minidb): extract retry helper |
 | test     | 新增或改进测试                           | test(agent-core-v2): cover skill resolver |
 | ci       | CI / 构建流水线变更                      | ci: cache pnpm store                   |
 | build    | 构建系统 / 产物变更                      | build(native): add win32-arm64 target  |
