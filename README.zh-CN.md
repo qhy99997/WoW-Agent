@@ -1,130 +1,113 @@
-# Kimi Code CLI
+# WoW
 
-[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE) [![Docs](https://img.shields.io/badge/docs-online-blue)](https://moonshotai.github.io/kimi-code/zh/)
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-[Documentation](https://moonshotai.github.io/kimi-code/zh/) · [Issues](https://github.com/MoonshotAI/kimi-code/issues) · [English](README.md)
+WoW 是一个桌面端 AI 编程 agent。指定一个项目目录，用自然语言描述你想做的事，它就会读写文件、执行 shell 命令，并在动手之前征求你的同意。
 
-
-![Kimi Code 的使用演示](./docs/media/intro.gif)
-
-
-## 什么是 Kimi Code CLI
-
-Kimi Code CLI 是一个运行在终端里的 AI 编程 agent，可以帮你读写代码、执行 shell 命令、检索文件、抓取网页，并根据反馈自主决定下一步动作。开箱即用对接 Moonshot AI 的 Kimi 模型，也可指向其他兼容厂商。
-
-## 安装
-
-推荐使用官方安装脚本，不需要提前安装 Node.js。
-
-- **macOS / Linux**：
-
-```sh
-curl -fsSL https://code.kimi.com/kimi-code/install.sh | bash
-```
-
-- **Windows（PowerShell）**：
-
-```powershell
-irm https://code.kimi.com/kimi-code/install.ps1 | iex
-```
-
-> Windows 用户首次启动前还需要安装 [Git for Windows](https://gitforwindows.org/)，Kimi Code CLI 会使用其中的 Git Bash 作为 Shell 环境。如果 Git Bash 安装在非标准路径，请把 `KIMI_SHELL_PATH` 设为 `bash.exe` 的绝对路径。
-
-随后在新的终端会话中运行：
-
-```sh
-kimi --version
-```
-
-npm 安装、升级、卸载方式，见[快速上手](https://moonshotai.github.io/kimi-code/zh/guides/getting-started)。
-
-## 快速开始
-
-进入项目目录并启动交互界面：
-
-```sh
-cd your-project
-kimi
-```
-
-首次启动时，在 Kimi Code CLI 里输入 `/login`，选择 Kimi Code OAuth 或 Moonshot AI Open Platform API 密钥登录。登录完成后，可以先让它熟悉项目：
-
-```
-帮我看一下这个项目的目录结构，简单介绍一下每个目录是做什么的
-```
+它是一个图形界面应用，不是终端程序，也不需要注册账号：模型端点和 API Key 由你自己提供。
 
 ## 核心特性
 
-- **二进制发行，零环境依赖** 一行命令安装，不需要预装 Node.js，不用折腾 PATH，也不会和全局模块冲突。
-- **极速启动** TUI 在毫秒级就绪，开一个新会话没有任何心智负担。
-- **精致的 TUI 体验** 端到端打磨的交互界面，专为长时间、专注的 Agent 会话优化。
-- **视频也能输入** 把屏幕录像、演示视频拖进对话，让 Agent 看那些难以用文字描述的东西——把参考片段做成 LUT、把长视频剪成短视频、把录屏变成代码，等等。
-- **AI-native 的 MCP 配置** 通过 `/mcp-config` 对话式添加、编辑、认证 MCP 服务器，无需手写 JSON。
-- **丰富的插件生态** 从插件市场或任意 GitHub 仓库安装 skills、MCP 服务器和数据源，每次安装都会标明来源的信任级别。
-- **子 Agent 聚焦并行工作** 内置 `coder`、`explore`、`plan` 子 Agent 在隔离上下文中处理子任务，主对话保持清爽。
-- **生命周期 hooks** 在关键节点执行本地命令：拦截高风险工具调用、审计决策、发送桌面通知，或对接你自己的自动化脚本。
-- **编辑器 / IDE 集成（ACP）** 用 `kimi acp` 让 Zed、JetBrains 等任意 [Agent Client Protocol](https://agentclientprotocol.com/) 客户端直接驱动会话。
+- **桌面应用。** Electron 外壳 + React 界面（`apps/desktop`），agent 引擎跑在主进程里。
+- **按工作区组织的会话。** 在侧边栏新建、重命名、删除会话。对话记录由引擎自己的会话历史重建，工作区也由已持久化的会话推导而来，因此重启之后依然完整。
+- **动手前先征求同意。** 需要授权的工具调用会弹出一张卡片，提供「允许一次」「本会话允许」「拒绝」三个选项；并发的授权请求会排队，不会互相顶掉。
+- **提问能被回答。** `AskUserQuestion` 会渲染成可交互的卡片，不会出现一轮对话卡死在等待输入上的情况。
+- **进度可见。** 回复以 Markdown 流式呈现；每个工具调用都会标明成功还是失败；轮次失败和模型重试会作为错误暴露出来，而不是悄无声息地卡住。如果模型长时间没有输出，WoW 会提示你，并允许你中止这一轮。
+- **自带模型。** 在设置里添加 Provider：名称、协议、Base URL、API Key。预设覆盖 OpenAI 兼容、Anthropic、Google Gemini、OpenAI Responses 和 Kimi 端点，也可以同时注册一个模型 ID。当前模型可以按会话切换。
+- **MCP 服务器。** 在设置里添加 Model Context Protocol 服务器——支持 stdio（命令 + 参数）或 HTTP 端点——并且可以在真正使用之前先测试配置是否可用。
+- **启动环境检查。** 启动时会检查 Node.js 运行环境、Windows 上的 Git Bash 以及数据目录，并把需要处理的问题列出来。
 
+## 构建与运行
 
-## 在编辑器里使用（ACP）
+本仓库不提供预编译安装包，请从源码构建。
 
-Kimi Code CLI 支持 [Agent Client Protocol](https://agentclientprotocol.com/)，ACP 兼容的编辑器 / IDE（Zed、JetBrains……）可以通过 stdio 直接驱动会话。登录一次后，把编辑器指向 `kimi acp` 子命令即可，无需重复登录。
+环境要求：
 
-以 Zed 为例，在 `~/.config/zed/settings.json` 中加入：
+- Windows 10/11（x64）——目前仅提供这一个安装包目标
+- [Git for Windows](https://gitforwindows.org/)——WoW 使用其中的 Git Bash 作为 Shell
+- Node.js ≥ 24.15.0、pnpm 10.33.0
 
-```json
-{
-  "agent_servers": {
-    "Kimi Code CLI": {
-      "type": "custom",
-      "command": "kimi",
-      "args": ["acp"],
-      "env": {}
-    }
-  }
-}
+```sh
+git clone https://github.com/qhy99997/WoW-Agent.git
+cd WoW-Agent
+pnpm install
 ```
 
-随后在 Zed 的 Agent 面板新建对话即可。JetBrains 配置与排障见[在 IDE 中使用](https://moonshotai.github.io/kimi-code/zh/guides/ides)，完整能力矩阵见 [`kimi acp` 参考](https://moonshotai.github.io/kimi-code/zh/reference/kimi-acp)。
+以开发模式运行：
 
-## 文档
+```sh
+pnpm dev
+```
 
-- [快速上手](https://moonshotai.github.io/kimi-code/zh/guides/getting-started)
-- [交互与审批](https://moonshotai.github.io/kimi-code/zh/guides/interaction)
-- [会话](https://moonshotai.github.io/kimi-code/zh/guides/sessions)
-- [在 IDE 中使用（ACP）](https://moonshotai.github.io/kimi-code/zh/guides/ides)
-- [配置](https://moonshotai.github.io/kimi-code/zh/configuration/config-files)
-- [命令参考](https://moonshotai.github.io/kimi-code/zh/reference/kimi-command)
+构建 Windows 安装包：
+
+```sh
+pnpm run dist
+```
+
+安装包输出到 `apps/desktop/release/WoW-0.1.0-x64.exe`。它是 NSIS 安装包：按用户安装，不需要管理员权限，会创建桌面和开始菜单快捷方式。
+
+## 快速开始
+
+1. 启动 WoW。如果环境检查未通过，处理标记为「需修复」的项目，然后点「重新检查」。
+2. 打开**设置 → 模型**，添加一个 Provider：选一个协议预设，或填入自定义 Base URL，再粘贴 API Key。如果该服务不会自动列出模型，顺便填一个模型 ID。
+3. 选择一个项目目录。WoW 会在其中读写文件、执行命令，并在动手前征求你的同意。
+4. 在输入框里描述任务并发送。
+
+> 桌面界面目前只有中文（`<html lang="zh-CN">`）。
+
+## 配置与数据
+
+WoW 把全部数据放在同一个主目录下：
+
+| 内容 | 位置 |
+| --- | --- |
+| 配置 | `~/.wow/config.toml`——Provider、模型、默认模型、MCP 服务器 |
+| 会话 | `~/.wow/sessions/` |
+| 日志 | `~/.wow/logs/wow.log` |
+
+Provider 和 MCP 服务器通常在设置界面里维护，不必手改文件；`config.toml` 是普通 TOML 文件，应用会重新加载它。
+
+环境变量：
+
+- `WOW_HOME`——改用其他数据目录，默认 `~/.wow`。
+- `WOW_SHELL_PATH`——`bash.exe` 的绝对路径，启动时的环境检查会读取它，用于 Git Bash 装在非标准路径的情况。
+- `KIMI_SHELL_PATH`——`bash.exe` 的绝对路径，agent 引擎在启动 shell 命令时读取它。如果机器上的 Git Bash 无法被自动识别，请把这两个变量设为同一个绝对路径。
 
 ## 本地开发
 
 环境要求：Node.js ≥ 24.15.0，pnpm 10.33.0。
 
 ```sh
-git clone https://github.com/MoonshotAI/kimi-code.git
-cd kimi-code
 pnpm install
+pnpm dev             # 以开发模式运行桌面应用
+pnpm test            # 运行测试（vitest）
+pnpm typecheck       # TypeScript 检查（会先构建各包）
+pnpm lint            # 仓库自查规则 + oxlint
+pnpm build           # 构建所有包
+pnpm run dist        # 构建全部内容并打包 Windows 安装包
 ```
 
-```sh
-pnpm dev:cli    # 以开发模式运行 CLI
-pnpm test       # 运行测试
-pnpm typecheck  # TypeScript 检查
-pnpm lint       # 运行 oxlint
-pnpm build      # 构建所有包
-```
+其他脚本：`pnpm build:packages`、`pnpm dev:packages`、`pnpm test:watch`、`pnpm test:coverage`、`pnpm lint:fix`、`pnpm clean`。
 
-完整贡献流程见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+## 目录结构
 
-## 社区
+- `apps/desktop`——Electron 应用：`src/main`（主进程、agent host、IPC）、`src/preload`（context bridge）、`src/renderer`（React 界面）、`src/shared`（IPC 契约）。
+- `packages/agent-core-v2`——agent 引擎。
+- `packages/node-sdk`——桌面应用用来驱动引擎的 SDK。
+- `packages/klient`、`packages/kosong`、`packages/minidb`、`packages/oauth`、`packages/telemetry`、`packages/tree-sitter-bash`——配套包。
+- `plugins/`——内置插件市场。
 
-- [Issues](https://github.com/MoonshotAI/kimi-code/issues)
-- 安全漏洞反馈，请见 [SECURITY.md](SECURITY.md)。
+仓库约定见 [AGENTS.md](AGENTS.md)。
+
+## 安全
+
+安全漏洞反馈，请见 [SECURITY.md](SECURITY.md)。
 
 ## 致谢
 
-我们的 TUI 构建在 [`pi-tui`](https://github.com/earendil-works/pi-mono/tree/main/packages/tui) 之上。我们衷心感谢 `pi-tui` 作者的工作。
+WoW 派生自 [MoonshotAI/kimi-code](https://github.com/MoonshotAI/kimi-code)，即 MIT 协议下的 Kimi Code CLI。agent 引擎、SDK 及配套包均来自该项目，内置插件同样源自该项目。
 
 ## 许可证
 
-基于 [MIT](LICENSE) 协议发布。
+基于 [MIT](LICENSE) 协议发布。按照 MIT 对衍生作品的要求，许可证中在 WoW 自己的版权声明之外，仍保留了上游的版权声明。

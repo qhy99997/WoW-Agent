@@ -1,126 +1,113 @@
-# Kimi Code CLI
+# WoW
 
-[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE) [![Docs](https://img.shields.io/badge/docs-online-blue)](https://moonshotai.github.io/kimi-code/en/) <br>
-[Documentation](https://moonshotai.github.io/kimi-code/en/) · [Issues](https://github.com/MoonshotAI/kimi-code/issues) · [中文](README.zh-CN.md)
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-![Demo of using Kimi Code](./docs/media/intro.gif)
+WoW is a desktop AI coding agent. Point it at a project directory, describe what you want, and it reads and edits files, runs shell commands, and asks for your approval before it acts.
 
-## What is Kimi Code CLI
+It is a GUI application, not a terminal program, and it does not ask you to create an account: you bring your own model endpoint and API key.
 
-Kimi Code CLI is an AI coding agent that runs in your terminal — it can read and edit code, run shell commands, search files, fetch web pages, and choose the next step based on the feedback it receives. It works out of the box with Moonshot AI’s Kimi models and can also be configured to use other compatible providers.
+## Features
 
-## Install
+- **Desktop application.** An Electron shell around a React UI (`apps/desktop`), with the agent engine running in the main process.
+- **Workspace-scoped sessions.** Create, rename, and delete sessions from the sidebar. Transcripts are rebuilt from the engine's own session history, and workspaces are derived from persisted sessions, so both survive a restart.
+- **Approval before it acts.** Tool calls that need consent appear as a card offering *allow once*, *allow for this session*, or *reject*. Concurrent requests are queued rather than allowed to collide.
+- **Questions get answered.** `AskUserQuestion` prompts render as an interactive card, so a turn never hangs waiting for input it cannot receive.
+- **Visible progress.** Replies stream in as Markdown; each tool call shows whether it succeeded or failed; turn failures and model retries surface as errors instead of silence. If the model goes quiet for too long, WoW says so and offers to stop the turn.
+- **Bring your own model.** Add providers in Settings with a name, a wire protocol, a Base URL, and an API key. Presets cover OpenAI-compatible, Anthropic, Google Gemini, OpenAI Responses, and Kimi endpoints, and you can register a model ID alongside the provider. The active model can be switched per session.
+- **MCP servers.** Add Model Context Protocol servers from Settings — either a stdio server (command plus arguments) or an HTTP endpoint — and test the configuration before relying on it.
+- **Startup environment check.** On launch WoW verifies the Node.js runtime, Git Bash on Windows, and the data directory, and lists anything that needs fixing.
 
-Install with the official script. No Node.js required.
+## Build and run
 
-- **macOS or Linux**:
+Prebuilt installers are not distributed from this repository; build one from source.
 
-```sh
-curl -fsSL https://code.kimi.com/kimi-code/install.sh | bash
-```
+Requirements:
 
-- **Windows (PowerShell)**:
-
-```powershell
-irm https://code.kimi.com/kimi-code/install.ps1 | iex
-```
-
-> On Windows, install [Git for Windows](https://gitforwindows.org/) before first launch because Kimi Code CLI uses the bundled Git Bash as its shell environment. If Git Bash is installed in a custom location, set `KIMI_SHELL_PATH` to the absolute path of `bash.exe`.
-
-Then, run it with a new shell session:
+- Windows 10/11 (x64) — this is currently the only installer target
+- [Git for Windows](https://gitforwindows.org/) — WoW uses the Git Bash bundled with it as its shell
+- Node.js ≥ 24.15.0 and pnpm 10.33.0
 
 ```sh
-kimi --version
+git clone https://github.com/qhy99997/WoW-Agent.git
+cd WoW-Agent
+pnpm install
 ```
 
-For npm install, upgrade, uninstall, see [Getting Started](https://moonshotai.github.io/kimi-code/en/guides/getting-started).
-
-## Quick Start
-
-Open a project and start the interactive UI:
+Run the app in development mode:
 
 ```sh
-cd your-project
-kimi
+pnpm dev
 ```
 
-On first launch, run `/login` inside Kimi Code CLI and choose either Kimi Code OAuth or a Moonshot AI Open Platform API key. After login, try your first task:
+Build the Windows installer:
 
-```
-Take a look at this project and explain its main directories.
-```
-
-## Key Features
-
-- **Single-binary distribution.** Install with one command: no Node.js setup, PATH gymnastics, or global module conflicts.
-- **Blazing-fast startup.** The TUI is ready in milliseconds, so starting a session never feels heavy.
-- **Purpose-built TUI.** A carefully tuned interface, optimized end to end for long, focused agent sessions.
-- **Video input.** Drop a screen recording or demo clip into the chat and let the agent watch what is hard to describe in words — turn a reference clip into a LUT, a long video into a short, a screen recording into working code, and more.
-- **AI-native MCP configuration.** Add, edit, and authenticate Model Context Protocol servers conversationally with `/mcp-config`, without hand-editing JSON.
-- **Rich plugin ecosystem.** Install skills, MCP servers, and data sources from the marketplace or any GitHub repo, with each install's trust level surfaced up front.
-- **Subagents for focused, parallel work.** Dispatch built-in `coder`, `explore`, and `plan` subagents in isolated contexts while keeping the main conversation clean.
-- **Lifecycle hooks.** Run local commands at key points to gate risky tool calls, audit decisions, trigger desktop notifications, or connect to your own automation.
-- **Editor & IDE integration (ACP).** Drive a Kimi Code CLI session straight from Zed, JetBrains, or any [Agent Client Protocol](https://agentclientprotocol.com/) client with `kimi acp`.
-
-## Use it in your editor (ACP)
-
-Kimi Code CLI speaks the [Agent Client Protocol](https://agentclientprotocol.com/), so ACP-compatible editors and IDEs (Zed, JetBrains, …) can drive a session over stdio. Log in once, then point your editor at the `kimi acp` subcommand — no extra login needed.
-
-For Zed, add this to `~/.config/zed/settings.json`:
-
-```json
-{
-  "agent_servers": {
-    "Kimi Code CLI": {
-      "type": "custom",
-      "command": "kimi",
-      "args": ["acp"],
-      "env": {}
-    }
-  }
-}
+```sh
+pnpm run dist
 ```
 
-Then open a new conversation in Zed's Agent panel. See [Using in IDEs](https://moonshotai.github.io/kimi-code/en/guides/ides) for JetBrains setup and troubleshooting, and the [`kimi acp` reference](https://moonshotai.github.io/kimi-code/en/reference/kimi-acp) for the full capability matrix.
+The installer is written to `apps/desktop/release/WoW-0.1.0-x64.exe`. It is an NSIS package: a per-user install that does not require administrator rights, and it creates desktop and Start-menu shortcuts.
 
-## Docs
+## Getting started
 
-- [Getting Started](https://moonshotai.github.io/kimi-code/en/guides/getting-started)
-- [Interaction and approvals](https://moonshotai.github.io/kimi-code/en/guides/interaction)
-- [Sessions](https://moonshotai.github.io/kimi-code/en/guides/sessions)
-- [Using in IDEs (ACP)](https://moonshotai.github.io/kimi-code/en/guides/ides)
-- [Configuration](https://moonshotai.github.io/kimi-code/en/configuration/config-files)
-- [Command reference](https://moonshotai.github.io/kimi-code/en/reference/kimi-command)
+1. Launch WoW. If the environment check fails, fix the items marked as needing repair and press **重新检查** (re-check).
+2. Open **设置 → 模型** (Settings → Models) and add a provider: pick a protocol preset or a custom Base URL, then paste your API key. Add a model ID if the provider does not list one automatically.
+3. Choose a project directory. WoW reads and writes files there, runs commands there, and asks for your approval before acting.
+4. Describe the task in the composer and send it.
+
+> The desktop interface is currently Chinese only (`<html lang="zh-CN">`).
+
+## Configuration and data
+
+WoW keeps everything under a single home directory:
+
+| What | Where |
+| --- | --- |
+| Configuration | `~/.wow/config.toml` — providers, models, default model, MCP servers |
+| Sessions | `~/.wow/sessions/` |
+| Logs | `~/.wow/logs/wow.log` |
+
+You normally edit providers and MCP servers through Settings rather than by hand, but `config.toml` is a plain TOML file and the app reloads it.
+
+Environment variables:
+
+- `WOW_HOME` — use a different data directory instead of `~/.wow`.
+- `WOW_SHELL_PATH` — path to `bash.exe`, read by the startup environment check when Git Bash is installed in a non-standard location.
+- `KIMI_SHELL_PATH` — path to `bash.exe`, read by the agent engine when it launches shell commands. On a machine where Git Bash is not auto-detected, set both variables to the same absolute path.
 
 ## Develop
 
 Requirements: Node.js ≥ 24.15.0, pnpm 10.33.0.
 
 ```sh
-git clone https://github.com/MoonshotAI/kimi-code.git
-cd kimi-code
 pnpm install
+pnpm dev             # run the desktop app in dev mode
+pnpm test            # run the test suite (vitest)
+pnpm typecheck       # TypeScript check (builds packages first)
+pnpm lint            # repo lint rules + oxlint
+pnpm build           # build all packages
+pnpm run dist        # build everything and package the Windows installer
 ```
 
-```sh
-pnpm dev:cli    # run the CLI in dev mode
-pnpm test       # run tests
-pnpm typecheck  # TypeScript check
-pnpm lint       # oxlint
-pnpm build      # build all packages
-```
+Additional scripts: `pnpm build:packages`, `pnpm dev:packages`, `pnpm test:watch`, `pnpm test:coverage`, `pnpm lint:fix`, `pnpm clean`.
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the full contribution guide.
+## Project layout
 
-## Community
+- `apps/desktop` — the Electron application: `src/main` (main process, agent host, IPC), `src/preload` (context bridge), `src/renderer` (React UI), `src/shared` (IPC contract).
+- `packages/agent-core-v2` — the agent engine.
+- `packages/node-sdk` — the SDK the desktop app drives the engine through.
+- `packages/klient`, `packages/kosong`, `packages/minidb`, `packages/oauth`, `packages/telemetry`, `packages/tree-sitter-bash` — supporting packages.
+- `plugins/` — the bundled plugin marketplace.
 
-- [Issues](https://github.com/MoonshotAI/kimi-code/issues)
-- For security vulnerabilities, see [SECURITY.md](SECURITY.md).
+See [AGENTS.md](AGENTS.md) for repository conventions.
+
+## Security
+
+For security vulnerabilities, see [SECURITY.md](SECURITY.md).
 
 ## Acknowledgements
 
-Our TUI is built on top of [`pi-tui`](https://github.com/earendil-works/pi-mono/tree/main/packages/tui). We thank the authors of `pi-tui` for their valuable work.
+WoW is derived from [MoonshotAI/kimi-code](https://github.com/MoonshotAI/kimi-code), the MIT-licensed Kimi Code CLI. The agent engine, the SDK, and the supporting packages come from that project, and the bundled plugins originate there as well.
 
 ## License
 
-Released under the [MIT License](LICENSE).
+Released under the [MIT License](LICENSE). The license retains the upstream copyright notice alongside WoW's own, as the MIT terms require for derived work.
