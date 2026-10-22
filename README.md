@@ -54,7 +54,7 @@ The installer is written to `apps/desktop/release/WoW-0.1.0-x64.exe`. It is an N
 3. Choose a project directory. WoW reads and writes files there, runs commands there, and asks for your approval before acting.
 4. Describe the task in the composer and send it.
 
-> The desktop interface is currently Chinese only (`<html lang="zh-CN">`).
+> The desktop interface is in Chinese; a few field labels such as `Base URL` and `API Key` stay in English (`<html lang="zh-CN">`).
 
 ## Configuration and data
 
