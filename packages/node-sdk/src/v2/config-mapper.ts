@@ -1,8 +1,8 @@
 /**
  * v2 config shape mapping — pure functions that project the agent-core-v2
  * engine's per-domain config view (`IConfigService.getAll()` /
- * `inspect().userValue` / `diagnostics()`) onto the v1 `KimiConfig` /
- * `ConfigDiagnostics` shapes the SDK contract returns.
+ * `inspect().userValue`) onto the v1 `KimiConfig` shape the SDK contract
+ * returns.
  *
  * Why a mapping layer exists: v1 loads config.toml as ONE zod-validated
  * document (`KimiConfigSchema`), while v2 registers one config section per
@@ -13,7 +13,7 @@
  * passthrough document, v2's materialized section defaults) are pinned in
  * the parity test's `KNOWN_DIFFS`, not papered over here.
  */
-import type { ConfigDiagnostics, KimiConfig } from '#/types';
+import type { KimiConfig } from '#/types';
 
 /**
  * Every top-level `KimiConfig` field except `raw` (a v1 write-path
@@ -65,25 +65,6 @@ export function resolvedConfigToKimiConfig(resolved: Record<string, unknown>): K
   return config as KimiConfig;
 }
 
-/** Structural minimum of the v2 engine's `ConfigDiagnostic`. */
-export interface V2ConfigDiagnostic {
-  readonly domain?: string;
-  readonly severity: string;
-  readonly message: string;
-}
-
-/**
- * v1 reports diagnostics as flat warning strings; v2 carries structured
- * `{domain, severity, message}` entries. The SDK contract is the v1 shape,
- * so the message texts are the warnings (severity/domain stay available to
- * v2-native callers through the klient facade).
- */
-export function diagnosticsToConfigDiagnostics(
-  diagnostics: readonly V2ConfigDiagnostic[],
-): ConfigDiagnostics {
-  return { warnings: diagnostics.map((diagnostic) => diagnostic.message) };
-}
-
 /** The writes needed to reproduce v1 `removeKimiProvider` semantics. */
 export interface ProviderRemovalPlan {
   readonly providers: Record<string, unknown>;
@@ -97,7 +78,7 @@ export interface ProviderRemovalPlan {
  * drop every model whose `provider` points at it, and clear the default
  * pointers when they dangle. The v2 engine's own `providerService.delete`
  * only clears the default-provider pointer, so the SDK replays the full v1
- * cascade through the config facade. Inputs are the USER-layer values
+ * cascade through the config service. Inputs are the USER-layer values
  * (`inspect().userValue`), matching v1's disk-config write base.
  *
  * The `[secondary_model]` section is deliberately left untouched: it is the

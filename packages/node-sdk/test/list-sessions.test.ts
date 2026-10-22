@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import { mkdir, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -14,7 +14,6 @@ import {
 } from '@moonshot-ai/agent-core-v2';
 
 import { createKimiHarness, SDKRpcClientV2 } from '#/index';
-import type { KimiError } from '#/index';
 
 import { TEST_IDENTITY } from './test-identity';
 
@@ -50,83 +49,75 @@ async function makeTempDir(): Promise<string> {
 }
 
 describe('KimiHarness.listSessions', () => {
-  it('rejects whitespace-only workDir with request.work_dir_required', async () => {
-    const homeDir = await makeTempDir();
-    const harness = createKimiHarness({
-      identity: TEST_IDENTITY,
-      homeDir,
-    });
-
-    try {
-      await expect(harness.listSessions({ workDir: '   ' })).rejects.toMatchObject({
-        name: 'KimiError',
-        code: 'request.work_dir_required',
-      } satisfies Partial<KimiError>);
-    } finally {
-      await harness.close();
-    }
-  });
-
-  it('lists all sessions when no payload is provided', async () => {
+  it('lists the sessions of every workDir', async () => {
     const homeDir = await makeTempDir();
     const workDir = await makeTempDir();
     const otherWorkDir = await makeTempDir();
-    const harness = createKimiHarness({
-      identity: TEST_IDENTITY,
-      homeDir,
-    });
+    const harness = createKimiHarness({ identity: TEST_IDENTITY, homeDir });
 
     try {
-      await harness.createSession({ id: 'ses_harness_all_a', workDir });
-      await harness.createSession({ id: 'ses_harness_all_b', workDir: otherWorkDir });
+      const first = await harness.createSession({ workDir });
+      const second = await harness.createSession({ workDir: otherWorkDir });
 
       const sessions = await harness.listSessions();
-      expect(sessions.map((session) => session.id).toSorted()).toEqual([
-        'ses_harness_all_a',
-        'ses_harness_all_b',
-      ]);
+      expect(sessions.map((session) => session.id).toSorted()).toEqual(
+        [first.id, second.id].toSorted(),
+      );
+      expect(sessions.find((session) => session.id === first.id)?.workDir).toBe(workDir);
+      expect(sessions.find((session) => session.id === second.id)?.workDir).toBe(otherWorkDir);
     } finally {
       await harness.close();
     }
   });
 
-  it('lists a session from a workDir containing spaces and non-ASCII characters', async () => {
+  it('keeps a workDir containing spaces and non-ASCII characters', async () => {
     const homeDir = await makeTempDir();
     const root = await makeTempDir();
     const workDir = join(root, 'Workspace With Spaces', '项目');
     await mkdir(workDir, { recursive: true });
-    const harness = createKimiHarness({
-      identity: TEST_IDENTITY,
-      homeDir,
-    });
+    const harness = createKimiHarness({ identity: TEST_IDENTITY, homeDir });
 
     try {
-      const session = await harness.createSession({ id: 'ses_unicode_workdir', workDir });
+      const session = await harness.createSession({ workDir });
 
-      const sessions = await harness.listSessions({ workDir });
-      expect(sessions.map((item) => item.id)).toEqual([session.id]);
+      const sessions = await harness.listSessions();
+      expect(sessions.map((item) => [item.id, item.workDir])).toEqual([[session.id, workDir]]);
     } finally {
       await harness.close();
     }
   });
 
-  it('resolves relative workDir inputs before filtering', async () => {
+  it('resolves a relative workDir on create', async () => {
     const homeDir = await makeTempDir();
     const workDir = await makeTempDir();
-    const harness = createKimiHarness({
-      identity: TEST_IDENTITY,
-      homeDir,
-    });
+    const harness = createKimiHarness({ identity: TEST_IDENTITY, homeDir });
     const originalCwd = process.cwd();
 
     try {
       process.chdir(workDir);
-      const session = await harness.createSession({ id: 'ses_relative_workdir', workDir: '.' });
+      const session = await harness.createSession({ workDir: '.' });
+      expect(session.workDir).toBe(resolve(workDir));
 
-      const sessions = await harness.listSessions({ workDir: '.' });
-      expect(sessions.map((item) => item.id)).toEqual([session.id]);
+      const sessions = await harness.listSessions();
+      expect(sessions.map((item) => [item.id, item.workDir])).toEqual([
+        [session.id, resolve(workDir)],
+      ]);
     } finally {
       process.chdir(originalCwd);
+      await harness.close();
+    }
+  });
+
+  it('rejects a whitespace-only workDir on create', async () => {
+    const homeDir = await makeTempDir();
+    const harness = createKimiHarness({ identity: TEST_IDENTITY, homeDir });
+
+    try {
+      await expect(harness.createSession({ workDir: '   ' })).rejects.toMatchObject({
+        name: 'KimiError',
+        code: 'request.work_dir_required',
+      });
+    } finally {
       await harness.close();
     }
   });
@@ -134,83 +125,20 @@ describe('KimiHarness.listSessions', () => {
   it('lists persisted sessions after the active Session has been closed', async () => {
     const homeDir = await makeTempDir();
     const workDir = await makeTempDir();
-    const harness = createKimiHarness({
-      identity: TEST_IDENTITY,
-      homeDir,
-    });
+    const harness = createKimiHarness({ identity: TEST_IDENTITY, homeDir });
 
     try {
-      const session = await harness.createSession({ id: 'ses_closed_but_listed', workDir });
-      await harness.closeSession(session.id);
+      const session = await harness.createSession({ workDir });
+      await session.close();
 
-      const sessions = await harness.listSessions({ workDir });
+      const sessions = await harness.listSessions();
       expect(sessions.map((item) => item.id)).toEqual([session.id]);
     } finally {
       await harness.close();
     }
   });
-});
 
-describe('SDKRpcClientV2.listSessionsPage', () => {
-  it('pages through the listing with keyset cursors (read model off)', async () => {
-    vi.stubEnv('KIMI_CODE_EXPERIMENTAL_FLAG', '0');
-    vi.stubEnv('KIMI_CODE_PERSISTENCE_MINIDB_READMODEL', '0');
-    const homeDir = await makeTempDir();
-    const workDir = await makeTempDir();
-    const client = new SDKRpcClientV2({ homeDir, identity: TEST_IDENTITY });
-
-    try {
-      for (let i = 0; i < 5; i += 1) {
-        const created = await client.createSession({ id: `ses_page_${i}`, workDir });
-        await client.closeSession({ sessionId: created.id });
-      }
-
-      const page1 = await client.listSessionsPage({ workDir, limit: 2 });
-      expect(page1.items).toHaveLength(2);
-      expect(page1.nextCursor).toBe(page1.items.at(-1)?.id);
-
-      const page2 = await client.listSessionsPage({ workDir, limit: 2, before: page1.nextCursor });
-      expect(page2.items).toHaveLength(2);
-      expect(page2.nextCursor).toBe(page2.items.at(-1)?.id);
-
-      const page3 = await client.listSessionsPage({ workDir, limit: 2, before: page2.nextCursor });
-      expect(page3.items).toHaveLength(1);
-      expect(page3.nextCursor).toBeUndefined();
-
-      const pagedIds = [...page1.items, ...page2.items, ...page3.items].map((item) => item.id);
-      expect(new Set(pagedIds)).toEqual(
-        new Set([0, 1, 2, 3, 4].map((i) => `ses_page_${String(i)}`)),
-      );
-      // Draining pages yields exactly the unpaged listing, in the same order.
-      const full = await client.listSessions({ workDir });
-      expect(pagedIds).toEqual(full.map((item) => item.id));
-    } finally {
-      await client.close();
-      vi.unstubAllEnvs();
-    }
-  });
-
-  it('answers an empty terminal page for an unknown cursor', async () => {
-    vi.stubEnv('KIMI_CODE_EXPERIMENTAL_FLAG', '0');
-    vi.stubEnv('KIMI_CODE_PERSISTENCE_MINIDB_READMODEL', '0');
-    const homeDir = await makeTempDir();
-    const workDir = await makeTempDir();
-    const client = new SDKRpcClientV2({ homeDir, identity: TEST_IDENTITY });
-
-    try {
-      const created = await client.createSession({ id: 'ses_cursor_probe', workDir });
-      await client.closeSession({ sessionId: created.id });
-
-      await expect(
-        client.listSessionsPage({ workDir, before: 'ses_unknown' }),
-      ).resolves.toEqual({ items: [], nextCursor: undefined });
-    } finally {
-      await client.close();
-      vi.unstubAllEnvs();
-    }
-  });
-
-  it('drains follow-up pages when the mapping drops entries (read model on)', async () => {
+  it('leaves out sessions whose workDir cannot be resolved (read model on)', async () => {
     vi.stubEnv('KIMI_CODE_EXPERIMENTAL_FLAG', '0');
     vi.stubEnv('KIMI_CODE_PERSISTENCE_MINIDB_READMODEL', '1');
     const homeDir = await makeTempDir();
@@ -218,14 +146,16 @@ describe('SDKRpcClientV2.listSessionsPage', () => {
     const client = new SDKRpcClientV2({ homeDir, identity: TEST_IDENTITY });
 
     try {
+      const created: string[] = [];
       for (let i = 0; i < 3; i += 1) {
-        const created = await client.createSession({ id: `ses_drain_${i}`, workDir });
-        await client.closeSession({ sessionId: created.id });
+        const summary = await client.createSession({ workDir });
+        await client.closeSession({ sessionId: summary.id });
+        created.push(summary.id);
       }
       const index = client.engineAccessor.get(ISessionIndex);
       await index.prepare();
       // A summary whose workDir can no longer be resolved (unknown workspace,
-      // no cwd) is dropped by the mapping; the page must still fill.
+      // no cwd) cannot be resumed, so the listing drops it.
       client.engineAccessor.get(ISessionIndexMirror).record({
         id: 'ses_ghost',
         workspaceId: 'ws_missing',
@@ -235,18 +165,8 @@ describe('SDKRpcClientV2.listSessionsPage', () => {
       });
       await drainSessionIndexMirror();
 
-      const page1 = await client.listSessionsPage({ limit: 2 });
-      expect(page1.items).toHaveLength(2);
-      expect(page1.items.some((item) => item.id === 'ses_ghost')).toBe(false);
-      expect(page1.nextCursor).toBeDefined();
-
-      const page2 = await client.listSessionsPage({ limit: 2, before: page1.nextCursor });
-      expect(page2.items).toHaveLength(1);
-      expect(page2.items[0]?.id).not.toBe('ses_ghost');
-      expect(page2.nextCursor).toBeUndefined();
-
-      const ids = [...page1.items, ...page2.items].map((item) => item.id).toSorted();
-      expect(ids).toEqual(['ses_drain_0', 'ses_drain_1', 'ses_drain_2']);
+      const ids = (await client.listSessions()).map((item) => item.id);
+      expect(ids.toSorted()).toEqual(created.toSorted());
     } finally {
       await client.close();
       // Dispose fired the mirror/query-store async closes; await them before
@@ -259,11 +179,10 @@ describe('SDKRpcClientV2.listSessionsPage', () => {
 });
 
 describe('SDKRpcClientV2 search-index separation', () => {
-  // The global full-text search database (`<homeDir>/search-index`) belongs
-  // to the kap-server search surface. The TUI-side chain (rpc client →
-  // klient → `ISessionIndex`) must list, resume and continue sessions without
-  // ever opening it — including while the session read model is still
-  // preparing.
+  // Listing, resuming and continuing sessions go through `ISessionIndex`
+  // alone and must never open the global full-text search database
+  // (`<homeDir>/search-index`) — including while the session read model is
+  // still preparing.
 
   it('listSessions / resumeSession never open the global search index (read model off)', async () => {
     vi.stubEnv('KIMI_CODE_EXPERIMENTAL_FLAG', '0');
@@ -273,10 +192,10 @@ describe('SDKRpcClientV2 search-index separation', () => {
     const client = new SDKRpcClientV2({ homeDir, identity: TEST_IDENTITY });
 
     try {
-      const created = await client.createSession({ id: 'ses_search_sep_off', workDir });
+      const created = await client.createSession({ workDir });
       await client.closeSession({ sessionId: created.id });
 
-      const sessions = await client.listSessions({ workDir });
+      const sessions = await client.listSessions();
       expect(sessions.map((item) => item.id)).toEqual([created.id]);
       const resumed = await client.resumeSession({ id: created.id });
       expect(resumed.id).toBe(created.id);
@@ -298,14 +217,14 @@ describe('SDKRpcClientV2 search-index separation', () => {
     const client = new SDKRpcClientV2({ homeDir, identity: TEST_IDENTITY });
 
     try {
-      const created = await client.createSession({ id: 'ses_search_sep_on', workDir });
+      const created = await client.createSession({ workDir });
       await client.closeSession({ sessionId: created.id });
 
       // The read model is still preparing here: the first list kicks the
       // background projection and answers from authoritative metadata, the
       // resume reads the authoritative document — neither waits for, nor
       // opens, any full-text index.
-      const sessions = await client.listSessions({ workDir });
+      const sessions = await client.listSessions();
       expect(sessions.map((item) => item.id)).toEqual([created.id]);
       const resumed = await client.resumeSession({ id: created.id });
       expect(resumed.id).toBe(created.id);

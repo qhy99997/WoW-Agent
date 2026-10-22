@@ -2,7 +2,7 @@
   "name": "@moonshot-ai/kimi-code-sdk",
   "version": "0.21.0",
   "private": true,
-  "description": "TypeScript SDK for the Kimi Code Agent",
+  "description": "In-process agent SDK for the WoW desktop app",
   "license": "MIT",
   "author": "WoW",
   "homepage": "https://github.com/qhy99997/WoW-Agent/tree/main/packages/node-sdk#readme",
@@ -52,17 +52,10 @@
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\""
   },
   "dependencies": {
-    "@antfu/utils": "^9.3.0",
-    "smol-toml": "^1.6.1",
-    "yazl": "^3.3.1",
     "zod": "^4.3.6"
   },
   "devDependencies": {
     "@moonshot-ai/agent-core-v2": "workspace:^",
-    "@moonshot-ai/kimi-code-oauth": "workspace:^",
-    "@moonshot-ai/klient": "workspace:^",
-    "@moonshot-ai/kosong": "workspace:^",
-    "@types/yazl": "^2.4.6",
-    "jimp": "^1.6.1"
+    "@moonshot-ai/kimi-code-oauth": "workspace:^"
   }
 }

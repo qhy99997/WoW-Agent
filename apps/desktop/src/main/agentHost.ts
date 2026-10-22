@@ -97,7 +97,6 @@ export class AgentHost {
       const sdk = await import('@moonshot-ai/kimi-code-sdk');
       const harness = sdk.createKimiHarness({
         homeDir: this.homeDir,
-        uiMode: 'desktop',
         identity: {
           productName: 'WoW',
           version: process.env['WOW_VERSION'] ?? '0.1.0',

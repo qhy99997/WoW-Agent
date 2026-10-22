@@ -1,8 +1,6 @@
 import { parsePattern } from '@moonshot-ai/agent-core-v2/agent/permissionRules/matchesRule';
 import { z } from 'zod';
 
-import { ErrorCodes, KimiError } from '#/errors';
-
 const HOOK_EVENT_TYPES = [
   'PreToolUse',
   'PostToolUse',
@@ -367,39 +365,6 @@ export const KimiConfigPatchSchema = z
   .strict();
 
 export type KimiConfigPatch = z.infer<typeof KimiConfigPatchSchema>;
-
-export function getDefaultConfig(): KimiConfig {
-  return {
-    providers: {},
-  };
-}
-
-export function validateConfig(config: unknown): KimiConfig {
-  try {
-    return KimiConfigSchema.parse(config);
-  } catch (error) {
-    throw new KimiError(ErrorCodes.CONFIG_INVALID, `Invalid configuration: ${formatConfigValidationError(error)}`, {
-      cause: error,
-    });
-  }
-}
-
-export function formatConfigValidationError(error: unknown): string {
-  const missingModelContextSize = missingModelContextSizeMessage(error);
-  if (missingModelContextSize !== undefined) return missingModelContextSize;
-  return error instanceof Error ? error.message : String(error);
-}
-
-function missingModelContextSizeMessage(error: unknown): string | undefined {
-  if (!(error instanceof z.ZodError)) return undefined;
-  for (const issue of error.issues) {
-    const [section, modelName, field] = issue.path;
-    if (section === 'models' && typeof modelName === 'string' && field === 'maxContextSize') {
-      return `Model "${modelName}" must define a positive max_context_size in config.toml.`;
-    }
-  }
-  return undefined;
-}
 
 function isValidPermissionPattern(pattern: string): boolean {
   try {

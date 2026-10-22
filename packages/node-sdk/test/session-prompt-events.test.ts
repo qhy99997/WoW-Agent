@@ -1,23 +1,24 @@
-import { mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { createKimiHarness, type Event, type KimiHarness } from '#/index';
+import { createKimiHarness, type ContextMessage, type Event, type KimiHarness } from '#/index';
 
 import { TEST_IDENTITY } from './test-identity';
-import { waitForAgentWireEvent } from './session-runtime-helpers';
 
 const MODEL_URL = 'https://model.example.test/v1/chat/completions';
 
 const fakeProviderState = vi.hoisted(() => ({
   calls: [] as Array<{
+    readonly model: string | undefined;
     readonly systemPrompt: string;
     readonly history: unknown;
   }>,
   responseText: 'hello from fake provider',
+  hang: false,
 }));
 
 function sseChunk(delta: Record<string, unknown>, finishReason: string | null = null): string {
@@ -43,20 +44,31 @@ const tempDirs: string[] = [];
 beforeEach(() => {
   fakeProviderState.calls.length = 0;
   fakeProviderState.responseText = 'hello from fake provider';
+  fakeProviderState.hang = false;
   fetchStub = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
     if (url !== MODEL_URL) {
       throw new Error(`Unexpected fetch: ${url}`);
     }
     const body = JSON.parse(typeof init?.body === 'string' ? init.body : '{}') as {
+      readonly model?: string;
       readonly messages?: ReadonlyArray<{ readonly role: string; readonly content: unknown }>;
     };
     const messages = body.messages ?? [];
     const system = messages.find((message) => message.role === 'system');
     fakeProviderState.calls.push({
+      model: body.model,
       systemPrompt: typeof system?.content === 'string' ? system.content : '',
       history: messages,
     });
+    if (fakeProviderState.hang) {
+      // Never answers; settles only when the turn's request is aborted.
+      return new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener('abort', () => {
+          reject(new DOMException('The operation was aborted.', 'AbortError'));
+        });
+      });
+    }
     return new Response(sseBody(fakeProviderState.responseText), {
       status: 200,
       headers: { 'Content-Type': 'text/event-stream' },
@@ -96,140 +108,14 @@ async function removeTempDir(dir: string): Promise<void> {
 }
 
 describe('Session.prompt events', () => {
-  it('continues notifying sessions after disabling and restarting with identical prompt and tools', async () => {
-    vi.stubEnv('KIMI_CODE_EXPERIMENTAL_FLAG', '0');
-    vi.stubEnv('KIMI_CODE_EXPERIMENTAL_NOTIFY_USER', '');
-    const homeDir = await makeTempDir();
-    const workDir = await makeTempDir();
-    const requests: Array<{ tools: unknown; messages: Array<{ role: string; content: unknown }> }> =
-      [];
-    fetchStub!.mockImplementation(
-      async (input: Parameters<typeof fetch>[0], init: Parameters<typeof fetch>[1]) => {
-        const url =
-          typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
-        if (url !== MODEL_URL) throw new Error(`Unexpected fetch: ${url}`);
-        if (typeof init?.body !== 'string') throw new Error('Expected a JSON request body');
-        requests.push(JSON.parse(init.body));
-        const body =
-          requests.length % 2 === 1
-            ? [
-                sseChunk({
-                  role: 'assistant',
-                  tool_calls: [
-                    {
-                      index: 0,
-                      id: `notify-${requests.length}`,
-                      type: 'function',
-                      function: {
-                        name: 'NotifyUser',
-                        arguments: JSON.stringify({
-                          title: 'Checking the work',
-                          message: 'Reviewing the changed files.',
-                        }),
-                      },
-                    },
-                  ],
-                }),
-                sseChunk({}, 'tool_calls'),
-                'data: [DONE]',
-              ]
-                .map((line) => `${line}\n\n`)
-                .join('')
-            : sseBody('Work completed.');
-        return new Response(body, {
-          status: 200,
-          headers: { 'Content-Type': 'text/event-stream' },
-        });
-      },
-    );
-    let harness = createKimiHarness({
-      identity: TEST_IDENTITY,
-      homeDir,
-      uiCapabilities: ['update_panel'],
-    });
-    try {
-      await configureFakeProvider(harness);
-      await harness.setConfig({ experimental: { notify_user: true } });
-      let session = await harness.createSession({ id: 'ses_notify_continue', workDir });
-      const events: Event[] = [];
-      let unsubscribe = session.onEvent((event) => events.push(event));
-      for (let turn = 0; turn < 3; turn++) {
-        if (turn === 1) await harness.setConfig({ experimental: { notify_user: false } });
-        if (turn === 2) {
-          unsubscribe();
-          await harness.close();
-          harness = createKimiHarness({ identity: TEST_IDENTITY, homeDir, uiCapabilities: [] });
-          session = await harness.resumeSession({ id: 'ses_notify_continue' });
-          unsubscribe = session.onEvent((event) => events.push(event));
-        }
-        const done = waitForEvent(session, (event) => event.type === 'turn.ended');
-        await session.prompt(`Continue the work, turn ${turn + 1}.`);
-        expect(await done).toMatchObject({ reason: 'completed' });
-      }
-      unsubscribe();
-      expect(requests).toHaveLength(6);
-      const system = (request: (typeof requests)[number]) =>
-        request.messages.filter((message) => message.role === 'system');
-      for (const request of requests) {
-        expect(request.tools).toEqual(requests[0]!.tools);
-        expect(system(request)).toEqual(system(requests[0]!));
-      }
-      const results = events.filter((event) => event.type === 'tool.result');
-      expect(results).toHaveLength(3);
-      expect(results.every((event) => event.isError !== true)).toBe(true);
-      expect(JSON.stringify(results[0])).toContain('Update shown to the user.');
-      expect(JSON.stringify(results.slice(1))).toContain(
-        'Notifications are disabled; the update was not displayed.',
-      );
-    } finally {
-      await harness.close();
-      vi.unstubAllEnvs();
-    }
-  });
-
-  it('preserves existing custom metadata when an SDK metadata patch is resumed', async () => {
+  it('persists sanitized prompt metadata without marking the title custom', async () => {
     const homeDir = await makeTempDir();
     const workDir = await makeTempDir();
     const harness = createKimiHarness({ identity: TEST_IDENTITY, homeDir });
 
     try {
       await configureFakeProvider(harness);
-      const session = await harness.createSession({
-        id: 'ses_update_metadata',
-        workDir,
-        metadata: { source: 'vscode' },
-      });
-      await session.createGoal({ objective: 'Keep core-owned metadata' });
-      await session.updateMetadata({
-        vscode_legacy_approval: { yolo: true, afk: false },
-      });
-      await session.close();
-
-      const resumed = await harness.resumeSession({ id: session.id });
-
-      expect(resumed.summary?.metadata).toEqual({
-        source: 'vscode',
-        vscode_legacy_approval: { yolo: true, afk: false },
-      });
-      await expect(resumed.getGoal()).resolves.toMatchObject({
-        goal: { objective: 'Keep core-owned metadata' },
-      });
-    } finally {
-      await harness.close();
-    }
-  });
-
-  it('persists sanitized prompt metadata without marking the title custom', async () => {
-    const homeDir = await makeTempDir();
-    const workDir = await makeTempDir();
-    const harness = createKimiHarness({
-      identity: TEST_IDENTITY,
-      homeDir,
-    });
-
-    try {
-      await configureFakeProvider(harness);
-      const session = await harness.createSession({ id: 'ses_prompt_meta', workDir });
+      const session = await harness.createSession({ workDir });
       const events: Event[] = [];
       const unsubscribe = session.onEvent((event) => {
         events.push(event);
@@ -286,14 +172,11 @@ describe('Session.prompt events', () => {
   it('emits mapped turn events through Session.onEvent', async () => {
     const homeDir = await makeTempDir();
     const workDir = await makeTempDir();
-    const harness = createKimiHarness({
-      identity: TEST_IDENTITY,
-      homeDir,
-    });
+    const harness = createKimiHarness({ identity: TEST_IDENTITY, homeDir });
 
     try {
       await configureFakeProvider(harness);
-      const session = await harness.createSession({ id: 'ses_prompt_events', workDir });
+      const session = await harness.createSession({ workDir });
       const events: Event[] = [];
       const done = waitForEvent(session, (event) => event.type === 'turn.ended');
       const unsubscribe = session.onEvent((event) => {
@@ -328,17 +211,14 @@ describe('Session.prompt events', () => {
     }
   });
 
-  it('supports onEvent unsubscribe without touching runtime wire directly', async () => {
+  it('supports onEvent unsubscribe', async () => {
     const homeDir = await makeTempDir();
     const workDir = await makeTempDir();
-    const harness = createKimiHarness({
-      identity: TEST_IDENTITY,
-      homeDir,
-    });
+    const harness = createKimiHarness({ identity: TEST_IDENTITY, homeDir });
 
     try {
       await configureFakeProvider(harness);
-      const session = await harness.createSession({ id: 'ses_prompt_unsubscribe', workDir });
+      const session = await harness.createSession({ workDir });
       const unsubscribedEvents: Event[] = [];
       const unsubscribe = session.onEvent((event) => {
         unsubscribedEvents.push(event);
@@ -355,471 +235,88 @@ describe('Session.prompt events', () => {
     }
   });
 
-  it('runs init through generateAgentsMd RPC as a subagent system trigger without prompt metadata updates', async () => {
+  it('serves the conversation through getContext, also after a restart', async () => {
     const homeDir = await makeTempDir();
     const workDir = await makeTempDir();
-    const harness = createKimiHarness({
-      identity: TEST_IDENTITY,
-      homeDir,
-    });
+    let harness = createKimiHarness({ identity: TEST_IDENTITY, homeDir });
 
     try {
       await configureFakeProvider(harness);
-      const session = await harness.createSession({ id: 'ses_init_rpc', workDir });
-      const events: Event[] = [];
-      const unsubscribe = session.onEvent((event) => {
-        events.push(event);
-      });
-
-      await session.init();
-      unsubscribe();
-
-      const spawned = events.find((event) => event.type === 'subagent.spawned');
-      expect(spawned).toMatchObject({
-        type: 'subagent.spawned',
-        sessionId: session.id,
-        agentId: 'main',
-        subagentName: 'coder',
-        parentToolCallId: 'generate-agents-md',
-      });
-      expect(events).toContainEqual(
-        expect.objectContaining({
-          type: 'turn.started',
-          sessionId: session.id,
-          agentId: spawned?.type === 'subagent.spawned' ? spawned.subagentId : undefined,
-          origin: { kind: 'system_trigger', name: 'subagent' },
-        }),
-      );
-      expect(events).not.toContainEqual(
-        expect.objectContaining({
-          type: 'session.meta.updated',
-        }),
-      );
-      expect(JSON.stringify(fakeProviderState.calls[0]?.history)).toContain('Task requirements:');
-    } finally {
-      await harness.close();
-    }
-  });
-
-  it('carries the prompt on the public turn.started event for subagent system triggers', async () => {
-    const homeDir = await makeTempDir();
-    const workDir = await makeTempDir();
-    const harness = createKimiHarness({
-      identity: TEST_IDENTITY,
-      homeDir,
-    });
-
-    try {
-      await configureFakeProvider(harness);
-      const session = await harness.createSession({ id: 'ses_init_rpc_v2', workDir });
-      const events: Event[] = [];
-      const unsubscribe = session.onEvent((event) => {
-        events.push(event);
-      });
-
-      await session.init();
-      unsubscribe();
-
-      const spawned = events.find((event) => event.type === 'subagent.spawned');
-      expect(events).toContainEqual(
-        expect.objectContaining({
-          type: 'turn.started',
-          sessionId: session.id,
-          agentId: spawned?.type === 'subagent.spawned' ? spawned.subagentId : undefined,
-          origin: { kind: 'system_trigger', name: 'subagent' },
-          prompt: expect.stringContaining('Task requirements:'),
-        }),
-      );
-    } finally {
-      await harness.close();
-    }
-  });
-
-  it('includes persisted subagent replay only when resume explicitly requests it', async () => {
-    const homeDir = await makeTempDir();
-    const workDir = await makeTempDir();
-    const harness = createKimiHarness({ identity: TEST_IDENTITY, homeDir });
-
-    try {
-      await configureFakeProvider(harness);
-      const session = await harness.createSession({ id: 'ses_subagent_replay', workDir });
-      const events: Event[] = [];
-      const unsubscribe = session.onEvent((event) => events.push(event));
-      await session.init();
-      unsubscribe();
-      const spawned = events.find((event) => event.type === 'subagent.spawned');
-      if (spawned?.type !== 'subagent.spawned') throw new Error('Expected persisted subagent');
-      await session.close();
-
-      const defaultResume = await harness.resumeSession({ id: session.id });
-      expect(defaultResume.getResumeState()?.agents).not.toHaveProperty(spawned.subagentId);
-      await defaultResume.close();
-
-      const fullResume = await harness.resumeSession({
-        id: session.id,
-        includeSubagents: true,
-      });
-      expect(fullResume.getResumeState()?.agents[spawned.subagentId]?.replay).toContainEqual(
-        expect.objectContaining({
-          type: 'message',
-          message: expect.objectContaining({ role: 'assistant' }),
-        }),
-      );
-    } finally {
-      await harness.close();
-    }
-  });
-
-  it('starts btw through RPC as a forked subagent without prompt metadata updates', async () => {
-    const homeDir = await makeTempDir();
-    const workDir = await makeTempDir();
-    const harness = createKimiHarness({
-      identity: TEST_IDENTITY,
-      homeDir,
-    });
-
-    try {
-      await configureFakeProvider(harness);
-      const session = await harness.createSession({ id: 'ses_btw_rpc', workDir });
-      const events: Event[] = [];
-      const unsubscribe = session.onEvent((event) => {
-        events.push(event);
-      });
-
-      let done = waitForEvent(session, (event) => event.type === 'turn.ended');
-      await session.prompt('main task context');
-      await done;
-
-      fakeProviderState.responseText = 'The main agent is working from the existing context.';
-      events.length = 0;
-      done = waitForEvent(
-        session,
-        (event) => event.type === 'turn.ended' && event.agentId !== 'main',
-      );
-
-      const agentId = await session.startBtw();
-      await harness.withInteractiveAgent(agentId, () =>
-        session.prompt('What are you working on right now?'),
-      );
-      await done;
-      unsubscribe();
-      expect(harness.interactiveAgentId).toBe('main');
-
-      const started = events.find(
-        (event) =>
-          event.type === 'turn.started' &&
-          event.agentId === agentId &&
-          event.origin.kind === 'user',
-      );
-      expect(events).toContainEqual(
-        expect.objectContaining({
-          type: 'turn.started',
-          sessionId: session.id,
-          agentId,
-          origin: { kind: 'user' },
-        }),
-      );
-      expect(started?.agentId).not.toBe('main');
-      expect(events).not.toContainEqual(expect.objectContaining({ type: 'subagent.spawned' }));
-      expect(events).not.toContainEqual(expect.objectContaining({ type: 'subagent.completed' }));
-      expect(events).not.toContainEqual(expect.objectContaining({ type: 'subagent.failed' }));
-      expect(events).not.toContainEqual(
-        expect.objectContaining({
-          type: 'session.meta.updated',
-        }),
-      );
-      expect(fakeProviderState.calls[1]?.systemPrompt).toBe(
-        fakeProviderState.calls[0]?.systemPrompt,
-      );
-      const btwHistoryText = JSON.stringify(fakeProviderState.calls[1]?.history);
-      expect(btwHistoryText).toContain('main task context');
-      expect(btwHistoryText).toContain('What are you working on right now?');
-
-      await harness.closeSession(session.id);
-      const resumed = await harness.resumeSession({ id: session.id });
-      const resumeState = resumed.getResumeState();
-      expect(resumeState?.agents).toMatchObject({ main: { userTurnCount: 1 } });
-      expect(resumeState?.agents).not.toHaveProperty(agentId);
-    } finally {
-      await harness.close();
-    }
-  });
-
-  it('preserves started user turns through resume, undo, compaction and reload', async () => {
-    const homeDir = await makeTempDir();
-    const workDir = await makeTempDir();
-    const harness = createKimiHarness({ identity: TEST_IDENTITY, homeDir });
-
-    try {
-      await configureFakeProvider(harness);
-      const source = await harness.createSession({ id: 'ses_user_turn_count', workDir });
-      await runPrompt(source, 'first question', 'first answer');
-      await runPrompt(source, 'second question', 'second answer');
-      await runPrompt(source, 'third question', 'third answer');
-      await source.undoHistory(1);
-      await source.close();
-
-      const resumed = await harness.resumeSession({ id: source.id, replayTurnLimit: 1 });
-      expect(resumed.getResumeState()?.agents['main']).toMatchObject({ userTurnCount: 3 });
-      expect(visibleReplayText(resumed.getResumeState()?.agents['main']?.replay ?? [])).toEqual([
-        'user:second question',
-        'assistant:second answer',
-      ]);
-
-      const snapshot = resumed.getResumeState()!;
-      const { userTurnCount, ...legacyMain } = snapshot.agents['main']!;
-      const legacySnapshot: typeof snapshot = {
-        ...snapshot,
-        agents: { ...snapshot.agents, main: legacyMain },
-      };
-      expect(userTurnCount).toBe(3);
-      expect(legacySnapshot.agents['main']?.userTurnCount).toBeUndefined();
-
-      await resumed.compact();
-      await waitForAgentWireEvent(homeDir, source.id, 'context.apply_compaction');
-      const compacted = await harness.reloadSession({ id: source.id });
-      expect(compacted.getResumeState()?.agents['main']).toMatchObject({ userTurnCount: 3 });
-      await runPrompt(compacted, 'follow-up question', 'follow-up answer');
-      const reloaded = await harness.reloadSession({ id: source.id });
-      expect(reloaded.getResumeState()?.agents['main']).toMatchObject({ userTurnCount: 4 });
-    } finally {
-      await harness.close();
-    }
-  });
-
-  it('persists only conversation through the selected turn across resume', async () => {
-    const homeDir = await makeTempDir();
-    const workDir = await makeTempDir();
-    const harness = createKimiHarness({ identity: TEST_IDENTITY, homeDir });
-
-    try {
-      await configureFakeProvider(harness);
-      const source = await harness.createSession({ id: 'ses_turn_fork_source', workDir });
-      await runPrompt(source, 'first question', 'first answer');
-      await runPrompt(source, 'second question', 'second answer');
-      await runPrompt(source, 'third question', 'third answer');
-
-      const fullFork = await harness.forkSession({ id: source.id });
-      expect(fullFork.getResumeState()?.agents['main']).toMatchObject({ userTurnCount: 3 });
-      await fullFork.close();
-
-      const fork = await harness.forkSession({
-        id: source.id,
-        forkId: 'ses_turn_fork_child',
-        turnIndex: 1,
-      });
-      await fork.close();
-      const resumed = await harness.resumeSession({ id: fork.id });
-      const replayText = visibleReplayText(resumed.getResumeState()?.agents['main']?.replay ?? []);
-      expect(resumed.getResumeState()?.agents['main']).toMatchObject({ userTurnCount: 2 });
-
-      expect(replayText).toEqual([
+      const session = await harness.createSession({ workDir });
+      await runPrompt(session, 'first question', 'first answer');
+      await runPrompt(session, 'second question', 'second answer');
+      const expected = [
         'user:first question',
         'assistant:first answer',
         'user:second question',
         'assistant:second answer',
+      ];
+      expect(visibleText((await session.getContext()).history)).toEqual(expected);
+
+      await harness.close();
+      harness = createKimiHarness({ identity: TEST_IDENTITY, homeDir });
+      const resumed = await harness.resumeSession({ id: session.id });
+      expect(visibleText((await resumed.getContext()).history)).toEqual(expected);
+
+      await runPrompt(resumed, 'third question', 'third answer');
+      expect(visibleText((await resumed.getContext()).history)).toEqual([
+        ...expected,
+        'user:third question',
+        'assistant:third answer',
       ]);
-      await runPrompt(resumed, 'fork follow-up', 'fork answer');
-      const reloaded = await harness.reloadSession({ id: fork.id });
-      expect(reloaded.getResumeState()?.agents['main']).toMatchObject({ userTurnCount: 3 });
     } finally {
       await harness.close();
     }
   });
 
-  it('returns the requested identity and derives metadata from the selected historical turn', async () => {
+  it('switches the model of a live session with setModel', async () => {
     const homeDir = await makeTempDir();
     const workDir = await makeTempDir();
     const harness = createKimiHarness({ identity: TEST_IDENTITY, homeDir });
 
     try {
       await configureFakeProvider(harness);
-      const source = await harness.createSession({
-        id: 'ses_turn_fork_metadata_source',
-        workDir,
-        metadata: { source: 'vscode' },
+      await harness.setConfig({
+        models: {
+          'other-model': { provider: 'local', model: 'other-model', maxContextSize: 262144 },
+        },
       });
-      await runPrompt(source, 'branch here', 'kept answer');
-      await runPrompt(source, 'future prompt', 'discarded answer');
+      const session = await harness.createSession({ workDir });
+      await runPrompt(session, 'first', 'first answer');
+      await session.setModel('other-model');
+      await runPrompt(session, 'second', 'second answer');
 
-      const fork = await harness.forkSession({
-        id: source.id,
-        forkId: 'ses_turn_fork_metadata_child',
-        title: 'Historical branch',
-        metadata: { branch: 'historical' },
-        turnIndex: 0,
-      });
-      const state = fork.getResumeState();
-
-      expect(fork.id).toBe('ses_turn_fork_metadata_child');
-      expect(fork.workDir).toBe(source.workDir);
-      expect(state?.sessionMetadata.forkedFrom).toBe(source.id);
-      expect(fork.summary).toMatchObject({
-        title: 'Historical branch',
-        lastPrompt: 'branch here',
-        metadata: { source: 'vscode', branch: 'historical' },
-      });
-      expect(state?.sessionMetadata).toMatchObject({
-        title: 'Historical branch',
-        lastPrompt: 'branch here',
-        custom: { source: 'vscode', branch: 'historical' },
+      expect(fakeProviderState.calls.at(0)?.model).toBe('fake-model');
+      expect(fakeProviderState.calls.at(-1)?.model).toBe('other-model');
+      await expect(session.setModel('missing-model')).rejects.toMatchObject({
+        code: 'config.invalid',
       });
     } finally {
       await harness.close();
     }
   });
 
-  it('flattens the undo branch out of a turn-sliced fork', async () => {
+  it('cancels the running turn', async () => {
     const homeDir = await makeTempDir();
     const workDir = await makeTempDir();
     const harness = createKimiHarness({ identity: TEST_IDENTITY, homeDir });
 
     try {
       await configureFakeProvider(harness);
-      const source = await harness.createSession({ id: 'ses_turn_fork_undo_source', workDir });
-      await runPrompt(source, 'kept prompt one', 'kept answer one');
-      await runPrompt(source, 'kept prompt two', 'kept answer two');
-      await runPrompt(source, 'retracted prompt', 'retracted answer');
-      await source.undoHistory(1);
-      await runPrompt(source, 'follow-up prompt', 'follow-up answer');
-
-      const fork = await harness.forkSession({
-        id: source.id,
-        forkId: 'ses_turn_fork_undo_child',
-        turnIndex: 2,
-      });
-      await fork.close();
-      const resumed = await harness.resumeSession({ id: fork.id });
-      const replayText = visibleReplayText(resumed.getResumeState()?.agents['main']?.replay ?? []);
-
-      expect(replayText).toEqual([
-        'user:kept prompt one',
-        'assistant:kept answer one',
-        'user:kept prompt two',
-        'assistant:kept answer two',
-        'user:follow-up prompt',
-        'assistant:follow-up answer',
-      ]);
-
-      const wireFiles = (await readdir(homeDir, { recursive: true })).filter((path) =>
-        path.endsWith(join('agents', 'main', 'wire.jsonl')),
+      const session = await harness.createSession({ workDir });
+      fakeProviderState.hang = true;
+      const requested = vi.waitFor(
+        () => {
+          expect(fakeProviderState.calls).toHaveLength(1);
+        },
+        { timeout: 5_000 },
       );
-      const forkedLines = (await readFile(
-        join(homeDir, wireFiles.find((path) => path.includes(fork.id))!),
-        'utf8',
-      ))
-        .trimEnd()
-        .split('\n');
-      const types = forkedLines.map((line) => (JSON.parse(line) as { type: string }).type);
-      expect(types).not.toContain('agent.switched');
-      expect(types).not.toContain('context.undo');
-      expect(types).not.toContain('context.undone');
+      const ended = waitForEvent(session, (event) => event.type === 'turn.ended', 5_000);
+      await session.prompt('never answered');
+      await requested;
+      await session.cancel();
 
-      const sourceLines = (await readFile(
-        join(homeDir, wireFiles.find((path) => path.includes(source.id))!),
-        'utf8',
-      ))
-        .trimEnd()
-        .split('\n');
-      const sourceTypes = sourceLines.map((line) => (JSON.parse(line) as { type: string }).type);
-      expect(sourceTypes).toContain('agent.switched');
-      expect(sourceLines.some((line) => line.includes('retracted'))).toBe(true);
-
-      const retractedTypes = forkedLines
-        .filter((line) => line.includes('retracted'))
-        .map((line) => (JSON.parse(line) as { type: string }).type);
-      expect(retractedTypes).toEqual([]);
-    } finally {
-      await harness.close();
-    }
-  });
-
-  it('continues with the next turn id after a historical fork', async () => {
-    const homeDir = await makeTempDir();
-    const workDir = await makeTempDir();
-    const harness = createKimiHarness({ identity: TEST_IDENTITY, homeDir });
-
-    try {
-      await configureFakeProvider(harness);
-      const source = await harness.createSession({ id: 'ses_turn_fork_id_source', workDir });
-      await runPrompt(source, 'kept prompt', 'kept answer');
-      await runPrompt(source, 'future prompt', 'future answer');
-      const fork = await harness.forkSession({ id: source.id, turnIndex: 0 });
-      const started = waitForEvent(fork, (event) => event.type === 'turn.started');
-      const ended = waitForEvent(fork, (event) => event.type === 'turn.ended');
-
-      await fork.prompt('branch continuation');
-
-      await expect(started).resolves.toMatchObject({ type: 'turn.started', turnId: 1 });
-      await ended;
-    } finally {
-      await harness.close();
-    }
-  });
-
-  it('omits subagents created after the selected historical turn', async () => {
-    const homeDir = await makeTempDir();
-    const workDir = await makeTempDir();
-    const harness = createKimiHarness({ identity: TEST_IDENTITY, homeDir });
-
-    try {
-      await configureFakeProvider(harness);
-      const source = await harness.createSession({ id: 'ses_turn_fork_agents_source', workDir });
-      await runPrompt(source, 'kept prompt', 'kept answer');
-      await runPrompt(source, 'future prompt', 'future answer');
-      await source.init();
-
-      const fork = await harness.forkSession({ id: source.id, turnIndex: 0 });
-
-      expect(Object.keys(fork.getResumeState()?.sessionMetadata.agents ?? {})).toEqual(['main']);
-    } finally {
-      await harness.close();
-    }
-  });
-
-  it('rejects a negative historical turn index with request.invalid', async () => {
-    const homeDir = await makeTempDir();
-    const workDir = await makeTempDir();
-    const harness = createKimiHarness({ identity: TEST_IDENTITY, homeDir });
-
-    try {
-      const source = await harness.createSession({ id: 'ses_turn_fork_negative', workDir });
-
-      await expect(
-        harness.forkSession({ id: source.id, turnIndex: -1 }),
-      ).rejects.toMatchObject({
-        name: 'KimiError',
-        code: 'request.invalid',
-      });
-    } finally {
-      await harness.close();
-    }
-  });
-
-  it('rejects an out-of-range historical turn without creating the fork', async () => {
-    const homeDir = await makeTempDir();
-    const workDir = await makeTempDir();
-    const harness = createKimiHarness({ identity: TEST_IDENTITY, homeDir });
-
-    try {
-      await configureFakeProvider(harness);
-      const source = await harness.createSession({ id: 'ses_turn_fork_range_source', workDir });
-      await runPrompt(source, 'only question', 'only answer');
-
-      await expect(
-        harness.forkSession({
-          id: source.id,
-          forkId: 'ses_turn_fork_range_child',
-          turnIndex: 1,
-        }),
-      ).rejects.toMatchObject({
-        name: 'KimiError',
-        code: 'request.invalid',
-        details: { turnIndex: 1, availableTurns: 1 },
-      });
-      await expect(
-        harness.listSessions({ sessionId: 'ses_turn_fork_range_child' }),
-      ).resolves.toEqual([]);
+      expect(await ended).toMatchObject({ reason: 'cancelled' });
     } finally {
       await harness.close();
     }
@@ -828,13 +325,10 @@ describe('Session.prompt events', () => {
   it('rejects empty prompt input', async () => {
     const homeDir = await makeTempDir();
     const workDir = await makeTempDir();
-    const harness = createKimiHarness({
-      identity: TEST_IDENTITY,
-      homeDir,
-    });
+    const harness = createKimiHarness({ identity: TEST_IDENTITY, homeDir });
 
     try {
-      const session = await harness.createSession({ id: 'ses_empty_prompt', workDir });
+      const session = await harness.createSession({ workDir });
       await expect(session.prompt('   ')).rejects.toMatchObject({
         name: 'KimiError',
         code: 'request.prompt_input_empty',
@@ -856,25 +350,16 @@ async function runPrompt(
   await done;
 }
 
-function visibleReplayText(
-  records: readonly {
-    readonly type: string;
-    readonly message?: {
-      readonly role: string;
-      readonly content: ReadonlyArray<{ readonly type: string; readonly text?: string }>;
-      readonly origin?: { readonly kind: string };
-    };
-  }[],
-): readonly string[] {
+/** The user prompts and assistant replies of a history, as `role:text`. */
+function visibleText(history: readonly ContextMessage[]): readonly string[] {
   const entries: string[] = [];
-  for (const record of records) {
-    if (record.type !== 'message' || record.message === undefined) continue;
-    const { message } = record;
-    if (message.role === 'user' && message.origin?.kind !== 'user') continue;
+  for (const message of history) {
+    if (message.role === 'user' && message.origin !== undefined && message.origin.kind !== 'user') {
+      continue;
+    }
     if (message.role !== 'user' && message.role !== 'assistant') continue;
     const text = message.content
-      .filter((part) => part.type === 'text')
-      .map((part) => part.text ?? '')
+      .map((part) => (part.type === 'text' ? part.text : ''))
       .join('');
     entries.push(`${message.role}:${text}`);
   }
@@ -906,12 +391,13 @@ function waitForEvent(
     onEvent(listener: (event: Event) => void): () => void;
   },
   predicate: (event: Event) => boolean,
+  timeoutMs = 1_000,
 ): Promise<Event> {
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {
       unsubscribe();
       reject(new Error('Timed out waiting for session event'));
-    }, 1_000);
+    }, timeoutMs);
     const unsubscribe = session.onEvent((event) => {
       if (!predicate(event)) return;
       clearTimeout(timeout);

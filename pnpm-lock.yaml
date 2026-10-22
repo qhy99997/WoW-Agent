@@ -265,15 +265,6 @@ importers:
 
   packages/node-sdk:
     dependencies:
-      '@antfu/utils':
-        specifier: ^9.3.0
-        version: 9.3.0
-      smol-toml:
-        specifier: ^1.6.1
-        version: 1.6.1
-      yazl:
-        specifier: ^3.3.1
-        version: 3.3.1
       zod:
         specifier: ^4.3.6
         version: 4.3.6
@@ -284,18 +275,6 @@ importers:
       '@moonshot-ai/kimi-code-oauth':
         specifier: workspace:^
         version: link:../oauth
-      '@moonshot-ai/klient':
-        specifier: workspace:^
-        version: link:../klient
-      '@moonshot-ai/kosong':
-        specifier: workspace:^
-        version: link:../kosong
-      '@types/yazl':
-        specifier: ^2.4.6
-        version: 2.4.6
-      jimp:
-        specifier: ^1.6.1
-        version: 1.6.1
 
   packages/oauth:
     dependencies:
