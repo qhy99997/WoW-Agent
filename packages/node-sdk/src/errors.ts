@@ -1,4 +1,4 @@
-import type { KimiErrorCode as EngineErrorCode } from '@moonshot-ai/agent-core-v2';
+import type { WowErrorCode as EngineErrorCode } from '@wow/agent-core-v2';
 
 export const ErrorCodes = {
   CONFIG_INVALID: 'config.invalid',
@@ -15,27 +15,27 @@ export const ErrorCodes = {
   REQUEST_PROMPT_INPUT_EMPTY: 'request.prompt_input_empty',
 } as const satisfies Record<string, EngineErrorCode>;
 
-export type KimiErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];
+export type WowErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];
 
-export interface KimiErrorOptions {
+export interface WowErrorOptions {
   readonly details?: Record<string, unknown>;
   readonly cause?: unknown;
 }
 
-export class KimiError extends Error {
-  readonly code: KimiErrorCode;
+export class WowError extends Error {
+  readonly code: WowErrorCode;
   readonly details?: Record<string, unknown>;
   override readonly cause?: unknown;
 
-  constructor(code: KimiErrorCode, message: string, options: KimiErrorOptions = {}) {
+  constructor(code: WowErrorCode, message: string, options: WowErrorOptions = {}) {
     super(message);
-    this.name = 'KimiError';
+    this.name = 'WowError';
     this.code = code;
     this.details = options.details;
     this.cause = options.cause;
   }
 }
 
-export function isKimiError(error: unknown): error is KimiError {
-  return error instanceof KimiError;
+export function isWowError(error: unknown): error is WowError {
+  return error instanceof WowError;
 }

@@ -102,12 +102,12 @@ export function splitAgentsMdFiles(
 
 export const AGENTS_MD_PLAIN_NAMES = ['AGENTS.md', 'agents.md'] as const;
 
-export function dotKimiAgentsMdPath(dir: string): string {
+export function dotWowAgentsMdPath(dir: string): string {
   return join(dir, '.wow', 'AGENTS.md');
 }
 
 export function agentsMdCandidatePaths(dir: string): string[] {
-  return [dotKimiAgentsMdPath(dir), ...AGENTS_MD_PLAIN_NAMES.map((name) => join(dir, name))];
+  return [dotWowAgentsMdPath(dir), ...AGENTS_MD_PLAIN_NAMES.map((name) => join(dir, name))];
 }
 
 export function extractAgentsMdPathsFromSystemPrompt(systemPrompt: string): string[] {
@@ -134,8 +134,8 @@ export async function findAgentsMdInDir(
   dir: string,
 ): Promise<string[]> {
   const found: string[] = [];
-  const dotKimi = dotKimiAgentsMdPath(dir);
-  if (await isNonEmptyFile(deps, dotKimi)) found.push(dotKimi);
+  const dotWow = dotWowAgentsMdPath(dir);
+  if (await isNonEmptyFile(deps, dotWow)) found.push(dotWow);
   for (const fileName of AGENTS_MD_PLAIN_NAMES) {
     const candidate = join(dir, fileName);
     if (await isNonEmptyFile(deps, candidate)) {
@@ -198,7 +198,7 @@ export async function loadAgentsMdForRoots(
     const dirs = dirsRootToLeaf(rootWorkDir, projectRoot);
 
     for (const dir of dirs) {
-      await collect(dotKimiAgentsMdPath(dir));
+      await collect(dotWowAgentsMdPath(dir));
       for (const fileName of AGENTS_MD_PLAIN_NAMES) {
         if (await collect(join(dir, fileName))) break;
       }

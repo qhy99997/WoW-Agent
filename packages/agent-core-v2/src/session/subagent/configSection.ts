@@ -49,7 +49,7 @@ export type SecondaryModelConfig = z.infer<typeof SecondaryModelConfigSchema>;
 
 export const DEFAULT_SUBAGENT_TIMEOUT_MS = 2 * 60 * 60 * 1000;
 
-export const SUBAGENT_TIMEOUT_ENV = 'KIMI_SUBAGENT_TIMEOUT_MS';
+export const SUBAGENT_TIMEOUT_ENV = 'WOW_SUBAGENT_TIMEOUT_MS';
 
 function parseTimeoutMsEnv(raw: string): number | undefined {
   const parsed = Number(raw);

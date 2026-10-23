@@ -23,8 +23,8 @@
  *   The kernel's `respond` no-ops on an id that is no longer
  *   pending, so a late answer after a turn cancellation is safe.
  */
-import type { Event } from '@moonshot-ai/agent-core-v2/events';
-import type { ToolInputDisplay } from '@moonshot-ai/agent-core-v2/tool/toolInputDisplay';
+import type { Event } from '@wow/agent-core-v2/events';
+import type { ToolInputDisplay } from '@wow/agent-core-v2/tool/toolInputDisplay';
 import {
   agentContextOf,
   INTERACTION_TAG_AGENT_ID,
@@ -42,7 +42,7 @@ import {
   type IDisposable,
   type Interaction,
   type ISessionScopeHandle,
-} from '@moonshot-ai/agent-core-v2';
+} from '@wow/agent-core-v2';
 
 import type {
   ApprovalRequest,

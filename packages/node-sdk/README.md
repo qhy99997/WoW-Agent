@@ -1,4 +1,4 @@
-# @moonshot-ai/kimi-code-sdk
+# @wow/sdk
 
 The in-process agent SDK behind the WoW desktop app (`apps/desktop`). It boots
 the agent-core-v2 engine and exposes the session, config and MCP operations

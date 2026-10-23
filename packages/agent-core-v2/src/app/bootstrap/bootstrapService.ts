@@ -1,6 +1,6 @@
 import { basename, join, relative } from 'pathe';
 
-import type { KimiHostIdentity } from '@moonshot-ai/kimi-code-oauth';
+import type { HostIdentity } from '@wow/oauth';
 import { LifecycleScope } from '#/app/scopes';
 import { ScopeActivation, registerScopedService } from '#/_base/di/scope';
 
@@ -20,7 +20,7 @@ export class BootstrapService implements IBootstrapService {
   readonly osHomeDir: string;
   readonly homeDir: string;
   readonly configPath: string;
-  readonly clientIdentity: KimiHostIdentity;
+  readonly clientIdentity: HostIdentity;
   readonly args: HostArgs;
   readonly sessionsDir: string;
   readonly blobsDir: string;

@@ -1,8 +1,8 @@
 {
-  "name": "@moonshot-ai/agent-core-v2",
+  "name": "@wow/agent-core-v2",
   "version": "0.5.0",
   "private": true,
-  "description": "The unified agent engine for Kimi (v2 — DI Scope architecture)",
+  "description": "The unified agent engine for WoW (v2 — DI Scope architecture)",
   "license": "MIT",
   "author": "WoW",
   "homepage": "https://github.com/qhy99997/WoW-Agent/tree/main/packages/agent-core-v2#readme",
@@ -15,7 +15,7 @@
     "url": "https://github.com/qhy99997/WoW-Agent/issues"
   },
   "keywords": [
-    "kimi",
+    "wow",
     "agent",
     "ai",
     "llm",
@@ -60,9 +60,9 @@
     "@google/genai": "^1.49.0",
     "@jsquash/webp": "^1.5.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
-    "@moonshot-ai/kimi-code-oauth": "workspace:^",
-    "@moonshot-ai/minidb": "workspace:^",
-    "@moonshot-ai/tree-sitter-bash": "workspace:^",
+    "@wow/oauth": "workspace:^",
+    "@wow/minidb": "workspace:^",
+    "@wow/tree-sitter-bash": "workspace:^",
     "@mozilla/readability": "^0.6.0",
     "ajv": "^8.18.0",
     "ajv-formats": "^3.0.1",

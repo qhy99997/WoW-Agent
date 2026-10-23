@@ -1,8 +1,8 @@
 {
-  "name": "@moonshot-ai/kimi-code-oauth",
+  "name": "@wow/oauth",
   "version": "0.4.0",
   "private": true,
-  "description": "Kimi host identity headers, provider credential rules, and the OAuth token transaction for MCP sign-in",
+  "description": "WoW host identity headers, provider credential rules, and the OAuth token transaction for MCP sign-in",
   "license": "MIT",
   "author": "WoW",
   "homepage": "https://github.com/qhy99997/WoW-Agent/tree/main/packages/oauth#readme",
@@ -15,7 +15,7 @@
     "url": "https://github.com/qhy99997/WoW-Agent/issues"
   },
   "keywords": [
-    "kimi",
+    "wow",
     "identity",
     "credentials",
     "oauth",

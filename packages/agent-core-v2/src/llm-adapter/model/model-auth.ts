@@ -1,5 +1,5 @@
 import { Error2 } from '#/_base/errors/errors';
-import { declaredProviderCredential } from '@moonshot-ai/kimi-code-oauth/provider-credential';
+import { declaredProviderCredential } from '@wow/oauth/provider-credential';
 import {
   BUDGET_THINKING_EFFORTS,
   matchKnownAnthropicModelProfile,

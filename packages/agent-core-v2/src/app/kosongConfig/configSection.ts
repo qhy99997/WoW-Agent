@@ -30,7 +30,7 @@ export const PROVIDERS_SECTION = 'providers';
 
 export const DEFAULT_PROVIDER_SECTION = 'defaultProvider';
 
-export const ENV_MODEL_PROVIDER_KEY = '__kimi_env__';
+export const ENV_MODEL_PROVIDER_KEY = '__wow_env__';
 
 export const ProviderTypeSchema = z.string();
 
@@ -63,9 +63,9 @@ type _AssertProvidersSection = AssertExact<
 
 export const providersEnvBindings = envBindings(ProvidersSectionSchema, {
   [ENV_MODEL_PROVIDER_KEY]: envBindings(ProviderConfigSchema, {
-    apiKey: 'KIMI_MODEL_API_KEY',
-    type: 'KIMI_MODEL_PROVIDER_TYPE',
-    baseUrl: 'KIMI_MODEL_BASE_URL',
+    apiKey: 'WOW_MODEL_API_KEY',
+    type: 'WOW_MODEL_PROVIDER_TYPE',
+    baseUrl: 'WOW_MODEL_BASE_URL',
   }),
 });
 
@@ -326,7 +326,7 @@ type _AssertThinkingConfig = AssertExact<
 >;
 
 export const thinkingEnvBindings = envBindings(ThinkingConfigSchema, {
-  forcedEffort: 'KIMI_MODEL_THINKING_EFFORT',
+  forcedEffort: 'WOW_MODEL_THINKING_EFFORT',
 });
 
 export const stripThinkingEnv: ConfigStripEnv<ThinkingConfig> = (value) => {

@@ -508,7 +508,7 @@ export function createWatchService(runtime: WatchRuntime = NODE_WATCH_RUNTIME): 
 
 const defaultService = createWatchService();
 
-export const WATCH_ENV = 'KIMI_CODE_WATCH';
+export const WATCH_ENV = 'WOW_WATCH';
 
 const TRUE_WATCH_ENV = new Set(['1', 'true', 'yes', 'on']);
 const FALSE_WATCH_ENV = new Set(['0', 'false', 'no', 'off']);
@@ -669,7 +669,7 @@ function planCandidateWatches(
       if (parent === current) break;
       current = parent;
     }
-    if (watchPathExists(current) && !isKimiCodeDir(current)) notify.add(current);
+    if (watchPathExists(current) && !isWowDir(current)) notify.add(current);
     else pending.add(candidate);
   }
   return {
@@ -679,7 +679,7 @@ function planCandidateWatches(
   };
 }
 
-function isKimiCodeDir(path: string): boolean {
+function isWowDir(path: string): boolean {
   const name = basename(path);
   return process.platform === 'win32' ? name.toLowerCase() === '.wow' : name === '.wow';
 }

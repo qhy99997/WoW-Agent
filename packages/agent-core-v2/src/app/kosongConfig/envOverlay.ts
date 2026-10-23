@@ -8,7 +8,7 @@ import { resolveProviderEndpoint } from '#/llm-adapter/provider/provider-definit
 
 import { ENV_MODEL_PROVIDER_KEY } from './configSection';
 
-export const ENV_MODEL_ALIAS_KEY = '__kimi_env_model__';
+export const ENV_MODEL_ALIAS_KEY = '__wow_env_model__';
 
 const DEFAULT_MAX_CONTEXT_SIZE = 262144;
 
@@ -84,18 +84,18 @@ function withoutKey(value: unknown, key: string): unknown {
   return out;
 }
 
-export const kimiModelEnvOverlay: ConfigEffectiveOverlay = {
+export const wowModelEnvOverlay: ConfigEffectiveOverlay = {
   apply(effective, getEnv, validate) {
-    const model = trimmed(getEnv('KIMI_MODEL_NAME'));
+    const model = trimmed(getEnv('WOW_MODEL_NAME'));
     const temperature = parseFloatEnv(
-      getEnv('KIMI_MODEL_TEMPERATURE'),
-      'KIMI_MODEL_TEMPERATURE',
+      getEnv('WOW_MODEL_TEMPERATURE'),
+      'WOW_MODEL_TEMPERATURE',
     );
-    const topP = parseFloatEnv(getEnv('KIMI_MODEL_TOP_P'), 'KIMI_MODEL_TOP_P');
-    const thinkingKeep = trimmed(getEnv('KIMI_MODEL_THINKING_KEEP'));
+    const topP = parseFloatEnv(getEnv('WOW_MODEL_TOP_P'), 'WOW_MODEL_TOP_P');
+    const thinkingKeep = trimmed(getEnv('WOW_MODEL_THINKING_KEEP'));
     const maxCompletionTokens =
-      parseCompletionTokens(getEnv('KIMI_MODEL_MAX_COMPLETION_TOKENS')) ??
-      parseCompletionTokens(getEnv('KIMI_MODEL_MAX_TOKENS'));
+      parseCompletionTokens(getEnv('WOW_MODEL_MAX_COMPLETION_TOKENS')) ??
+      parseCompletionTokens(getEnv('WOW_MODEL_MAX_TOKENS'));
 
     const changed: string[] = [];
 
@@ -113,23 +113,23 @@ export const kimiModelEnvOverlay: ConfigEffectiveOverlay = {
       return changed;
     }
 
-    const maxContextRaw = trimmed(getEnv('KIMI_MODEL_MAX_CONTEXT_SIZE'));
+    const maxContextRaw = trimmed(getEnv('WOW_MODEL_MAX_CONTEXT_SIZE'));
     const maxContextSize =
       maxContextRaw === undefined
         ? DEFAULT_MAX_CONTEXT_SIZE
-        : parsePositiveInt(maxContextRaw, 'KIMI_MODEL_MAX_CONTEXT_SIZE');
+        : parsePositiveInt(maxContextRaw, 'WOW_MODEL_MAX_CONTEXT_SIZE');
 
-    const maxOutputRaw = trimmed(getEnv('KIMI_MODEL_MAX_OUTPUT_SIZE'));
+    const maxOutputRaw = trimmed(getEnv('WOW_MODEL_MAX_OUTPUT_SIZE'));
     const maxOutputSize =
       maxOutputRaw === undefined
         ? undefined
-        : parsePositiveInt(maxOutputRaw, 'KIMI_MODEL_MAX_OUTPUT_SIZE');
-    const capabilities = parseCapabilities(getEnv('KIMI_MODEL_CAPABILITIES')) ?? DEFAULT_CAPABILITIES;
-    const displayName = trimmed(getEnv('KIMI_MODEL_DISPLAY_NAME'));
-    const reasoningKey = trimmed(getEnv('KIMI_MODEL_REASONING_KEY'));
+        : parsePositiveInt(maxOutputRaw, 'WOW_MODEL_MAX_OUTPUT_SIZE');
+    const capabilities = parseCapabilities(getEnv('WOW_MODEL_CAPABILITIES')) ?? DEFAULT_CAPABILITIES;
+    const displayName = trimmed(getEnv('WOW_MODEL_DISPLAY_NAME'));
+    const reasoningKey = trimmed(getEnv('WOW_MODEL_REASONING_KEY'));
     const adaptiveThinking = parseBooleanVar(
-      getEnv('KIMI_MODEL_ADAPTIVE_THINKING'),
-      'KIMI_MODEL_ADAPTIVE_THINKING',
+      getEnv('WOW_MODEL_ADAPTIVE_THINKING'),
+      'WOW_MODEL_ADAPTIVE_THINKING',
     );
 
     const alias: Record<string, unknown> = {
@@ -226,4 +226,4 @@ function collectModelOverrides(input: {
   return Object.keys(modelOverrides).length > 0 ? modelOverrides : undefined;
 }
 
-registerConfigOverlay(kimiModelEnvOverlay);
+registerConfigOverlay(wowModelEnvOverlay);

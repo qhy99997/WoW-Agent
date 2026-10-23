@@ -1,10 +1,8 @@
-# @moonshot-ai/kimi-code-oauth
+# @wow/oauth
 
-Kimi host identity headers, shared provider credential rules, and the OAuth token transaction used by MCP server sign-in.
+WoW host identity headers, shared provider credential rules, and the OAuth token transaction used by MCP server sign-in.
 
-Part of the [Kimi Code](https://github.com/MoonshotAI/kimi-code) monorepo.
-
-See the main repository for documentation, issues, and contribution guidelines.
+Part of the [WoW](https://github.com/qhy99997/WoW-Agent) monorepo.
 
 ## License
 

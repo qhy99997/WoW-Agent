@@ -5,7 +5,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { createKimiHarness, type ContextMessage, type Event, type KimiHarness } from '#/index';
+import { createWowHarness, type ContextMessage, type Event, type WowHarness } from '#/index';
 
 import { TEST_IDENTITY } from './test-identity';
 
@@ -85,7 +85,7 @@ afterEach(async () => {
 });
 
 async function makeTempDir(): Promise<string> {
-  const dir = await mkdtemp(join(tmpdir(), 'kimi-sdk-prompt-'));
+  const dir = await mkdtemp(join(tmpdir(), 'wow-sdk-prompt-'));
   tempDirs.push(dir);
   return dir;
 }
@@ -111,7 +111,7 @@ describe('Session.prompt events', () => {
   it('persists sanitized prompt metadata without marking the title custom', async () => {
     const homeDir = await makeTempDir();
     const workDir = await makeTempDir();
-    const harness = createKimiHarness({ identity: TEST_IDENTITY, homeDir });
+    const harness = createWowHarness({ identity: TEST_IDENTITY, homeDir });
 
     try {
       await configureFakeProvider(harness);
@@ -172,7 +172,7 @@ describe('Session.prompt events', () => {
   it('emits mapped turn events through Session.onEvent', async () => {
     const homeDir = await makeTempDir();
     const workDir = await makeTempDir();
-    const harness = createKimiHarness({ identity: TEST_IDENTITY, homeDir });
+    const harness = createWowHarness({ identity: TEST_IDENTITY, homeDir });
 
     try {
       await configureFakeProvider(harness);
@@ -214,7 +214,7 @@ describe('Session.prompt events', () => {
   it('supports onEvent unsubscribe', async () => {
     const homeDir = await makeTempDir();
     const workDir = await makeTempDir();
-    const harness = createKimiHarness({ identity: TEST_IDENTITY, homeDir });
+    const harness = createWowHarness({ identity: TEST_IDENTITY, homeDir });
 
     try {
       await configureFakeProvider(harness);
@@ -238,7 +238,7 @@ describe('Session.prompt events', () => {
   it('serves the conversation through getContext, also after a restart', async () => {
     const homeDir = await makeTempDir();
     const workDir = await makeTempDir();
-    let harness = createKimiHarness({ identity: TEST_IDENTITY, homeDir });
+    let harness = createWowHarness({ identity: TEST_IDENTITY, homeDir });
 
     try {
       await configureFakeProvider(harness);
@@ -254,7 +254,7 @@ describe('Session.prompt events', () => {
       expect(visibleText((await session.getContext()).history)).toEqual(expected);
 
       await harness.close();
-      harness = createKimiHarness({ identity: TEST_IDENTITY, homeDir });
+      harness = createWowHarness({ identity: TEST_IDENTITY, homeDir });
       const resumed = await harness.resumeSession({ id: session.id });
       expect(visibleText((await resumed.getContext()).history)).toEqual(expected);
 
@@ -272,7 +272,7 @@ describe('Session.prompt events', () => {
   it('switches the model of a live session with setModel', async () => {
     const homeDir = await makeTempDir();
     const workDir = await makeTempDir();
-    const harness = createKimiHarness({ identity: TEST_IDENTITY, homeDir });
+    const harness = createWowHarness({ identity: TEST_IDENTITY, homeDir });
 
     try {
       await configureFakeProvider(harness);
@@ -299,7 +299,7 @@ describe('Session.prompt events', () => {
   it('cancels the running turn', async () => {
     const homeDir = await makeTempDir();
     const workDir = await makeTempDir();
-    const harness = createKimiHarness({ identity: TEST_IDENTITY, homeDir });
+    const harness = createWowHarness({ identity: TEST_IDENTITY, homeDir });
 
     try {
       await configureFakeProvider(harness);
@@ -325,12 +325,12 @@ describe('Session.prompt events', () => {
   it('rejects empty prompt input', async () => {
     const homeDir = await makeTempDir();
     const workDir = await makeTempDir();
-    const harness = createKimiHarness({ identity: TEST_IDENTITY, homeDir });
+    const harness = createWowHarness({ identity: TEST_IDENTITY, homeDir });
 
     try {
       const session = await harness.createSession({ workDir });
       await expect(session.prompt('   ')).rejects.toMatchObject({
-        name: 'KimiError',
+        name: 'WowError',
         code: 'request.prompt_input_empty',
       });
     } finally {
@@ -366,7 +366,7 @@ function visibleText(history: readonly ContextMessage[]): readonly string[] {
   return entries;
 }
 
-async function configureFakeProvider(harness: KimiHarness): Promise<void> {
+async function configureFakeProvider(harness: WowHarness): Promise<void> {
   await harness.setConfig({
     providers: {
       local: {

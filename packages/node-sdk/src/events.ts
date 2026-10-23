@@ -5,12 +5,12 @@ import type {
   QuestionResult,
 } from '#/interaction';
 
-export type { Event, ToolResultEvent } from '@moonshot-ai/agent-core-v2/events';
+export type { Event, ToolResultEvent } from '@wow/agent-core-v2/events';
 
 export type { ApprovalRequest, ApprovalScope } from '#/interaction';
 export type { ApprovalDecision, ApprovalResponse } from '#/interaction';
 
-export type { ToolInputDisplay } from '@moonshot-ai/agent-core-v2/tool/toolInputDisplay';
+export type { ToolInputDisplay } from '@wow/agent-core-v2/tool/toolInputDisplay';
 
 export type {
   QuestionRequest,

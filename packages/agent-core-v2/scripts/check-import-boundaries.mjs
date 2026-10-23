@@ -10,7 +10,7 @@ const ADAPTER_ROOT = join(SRC_ROOT, 'llm-adapter');
 const LOOP_MACHINE_ADAPTER_ROOT = join(SRC_ROOT, 'agent/loop/machine');
 const SESSION_LIFECYCLE_ADAPTER_ROOT = join(SRC_ROOT, 'session/agentLifecycle');
 
-const SELF_PACKAGE_PREFIX = '@moonshot-ai/agent-core-v2/';
+const SELF_PACKAGE_PREFIX = '@wow/agent-core-v2/';
 const KOSONG_PATH_RE = /(?:^|\/)kosong(?:\/|$)/;
 const TRAIT_FILE_RE = /\/trait\.ts$/;
 const FORMAT_LOWER_FILE_RE = /\/bases\/[^/]+\/(?:format|lower)\.ts$/;

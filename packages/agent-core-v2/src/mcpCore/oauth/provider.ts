@@ -11,11 +11,11 @@ import {
   type OAuthClientMetadata,
   type OAuthTokens,
 } from '@modelcontextprotocol/sdk/shared/auth.js';
-import { OAuthTokenTransaction } from '@moonshot-ai/kimi-code-oauth';
+import { OAuthTokenTransaction } from '@wow/oauth';
 
 import { BugIndicatingError } from '#/errors';
 
-import { KIMI_MCP_CLIENT_NAME } from '../client-shared';
+import { WOW_MCP_CLIENT_NAME } from '../client-shared';
 import { canonicalMcpOAuthResource, mcpOAuthStoreKey, type McpOAuthStore } from './store';
 
 const TOKENS_SUFFIX = '-tokens.json';
@@ -73,7 +73,7 @@ export class McpOAuthClientProvider implements OAuthClientProvider {
     this.store = options.store;
     this.clientLabel =
       options.clientLabel ??
-      `${options.clientName ?? KIMI_MCP_CLIENT_NAME} (${options.serverName})`;
+      `${options.clientName ?? WOW_MCP_CLIENT_NAME} (${options.serverName})`;
     this.onTokensSaved = options.onTokensSaved;
     this.onCredentialsInvalidated = options.onCredentialsInvalidated;
     this.now = options.now ?? Date.now;

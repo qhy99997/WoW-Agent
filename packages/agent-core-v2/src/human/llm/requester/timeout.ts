@@ -1,6 +1,6 @@
 import { Agent, EnvHttpProxyAgent, type Dispatcher } from 'undici';
 
-export const LLM_HEADERS_TIMEOUT_ENV = 'KIMI_CODE_LLM_HEADERS_TIMEOUT_MS';
+export const LLM_HEADERS_TIMEOUT_ENV = 'WOW_LLM_HEADERS_TIMEOUT_MS';
 
 const MAX_HEADERS_TIMEOUT_MS = 2 ** 31 - 1;
 
@@ -102,7 +102,7 @@ export function getLlmHeadersTimeoutDispatcher(
         warnedInvalidProxy = true;
         const reason = error instanceof Error ? error.message : String(error);
         process.stderr.write(
-          `kimi: ${LLM_HEADERS_TIMEOUT_ENV}: ignoring invalid proxy configuration (${reason}); requests keep the default headers timeout\n`,
+          `wow: ${LLM_HEADERS_TIMEOUT_ENV}: ignoring invalid proxy configuration (${reason}); requests keep the default headers timeout\n`,
         );
       }
       dispatcher = undefined;
@@ -111,7 +111,7 @@ export function getLlmHeadersTimeoutDispatcher(
     if (!warnedSocksProxy) {
       warnedSocksProxy = true;
       process.stderr.write(
-        `kimi: ${LLM_HEADERS_TIMEOUT_ENV} is not supported with SOCKS proxies; requests keep the default headers timeout\n`,
+        `wow: ${LLM_HEADERS_TIMEOUT_ENV} is not supported with SOCKS proxies; requests keep the default headers timeout\n`,
       );
     }
     dispatcher = undefined;

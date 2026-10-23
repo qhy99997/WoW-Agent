@@ -30,9 +30,9 @@ export function resolveAgentTaskConfig(config: IConfigService): AgentTaskConfig 
   return { ...legacy, ...current };
 }
 
-export const KEEP_ALIVE_ON_EXIT_ENV = 'KIMI_CODE_BACKGROUND_KEEP_ALIVE_ON_EXIT';
-export const MAX_RUNNING_TASKS_ENV = 'KIMI_CODE_BACKGROUND_MAX_RUNNING_TASKS';
-export const BASH_TASK_TIMEOUT_S_ENV = 'KIMI_CODE_BACKGROUND_BASH_TASK_TIMEOUT_S';
+export const KEEP_ALIVE_ON_EXIT_ENV = 'WOW_BACKGROUND_KEEP_ALIVE_ON_EXIT';
+export const MAX_RUNNING_TASKS_ENV = 'WOW_BACKGROUND_MAX_RUNNING_TASKS';
+export const BASH_TASK_TIMEOUT_S_ENV = 'WOW_BACKGROUND_BASH_TASK_TIMEOUT_S';
 
 function parsePositiveInt(raw: string): number | undefined {
   const value = raw.trim();

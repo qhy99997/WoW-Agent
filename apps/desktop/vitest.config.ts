@@ -14,7 +14,7 @@ export default defineConfig({
   test: {
     name: 'desktop',
     env: {
-      KIMI_LOG_LEVEL: 'off',
+      WOW_LOG_LEVEL: 'off',
     },
     include: ['test/**/*.test.ts'],
     environment: 'node',

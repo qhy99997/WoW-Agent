@@ -1,7 +1,7 @@
 import { type FlagDefinitionInput, registerFlagDefinition } from '#/app/flag/flagRegistry';
 
 export const WAIT_FOR_FLAG_ID = 'wait_for';
-export const WAIT_FOR_FLAG_ENV = 'KIMI_CODE_EXPERIMENTAL_WAIT_FOR';
+export const WAIT_FOR_FLAG_ENV = 'WOW_EXPERIMENTAL_WAIT_FOR';
 
 export const waitForFlag: FlagDefinitionInput = {
   id: WAIT_FOR_FLAG_ID,

@@ -1,9 +1,9 @@
 /**
- * Kimi host and device identity header factories.
+ * Host and device identity header factories.
  *
  * The caller owns the host identity (product name + host app version)
  * and the `homeDir` where the stable device id is stored. This module
- * intentionally keeps no global CLI version or environment-derived
+ * intentionally keeps no global version or environment-derived
  * production state.
  */
 
@@ -14,31 +14,29 @@ import { join } from 'node:path';
 
 import type { DeviceHeaders } from './types';
 
-export const KIMI_CODE_PLATFORM = 'kimi_code_cli';
+export const WOW_PLATFORM = 'wow_desktop';
 
-export interface KimiHostIdentity {
+export interface HostIdentity {
   readonly productName: string;
   readonly version: string;
   /**
-   * `X-Msh-Platform` value reported to Kimi endpoints
-   * (e.g. `kimi_code_cli`, `kimi_code_desktop`). Every host must state its own
-   * explicitly — `KIMI_CODE_PLATFORM` is the CLI's value, not a default to
-   * inherit silently.
+   * `X-Msh-Platform` value reported to endpoints (e.g. `wow_desktop`).
+   * Every host must state its own explicitly.
    */
   readonly platform: string;
   readonly userAgentSuffix?: string | undefined;
 }
 
-export interface KimiIdentityOptions extends KimiHostIdentity {
+export interface IdentityOptions extends HostIdentity {
   readonly homeDir: string;
 }
 
-export interface CreateKimiDeviceIdOptions {
+export interface CreateDeviceIdOptions {
   /** Invoked synchronously the first time a device id is minted on this machine. */
   readonly onFirstLaunch?: ((id: string) => void) | undefined;
 }
 
-export function readKimiDeviceId(homeDir: string): string | null {
+export function readDeviceId(homeDir: string): string | null {
   const deviceIdPath = join(homeDir, 'device_id');
   if (!existsSync(deviceIdPath)) return null;
   try {
@@ -49,11 +47,11 @@ export function readKimiDeviceId(homeDir: string): string | null {
   }
 }
 
-export function createKimiDeviceId(
+export function createDeviceId(
   homeDir: string,
-  options: CreateKimiDeviceIdOptions = {},
+  options: CreateDeviceIdOptions = {},
 ): string {
-  const existing = readKimiDeviceId(homeDir);
+  const existing = readDeviceId(homeDir);
   if (existing !== null) return existing;
 
   const id = randomUUID();
@@ -73,7 +71,7 @@ export function createKimiDeviceId(
   return id;
 }
 
-export function createKimiDeviceHeaders(options: {
+export function createDeviceHeaders(options: {
   readonly homeDir: string;
   readonly version: string;
   /** Required and validated like the version: non-empty ASCII, no fallback —
@@ -81,22 +79,22 @@ export function createKimiDeviceHeaders(options: {
   readonly platform: string;
 }): DeviceHeaders {
   return {
-    'X-Msh-Platform': requiredAsciiHeader(options.platform, 'Kimi identity platform'),
-    'X-Msh-Version': requiredAsciiHeader(options.version, 'Kimi identity version'),
+    'X-Msh-Platform': requiredAsciiHeader(options.platform, 'Host identity platform'),
+    'X-Msh-Version': requiredAsciiHeader(options.version, 'Host identity version'),
     'X-Msh-Device-Name': asciiHeader(hostname()),
     'X-Msh-Device-Model': asciiHeader(deviceModel()),
     'X-Msh-Os-Version': asciiHeader(release()),
-    'X-Msh-Device-Id': createKimiDeviceId(options.homeDir),
+    'X-Msh-Device-Id': createDeviceId(options.homeDir),
   };
 }
 
-export function createKimiUserAgent(options: {
+export function createUserAgent(options: {
   readonly productName: string;
   readonly version: string;
   readonly userAgentSuffix?: string | undefined;
 }): string {
-  const product = requiredAsciiHeader(options.productName, 'Kimi identity product');
-  const version = requiredAsciiHeader(options.version, 'Kimi identity version');
+  const product = requiredAsciiHeader(options.productName, 'Host identity product');
+  const version = requiredAsciiHeader(options.version, 'Host identity version');
   const suffix =
     options.userAgentSuffix === undefined ? undefined : asciiHeader(options.userAgentSuffix, '');
   return suffix === undefined || suffix.length === 0
@@ -106,8 +104,8 @@ export function createKimiUserAgent(options: {
 
 /**
  * Swap the product token of a User-Agent produced by
- * {@link createKimiUserAgent}, keeping the version and optional suffix intact
- * (`kimi-code-cli/1.2.3 (web)` → `acme/1.2.3 (web)`).
+ * {@link createUserAgent}, keeping the version and optional suffix intact
+ * (`WoW/1.2.3 (desktop)` → `acme/1.2.3 (desktop)`).
  *
  * Lives next to the builder on purpose: the format knowledge — product token,
  * `/`, version, parenthesized suffix — must exist in exactly one place, so a
@@ -119,15 +117,15 @@ export function createKimiUserAgent(options: {
  * replaced wholesale.
  */
 export function replaceUserAgentProduct(userAgent: string, product: string): string {
-  const cleaned = requiredAsciiHeader(product, 'Kimi identity product');
+  const cleaned = requiredAsciiHeader(product, 'Host identity product');
   const separator = userAgent.indexOf('/');
   return separator < 0 ? cleaned : `${cleaned}${userAgent.slice(separator)}`;
 }
 
-export function createKimiDefaultHeaders(options: KimiIdentityOptions): Record<string, string> {
+export function createDefaultHeaders(options: IdentityOptions): Record<string, string> {
   return {
-    'User-Agent': createKimiUserAgent(options),
-    ...createKimiDeviceHeaders({
+    'User-Agent': createUserAgent(options),
+    ...createDeviceHeaders({
       homeDir: options.homeDir,
       version: options.version,
       platform: options.platform,
@@ -141,7 +139,7 @@ export function createKimiDefaultHeaders(options: KimiIdentityOptions): Record<s
  * newline-separated `Name: Value` lines; lines without a colon are skipped;
  * names and values are trimmed.
  *
- * These headers form the lowest-precedence layer — the Kimi identity headers
+ * These headers form the lowest-precedence layer — the host identity headers
  * (User-Agent, X-Msh-*), per-provider `customHeaders`, and request auth
  * (Authorization) all override them.
  *
@@ -149,12 +147,12 @@ export function createKimiDefaultHeaders(options: KimiIdentityOptions): Record<s
  * environment-derived and stateless (re-read on every call) so callers can
  * apply it uniformly without plumbing the value through every host layer.
  */
-export const KIMI_CODE_CUSTOM_HEADERS_ENV = 'KIMI_CODE_CUSTOM_HEADERS';
+export const WOW_CUSTOM_HEADERS_ENV = 'WOW_CUSTOM_HEADERS';
 
-export function parseKimiCodeCustomHeaders(
+export function parseCustomHeaders(
   env: NodeJS.ProcessEnv = process.env,
 ): Record<string, string> {
-  const raw = env[KIMI_CODE_CUSTOM_HEADERS_ENV]?.trim();
+  const raw = env[WOW_CUSTOM_HEADERS_ENV]?.trim();
   if (raw === undefined || raw.length === 0) return {};
   const headers: Record<string, string> = {};
   for (const line of raw.split('\n')) {
@@ -167,12 +165,12 @@ export function parseKimiCodeCustomHeaders(
   return headers;
 }
 
-export function assertKimiHostIdentity(identity: KimiHostIdentity | undefined): KimiHostIdentity {
+export function assertHostIdentity(identity: HostIdentity | undefined): HostIdentity {
   if (identity === undefined) {
-    throw new Error('Kimi host identity is required. Pass the host product name and version.');
+    throw new Error('Host identity is required. Pass the host product name and version.');
   }
-  requiredAsciiHeader(identity.productName, 'Kimi identity product');
-  requiredAsciiHeader(identity.version, 'Kimi identity version');
+  requiredAsciiHeader(identity.productName, 'Host identity product');
+  requiredAsciiHeader(identity.version, 'Host identity version');
   return identity;
 }
 

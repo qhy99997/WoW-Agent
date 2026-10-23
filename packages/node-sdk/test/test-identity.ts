@@ -1,7 +1,7 @@
-import type { KimiHostIdentity } from '#/index';
+import type { HostIdentity } from '#/index';
 
-export const TEST_IDENTITY: KimiHostIdentity = {
-  productName: 'kimi-code-cli',
+export const TEST_IDENTITY: HostIdentity = {
+  productName: 'wow-desktop',
   version: '0.0.0-test',
-  platform: 'kimi_code_cli',
+  platform: 'wow_desktop',
 };

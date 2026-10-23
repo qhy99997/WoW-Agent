@@ -18,7 +18,7 @@
     "clean": "node -e \"require('node:fs').rmSync('out',{recursive:true,force:true})\""
   },
   "dependencies": {
-    "@moonshot-ai/kimi-code-sdk": "workspace:^",
+    "@wow/sdk": "workspace:^",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1"
   },

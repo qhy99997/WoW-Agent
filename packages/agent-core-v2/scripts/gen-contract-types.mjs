@@ -21,7 +21,7 @@ const TMP = join(PKG, '.contract-types-tmp');
 const TSCONFIG = join(PKG, 'tsconfig.contract.json');
 
 const repoRoot = join(PKG, '..', '..');
-const defaultOut = join(repoRoot, '..', 'kimi-code-mini-bench', 'types', 'agent-core-v2');
+const defaultOut = join(repoRoot, '..', 'wow-mini-bench', 'types', 'agent-core-v2');
 const OUT = process.argv[2] ? join(process.cwd(), process.argv[2]) : defaultOut;
 
 const require = createRequire(import.meta.url);

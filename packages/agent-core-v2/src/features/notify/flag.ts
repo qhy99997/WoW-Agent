@@ -1,7 +1,7 @@
 import { type FlagDefinitionInput, registerFlagDefinition } from '#/app/flag/flagRegistry';
 
 export const NOTIFY_USER_FLAG_ID = 'notify_user';
-export const NOTIFY_USER_FLAG_ENV = 'KIMI_CODE_EXPERIMENTAL_NOTIFY_USER';
+export const NOTIFY_USER_FLAG_ENV = 'WOW_EXPERIMENTAL_NOTIFY_USER';
 
 export const notifyUserFlag: FlagDefinitionInput = {
   id: NOTIFY_USER_FLAG_ID,

@@ -42,7 +42,7 @@ export const PermissionConfigSchema = z.object({
 
 export type PermissionConfig = z.infer<typeof PermissionConfigSchema>;
 
-export const DANGEROUS_COMMAND_GUARD_ENV = 'KIMI_CODE_DANGEROUS_COMMAND_GUARD';
+export const DANGEROUS_COMMAND_GUARD_ENV = 'WOW_DANGEROUS_COMMAND_GUARD';
 
 function parseDangerousCommandGuardEnv(raw: string): boolean | undefined {
   if (raw === 'true') return true;

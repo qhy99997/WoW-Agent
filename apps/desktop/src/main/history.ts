@@ -1,4 +1,4 @@
-import type { ContextMessage } from '@moonshot-ai/kimi-code-sdk';
+import type { ContextMessage } from '@wow/sdk';
 
 import type { TranscriptEntry } from '../shared/contract';
 

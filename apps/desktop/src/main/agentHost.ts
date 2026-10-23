@@ -7,12 +7,12 @@ import type {
   ApprovalHandler,
   ApprovalResponse,
   Event as AgentEvent,
-  KimiHarness,
   QuestionHandler,
   QuestionResult,
   Session,
   SessionSummary as SdkSessionSummary,
-} from '@moonshot-ai/kimi-code-sdk';
+  WowHarness,
+} from '@wow/sdk';
 
 import { projectHistory } from './history';
 import { nativeWorkDir } from './workDir';
@@ -74,9 +74,9 @@ export function describeTurnEnd(event: {
  * main process so the renderer only ever sees plain JSON over IPC.
  */
 export class AgentHost {
-  private harness: KimiHarness | null = null;
+  private harness: WowHarness | null = null;
   private sink: EventSink | null = null;
-  private starting: Promise<KimiHarness> | null = null;
+  private starting: Promise<WowHarness> | null = null;
   private readonly workspaces: Workspace[] = [];
   private readonly sessions = new Map<string, Session>();
   private readonly transcripts = new Map<string, TranscriptEntry[]>();
@@ -92,11 +92,11 @@ export class AgentHost {
     this.sink = sink;
   }
 
-  async ensureStarted(): Promise<KimiHarness> {
+  async ensureStarted(): Promise<WowHarness> {
     if (this.harness !== null) return this.harness;
     this.starting ??= (async () => {
-      const sdk = await import('@moonshot-ai/kimi-code-sdk');
-      const harness = sdk.createKimiHarness({
+      const sdk = await import('@wow/sdk');
+      const harness = sdk.createWowHarness({
         homeDir: this.homeDir,
         identity: {
           productName: 'WoW',
@@ -122,7 +122,7 @@ export class AgentHost {
     });
 
     if (process.platform === 'win32') {
-      const override = process.env['WOW_SHELL_PATH'] ?? process.env['KIMI_SHELL_PATH'];
+      const override = process.env['WOW_SHELL_PATH'];
       const shellPath =
         (override !== undefined && existsSync(override) ? override : undefined) ??
         WINDOWS_GIT_BASH.find((c) => existsSync(c));

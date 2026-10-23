@@ -1,15 +1,15 @@
-export { KimiHarness } from '#/kimi-harness';
-export type { KimiHarnessRuntimeOptions } from '#/kimi-harness';
+export { WowHarness } from '#/harness';
+export type { WowHarnessRuntimeOptions } from '#/harness';
 export { Session } from '#/session';
-export { createKimiHarness, SDKRpcClientV2 } from '#/sdk-rpc-client-v2';
+export { createWowHarness, SDKRpcClientV2 } from '#/sdk-rpc-client-v2';
 export { SDKRpcClientBase } from '#/rpc';
 
 export {
   ErrorCodes,
-  KimiError,
-  isKimiError,
-  type KimiErrorCode,
-  type KimiErrorOptions,
+  WowError,
+  isWowError,
+  type WowErrorCode,
+  type WowErrorOptions,
 } from '#/errors';
 
 export * from '#/events';

@@ -1,5 +1,5 @@
 import type { AgentContextData } from '#/context';
-import { ErrorCodes, KimiError } from '#/errors';
+import { ErrorCodes, WowError } from '#/errors';
 import type { ApprovalHandler, Event, QuestionHandler } from '#/events';
 import type { SDKRpcClientBase } from '#/rpc';
 import type { PromptInput, SessionSummary, Unsubscribe } from '#/types';
@@ -69,7 +69,7 @@ export class Session {
     this.ensureOpen();
     const normalized = model.trim();
     if (normalized.length === 0) {
-      throw new KimiError(ErrorCodes.SESSION_MODEL_EMPTY, 'Session model cannot be empty');
+      throw new WowError(ErrorCodes.SESSION_MODEL_EMPTY, 'Session model cannot be empty');
     }
     await this.rpc.setModel({ sessionId: this.id, model: normalized });
   }
@@ -103,7 +103,7 @@ export class Session {
 
   private ensureOpen(): void {
     if (this.closed) {
-      throw new KimiError(ErrorCodes.SESSION_CLOSED, 'Session is closed');
+      throw new WowError(ErrorCodes.SESSION_CLOSED, 'Session is closed');
     }
   }
 }
@@ -111,20 +111,20 @@ export class Session {
 function normalizePromptInput(input: string | PromptInput): PromptInput {
   if (typeof input === 'string') {
     if (input.trim().length === 0) {
-      throw new KimiError(ErrorCodes.REQUEST_PROMPT_INPUT_EMPTY, 'Prompt input cannot be empty');
+      throw new WowError(ErrorCodes.REQUEST_PROMPT_INPUT_EMPTY, 'Prompt input cannot be empty');
     }
     return [{ type: 'text', text: input }];
   }
 
   if (input.length === 0) {
-    throw new KimiError(ErrorCodes.REQUEST_PROMPT_INPUT_EMPTY, 'Prompt input cannot be empty');
+    throw new WowError(ErrorCodes.REQUEST_PROMPT_INPUT_EMPTY, 'Prompt input cannot be empty');
   }
 
   for (const part of input) {
     switch (part.type) {
       case 'text':
         if (part.text.trim().length === 0) {
-          throw new KimiError(
+          throw new WowError(
             ErrorCodes.REQUEST_PROMPT_INPUT_EMPTY,
             'Prompt input cannot contain empty text parts',
           );
@@ -132,7 +132,7 @@ function normalizePromptInput(input: string | PromptInput): PromptInput {
         break;
       case 'image_url':
         if (part.imageUrl.url.trim().length === 0) {
-          throw new KimiError(
+          throw new WowError(
             ErrorCodes.REQUEST_PROMPT_INPUT_EMPTY,
             'Prompt input cannot contain empty image URLs',
           );
@@ -140,7 +140,7 @@ function normalizePromptInput(input: string | PromptInput): PromptInput {
         break;
       case 'video_url':
         if (part.videoUrl.url.trim().length === 0) {
-          throw new KimiError(
+          throw new WowError(
             ErrorCodes.REQUEST_PROMPT_INPUT_EMPTY,
             'Prompt input cannot contain empty video URLs',
           );

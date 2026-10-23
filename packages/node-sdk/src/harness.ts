@@ -1,11 +1,11 @@
-import { ErrorCodes, KimiError } from '#/errors';
+import { ErrorCodes, WowError } from '#/errors';
 import type { SDKRpcClientBase } from '#/rpc';
 import { Session } from '#/session';
 import type {
   CreateSessionOptions,
   GetConfigOptions,
-  KimiConfig,
-  KimiConfigPatch,
+  WowConfig,
+  WowConfigPatch,
   McpManagedServerInfo,
   McpServerConfig,
   McpServerOptions,
@@ -15,13 +15,13 @@ import type {
   SessionSummary,
 } from '#/types';
 
-export interface KimiHarnessRuntimeOptions {
+export interface WowHarnessRuntimeOptions {
   readonly homeDir: string;
   readonly configPath: string;
   readonly onClose: () => void | Promise<void>;
 }
 
-export class KimiHarness {
+export class WowHarness {
   readonly homeDir: string;
   readonly configPath: string;
 
@@ -31,7 +31,7 @@ export class KimiHarness {
 
   constructor(
     private readonly rpc: SDKRpcClientBase,
-    options: KimiHarnessRuntimeOptions,
+    options: WowHarnessRuntimeOptions,
   ) {
     this.homeDir = options.homeDir;
     this.configPath = options.configPath;
@@ -83,11 +83,11 @@ export class KimiHarness {
     return this.rpc.listSessions();
   }
 
-  async getConfig(options: GetConfigOptions = {}): Promise<KimiConfig> {
+  async getConfig(options: GetConfigOptions = {}): Promise<WowConfig> {
     return this.rpc.getConfig(options);
   }
 
-  async setConfig(patch: KimiConfigPatch): Promise<KimiConfig> {
+  async setConfig(patch: WowConfigPatch): Promise<WowConfig> {
     return this.rpc.setConfig(patch);
   }
 
@@ -96,11 +96,11 @@ export class KimiHarness {
    * express "drop this key"; this is the escape hatch for deletions (removing a
    * model alias, clearing a section). `undefined` deletes the domain.
    */
-  async replaceConfigSection(domain: string, value: unknown): Promise<KimiConfig> {
+  async replaceConfigSection(domain: string, value: unknown): Promise<WowConfig> {
     return this.rpc.replaceConfigSection(domain, value);
   }
 
-  async removeProvider(providerId: string): Promise<KimiConfig> {
+  async removeProvider(providerId: string): Promise<WowConfig> {
     return this.rpc.removeProvider(providerId);
   }
 
@@ -160,11 +160,11 @@ export class KimiHarness {
 
 function normalizeSessionId(value: string): string {
   if (typeof value !== 'string') {
-    throw new KimiError(ErrorCodes.SESSION_ID_REQUIRED, 'Session id is required.');
+    throw new WowError(ErrorCodes.SESSION_ID_REQUIRED, 'Session id is required.');
   }
   const normalized = value.trim();
   if (normalized.length === 0) {
-    throw new KimiError(ErrorCodes.SESSION_ID_EMPTY, 'Session id cannot be empty.');
+    throw new WowError(ErrorCodes.SESSION_ID_EMPTY, 'Session id cannot be empty.');
   }
   return normalized;
 }

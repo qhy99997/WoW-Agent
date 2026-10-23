@@ -21,7 +21,7 @@ export interface PersistOriginalImageOptions {
 }
 
 export function originalImageCacheDir(): string {
-  return join(tmpdir(), 'kimi-code-original-images');
+  return join(tmpdir(), 'wow-original-images');
 }
 
 export function sessionMediaOriginalsDir(sessionDir: string): string {

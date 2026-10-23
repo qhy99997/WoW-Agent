@@ -1,5 +1,5 @@
 import type { AgentContextData } from '#/context';
-import { ErrorCodes, type KimiErrorCode } from '#/errors';
+import { ErrorCodes, type WowErrorCode } from '#/errors';
 import type { ApprovalHandler, Event, QuestionHandler } from '#/events';
 import type {
   ApprovalRequest,
@@ -12,8 +12,8 @@ import type {
 import type {
   CreateSessionOptions,
   GetConfigOptions,
-  KimiConfig,
-  KimiConfigPatch,
+  WowConfig,
+  WowConfigPatch,
   McpManagedServerInfo,
   McpServerConfig,
   McpServerOptions,
@@ -44,7 +44,7 @@ export interface SetSessionModelRpcResult {
 }
 
 /**
- * The engine-facing half of the SDK: the abstract operations a `KimiHarness` /
+ * The engine-facing half of the SDK: the abstract operations a `WowHarness` /
  * `Session` pair needs, plus the per-session event listeners and the
  * approval / question handler registries the engine wiring feeds.
  */
@@ -65,13 +65,13 @@ export abstract class SDKRpcClientBase {
 
   abstract renameSession(input: RenameSessionInput): Promise<void>;
 
-  abstract getConfig(input?: GetConfigOptions): Promise<KimiConfig>;
+  abstract getConfig(input?: GetConfigOptions): Promise<WowConfig>;
 
-  abstract setConfig(input: KimiConfigPatch): Promise<KimiConfig>;
+  abstract setConfig(input: WowConfigPatch): Promise<WowConfig>;
 
-  abstract replaceConfigSection(domain: string, value: unknown): Promise<KimiConfig>;
+  abstract replaceConfigSection(domain: string, value: unknown): Promise<WowConfig>;
 
-  abstract removeProvider(providerId: string): Promise<KimiConfig>;
+  abstract removeProvider(providerId: string): Promise<WowConfig>;
 
   abstract listMcpServers(options?: McpServerOptions): Promise<readonly McpManagedServerInfo[]>;
 
@@ -177,7 +177,7 @@ export abstract class SDKRpcClientBase {
 
   private emitHandlerError(
     request: { readonly sessionId: string; readonly agentId: string },
-    code: KimiErrorCode,
+    code: WowErrorCode,
     error: unknown,
   ): void {
     this.receiveEvent({

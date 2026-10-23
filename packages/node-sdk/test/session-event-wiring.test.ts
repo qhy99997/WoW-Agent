@@ -18,7 +18,7 @@ import {
   ISessionUsageService,
   makeAgentScopeContext,
   type ISessionScopeHandle,
-} from '@moonshot-ai/agent-core-v2';
+} from '@wow/agent-core-v2';
 
 import { SessionEventWiring, type SessionEventSink } from '#/v2/session-wiring';
 

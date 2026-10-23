@@ -11,7 +11,7 @@ import { IWorkspaceContext } from '#/workspace/workspaceContext/workspaceContext
 import { IWorkspaceTrust, type WorkspaceTrustChange } from './workspaceTrust';
 import { deleteWorkspaceTrust, readWorkspaceTrust, writeWorkspaceTrust } from './trustRecord';
 
-export const TRUST_WORKSPACE_ENV = 'KIMI_CODE_TRUST_WORKSPACE';
+export const TRUST_WORKSPACE_ENV = 'WOW_TRUST_WORKSPACE';
 
 export function trustWorkspaceEnvTrusted(
   getEnv: (name: string) => string | undefined,

@@ -1,5 +1,5 @@
 {
-  "name": "@moonshot-ai/kimi-code-sdk",
+  "name": "@wow/sdk",
   "version": "0.21.0",
   "private": true,
   "description": "In-process agent SDK for the WoW desktop app",
@@ -15,7 +15,7 @@
     "url": "https://github.com/qhy99997/WoW-Agent/issues"
   },
   "keywords": [
-    "kimi",
+    "wow",
     "sdk",
     "typescript",
     "agent",
@@ -56,7 +56,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@moonshot-ai/agent-core-v2": "workspace:^",
-    "@moonshot-ai/kimi-code-oauth": "workspace:^"
+    "@wow/agent-core-v2": "workspace:^",
+    "@wow/oauth": "workspace:^"
   }
 }

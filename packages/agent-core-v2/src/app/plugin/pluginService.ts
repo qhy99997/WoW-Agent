@@ -71,7 +71,7 @@ export class PluginService extends Service implements IPluginService {
     super();
     this.homeDir = bootstrap.homeDir;
     this.manager = new PluginManager({
-      kimiHomeDir: this.homeDir,
+      homeDir: this.homeDir,
       discoverSkills: (roots) => discovery.discover(roots),
     });
   }
@@ -141,7 +141,7 @@ export class PluginService extends Service implements IPluginService {
           throw new Error2(
             PluginErrors.codes.PLUGIN_LOAD_FAILED,
             `Failed to reload plugins: ${this.loadError.message}`,
-            { cause: this.loadError, details: { kimiHomeDir: this.homeDir } },
+            { cause: this.loadError, details: { homeDir: this.homeDir } },
           );
         }
       }),
@@ -295,7 +295,7 @@ export class PluginService extends Service implements IPluginService {
       PluginErrors.codes.PLUGIN_LOAD_FAILED,
       `Plugin state failed to load: ${this.loadError.message}. ` +
         `Fix the file at ${this.homeDir}/plugins/installed.json and run /plugins reload.`,
-      { cause: this.loadError, details: { kimiHomeDir: this.homeDir } },
+      { cause: this.loadError, details: { homeDir: this.homeDir } },
     );
   }
 }

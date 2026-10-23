@@ -1,18 +1,18 @@
 export type { DeviceHeaders } from './types';
 
 export {
-  assertKimiHostIdentity,
-  createKimiDefaultHeaders,
-  createKimiDeviceHeaders,
-  createKimiDeviceId,
-  createKimiUserAgent,
-  KIMI_CODE_CUSTOM_HEADERS_ENV,
-  KIMI_CODE_PLATFORM,
-  parseKimiCodeCustomHeaders,
-  readKimiDeviceId,
+  assertHostIdentity,
+  createDefaultHeaders,
+  createDeviceHeaders,
+  createDeviceId,
+  createUserAgent,
+  parseCustomHeaders,
+  readDeviceId,
   replaceUserAgentProduct,
+  WOW_CUSTOM_HEADERS_ENV,
+  WOW_PLATFORM,
 } from './identity';
-export type { KimiHostIdentity, KimiIdentityOptions } from './identity';
+export type { HostIdentity, IdentityOptions } from './identity';
 
 export {
   apiKeyEnvMissingMessage,

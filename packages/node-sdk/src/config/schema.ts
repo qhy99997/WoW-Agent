@@ -1,4 +1,4 @@
-import { parsePattern } from '@moonshot-ai/agent-core-v2/agent/permissionRules/matchesRule';
+import { parsePattern } from '@wow/agent-core-v2/agent/permissionRules/matchesRule';
 import { z } from 'zod';
 
 const HOOK_EVENT_TYPES = [
@@ -271,7 +271,7 @@ export const McpServerConfigSchema = z.preprocess((raw) => {
 
 export type McpServerConfig = z.infer<typeof McpServerConfigSchema>;
 
-export const KimiConfigSchema = z.object({
+export const WowConfigSchema = z.object({
   providers: z.record(z.string(), ProviderConfigSchema).default({}),
   defaultProvider: z.string().optional(),
   defaultModel: z.string().optional(),
@@ -300,7 +300,7 @@ export const KimiConfigSchema = z.object({
   raw: z.record(z.string(), z.unknown()).optional(),
 });
 
-export type KimiConfig = z.infer<typeof KimiConfigSchema>;
+export type WowConfig = z.infer<typeof WowConfigSchema>;
 
 const ProviderConfigPatchSchema = ProviderConfigSchema.partial();
 const ModelAliasPatchSchema = ModelAliasSchema.partial();
@@ -319,7 +319,7 @@ const ServicesConfigPatchSchema = z.object({
   moonshotFetch: MoonshotServiceConfigPatchSchema.optional(),
 });
 
-export const KimiConfigPatchSchema = z
+export const WowConfigPatchSchema = z
   .object({
     providers: z.record(z.string(), ProviderConfigPatchSchema).optional(),
     defaultProvider: z.string().optional(),
@@ -349,7 +349,7 @@ export const KimiConfigPatchSchema = z
   })
   .strict();
 
-export type KimiConfigPatch = z.infer<typeof KimiConfigPatchSchema>;
+export type WowConfigPatch = z.infer<typeof WowConfigPatchSchema>;
 
 function isValidPermissionPattern(pattern: string): boolean {
   try {

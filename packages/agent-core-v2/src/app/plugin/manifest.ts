@@ -13,8 +13,8 @@ import {
   type PluginManifestKind,
 } from './types';
 
-const KIMI_PLUGIN_ROOT_PATH = 'kimi.plugin.json';
-const KIMI_PLUGIN_DIR_PATH = '.kimi-plugin/plugin.json';
+const WOW_PLUGIN_ROOT_PATH = 'wow.plugin.json';
+const WOW_PLUGIN_DIR_PATH = '.wow-plugin/plugin.json';
 
 export const PLUGIN_SYSTEM_PROMPT_MAX_BYTES = 32 * 1024;
 
@@ -36,8 +36,8 @@ export interface ParsedManifestResult {
 }
 
 export async function parseManifest(pluginRoot: string): Promise<ParsedManifestResult> {
-  const rootJsonPath = path.join(pluginRoot, KIMI_PLUGIN_ROOT_PATH);
-  const dirJsonPath = path.join(pluginRoot, KIMI_PLUGIN_DIR_PATH);
+  const rootJsonPath = path.join(pluginRoot, WOW_PLUGIN_ROOT_PATH);
+  const dirJsonPath = path.join(pluginRoot, WOW_PLUGIN_DIR_PATH);
   const rootJsonExists = await isFile(rootJsonPath);
   const dirJsonExists = await isFile(dirJsonPath);
 
@@ -46,14 +46,14 @@ export async function parseManifest(pluginRoot: string): Promise<ParsedManifestR
       diagnostics: [
         {
           severity: 'error',
-          message: `No manifest at ${KIMI_PLUGIN_ROOT_PATH} or ${KIMI_PLUGIN_DIR_PATH}`,
+          message: `No manifest at ${WOW_PLUGIN_ROOT_PATH} or ${WOW_PLUGIN_DIR_PATH}`,
         },
       ],
     };
   }
 
   const manifestPath = rootJsonExists ? rootJsonPath : dirJsonPath;
-  const manifestKind: PluginManifestKind = rootJsonExists ? 'kimi-plugin-root' : 'kimi-plugin-dir';
+  const manifestKind: PluginManifestKind = rootJsonExists ? 'wow-plugin-root' : 'wow-plugin-dir';
   const shadowedManifestPath = rootJsonExists && dirJsonExists ? dirJsonPath : undefined;
 
   let raw: unknown;
@@ -153,7 +153,7 @@ function recordUnsupportedRuntimeFields(
     if (raw[field] === undefined) continue;
     diagnostics.push({
       severity: 'info',
-      message: `"${field}" is present but not supported by Kimi plugins`,
+      message: `"${field}" is present but not supported by WoW plugins`,
     });
   }
 }

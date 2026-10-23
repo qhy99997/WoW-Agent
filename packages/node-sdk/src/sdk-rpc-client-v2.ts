@@ -14,7 +14,7 @@ import {
   drainLogCloses,
   drainQueryStoreDisposals,
   drainSessionIndexMirror,
-  ensureKimiHome,
+  ensureWowHome,
   ensureMainAgent,
   followSessionLifecycles,
   getLiveSessionById,
@@ -43,7 +43,7 @@ import {
   ProfileError,
   ProfileErrors,
   resolveConfigPath,
-  resolveKimiHome,
+  resolveWowHome,
   resolveLoggingConfig,
   resumeSessionById,
   sessionDirOf,
@@ -55,13 +55,13 @@ import {
   type Scope,
   type ServicesAccessor,
   type SessionSummary as EngineSessionSummary,
-} from '@moonshot-ai/agent-core-v2';
-import { IAppendLogStore } from '@moonshot-ai/agent-core-v2/persistence/interface/appendLogStore';
-import { assertKimiHostIdentity, createKimiDefaultHeaders } from '@moonshot-ai/kimi-code-oauth';
+} from '@wow/agent-core-v2';
+import { IAppendLogStore } from '@wow/agent-core-v2/persistence/interface/appendLogStore';
+import { assertHostIdentity, createDefaultHeaders, type HostIdentity } from '@wow/oauth';
 
 import type { AgentContextData } from '#/context';
-import { ErrorCodes, KimiError } from '#/errors';
-import { KimiHarness } from '#/kimi-harness';
+import { ErrorCodes, WowError } from '#/errors';
+import { WowHarness } from '#/harness';
 import {
   SDKRpcClientBase,
   type SessionIdRpcInput,
@@ -73,10 +73,9 @@ import type {
   CreateSessionOptions,
   GetConfigOptions,
   JsonObject,
-  KimiConfig,
-  KimiConfigPatch,
-  KimiHarnessOptions,
-  KimiHostIdentity,
+  WowConfig,
+  WowConfigPatch,
+  WowHarnessOptions,
   McpManagedServerInfo,
   McpServerConfig,
   McpServerOptions,
@@ -85,7 +84,7 @@ import type {
   ResumeSessionInput,
   SessionSummary,
 } from '#/types';
-import { planProviderRemoval, resolvedConfigToKimiConfig } from '#/v2/config-mapper';
+import { planProviderRemoval, resolvedConfigToWowConfig } from '#/v2/config-mapper';
 import { translateGlobalEvent } from '#/v2/event-mapper';
 import { normalizeWorkDir, v2SummaryToSessionSummary } from '#/v2/session-mapper';
 import { SessionEventWiring } from '#/v2/session-wiring';
@@ -93,7 +92,7 @@ import { SessionEventWiring } from '#/v2/session-wiring';
 export class SDKRpcClientV2 extends SDKRpcClientBase {
   readonly homeDir: string;
   readonly configPath: string;
-  readonly identity: KimiHostIdentity;
+  readonly identity: HostIdentity;
 
   private readonly app: Scope;
   /**
@@ -119,12 +118,12 @@ export class SDKRpcClientV2 extends SDKRpcClientBase {
   private readonly sessionAccessQueues = new Map<string, Promise<void>>();
   private readonly appSubscriptions: IDisposable[] = [];
 
-  constructor(options: KimiHarnessOptions) {
+  constructor(options: WowHarnessOptions) {
     super();
-    this.identity = assertKimiHostIdentity(options.identity);
-    this.homeDir = resolveKimiHome(options.homeDir);
+    this.identity = assertHostIdentity(options.identity);
+    this.homeDir = resolveWowHome(options.homeDir);
     this.configPath = resolveConfigPath({ homeDir: this.homeDir });
-    ensureKimiHome(this.homeDir);
+    ensureWowHome(this.homeDir);
 
     const { app } = bootstrap(
       {
@@ -134,7 +133,7 @@ export class SDKRpcClientV2 extends SDKRpcClientBase {
         args: {
           // Host identity headers for the engine's outbound requests (model,
           // URL fetch, registry refresh).
-          requestHeaders: createKimiDefaultHeaders({ homeDir: this.homeDir, ...this.identity }),
+          requestHeaders: createDefaultHeaders({ homeDir: this.homeDir, ...this.identity }),
         },
       },
       [...logSeed(resolveLoggingConfig({ homeDir: this.homeDir, env: process.env }))],
@@ -191,16 +190,16 @@ export class SDKRpcClientV2 extends SDKRpcClientBase {
 
   // -- config ---------------------------------------------------------------
 
-  override async getConfig(options?: GetConfigOptions): Promise<KimiConfig> {
+  override async getConfig(options?: GetConfigOptions): Promise<WowConfig> {
     const config = await this.config();
     if (options?.reload) {
       await config.reload();
     }
-    return resolvedConfigToKimiConfig(clone(config.getAll()));
+    return resolvedConfigToWowConfig(clone(config.getAll()));
   }
 
   /** Deep-merges each top-level field of the patch into its config domain. */
-  override async setConfig(patch: KimiConfigPatch): Promise<KimiConfig> {
+  override async setConfig(patch: WowConfigPatch): Promise<WowConfig> {
     const config = await this.config();
     for (const [domain, domainPatch] of Object.entries(patch)) {
       if (domainPatch === undefined) continue;
@@ -209,7 +208,7 @@ export class SDKRpcClientV2 extends SDKRpcClientBase {
     return this.getConfig();
   }
 
-  override async replaceConfigSection(domain: string, value: unknown): Promise<KimiConfig> {
+  override async replaceConfigSection(domain: string, value: unknown): Promise<WowConfig> {
     const config = await this.config();
     await config.replace(domain, value === undefined ? null : clone(value));
     return this.getConfig();
@@ -221,7 +220,7 @@ export class SDKRpcClientV2 extends SDKRpcClientBase {
    * persisted as one multi-section replace, so the file never ends up
    * half-cascaded.
    */
-  override async removeProvider(providerId: string): Promise<KimiConfig> {
+  override async removeProvider(providerId: string): Promise<WowConfig> {
     const config = await this.config();
     const plan = planProviderRemoval({
       providers: clone(config.inspect<Record<string, unknown>>('providers').userValue),
@@ -292,7 +291,7 @@ export class SDKRpcClientV2 extends SDKRpcClientBase {
   override async renameSession(input: RenameSessionInput): Promise<void> {
     const title = input.title.trim();
     if (title.length === 0) {
-      throw new KimiError(ErrorCodes.SESSION_TITLE_EMPTY, 'Session title cannot be empty');
+      throw new WowError(ErrorCodes.SESSION_TITLE_EMPTY, 'Session title cannot be empty');
     }
     await this.runSessionAccess(input.id, () =>
       this.withTemporarySession(input.id, (handle) =>
@@ -453,7 +452,7 @@ export class SDKRpcClientV2 extends SDKRpcClientBase {
     const context = await ensureMainAgent(session);
     const agent = session.accessor.get(IAgentLifecycleService).handleOf(context.agentId);
     if (agent === undefined) {
-      throw new KimiError(ErrorCodes.AGENT_NOT_FOUND, 'Main agent was not found');
+      throw new WowError(ErrorCodes.AGENT_NOT_FOUND, 'Main agent was not found');
     }
     const profile = agent.accessor.get(IAgentProfileService);
     if (profile.data().profileName !== undefined) return agent;
@@ -538,24 +537,24 @@ export class SDKRpcClientV2 extends SDKRpcClientBase {
   }
 }
 
-export function createKimiHarness(options: KimiHarnessOptions): KimiHarness {
+export function createWowHarness(options: WowHarnessOptions): WowHarness {
   const rpc = new SDKRpcClientV2(options);
-  return new KimiHarness(rpc, {
+  return new WowHarness(rpc, {
     homeDir: rpc.homeDir,
     configPath: rpc.configPath,
     onClose: () => rpc.close(),
   });
 }
 
-function sessionNotFound(sessionId: string): KimiError {
-  return new KimiError(ErrorCodes.SESSION_NOT_FOUND, `Session "${sessionId}" was not found`, {
+function sessionNotFound(sessionId: string): WowError {
+  return new WowError(ErrorCodes.SESSION_NOT_FOUND, `Session "${sessionId}" was not found`, {
     details: { sessionId },
   });
 }
 
 function normalizeRequiredWorkDir(operation: string, workDir: string): string {
   if (typeof workDir !== 'string' || workDir.trim() === '') {
-    throw new KimiError(ErrorCodes.REQUEST_WORK_DIR_REQUIRED, `${operation} requires workDir`);
+    throw new WowError(ErrorCodes.REQUEST_WORK_DIR_REQUIRED, `${operation} requires workDir`);
   }
   return normalizeWorkDir(workDir);
 }

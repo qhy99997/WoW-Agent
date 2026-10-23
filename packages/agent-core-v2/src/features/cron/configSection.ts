@@ -35,13 +35,13 @@ function parsePollIntervalMs(raw: string): number | null | undefined {
 }
 
 export const cronEnvBindings: EnvBindings<CronConfig> = envBindings(cronConfigSchema, {
-  debug: { env: 'KIMI_CRON_DEBUG', parse: on },
-  noJitter: { env: 'KIMI_CRON_NO_JITTER', parse: on },
-  noStale: { env: 'KIMI_CRON_NO_STALE', parse: on },
-  disabled: { env: 'KIMI_DISABLE_CRON', parse: on },
-  manualTick: { env: 'KIMI_CRON_MANUAL_TICK', parse: on },
-  clock: 'KIMI_CRON_CLOCK',
-  pollIntervalMs: { env: 'KIMI_CRON_POLL_INTERVAL_MS', parse: parsePollIntervalMs },
+  debug: { env: 'WOW_CRON_DEBUG', parse: on },
+  noJitter: { env: 'WOW_CRON_NO_JITTER', parse: on },
+  noStale: { env: 'WOW_CRON_NO_STALE', parse: on },
+  disabled: { env: 'WOW_DISABLE_CRON', parse: on },
+  manualTick: { env: 'WOW_CRON_MANUAL_TICK', parse: on },
+  clock: 'WOW_CRON_CLOCK',
+  pollIntervalMs: { env: 'WOW_CRON_POLL_INTERVAL_MS', parse: parsePollIntervalMs },
 });
 
 export const stripCronEnv: ConfigStripEnv<CronConfig> = () => undefined;

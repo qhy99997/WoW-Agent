@@ -62,9 +62,9 @@ describe('toRpcError', () => {
     expect(toRpcError('nope')).toEqual({ code: 'internal', message: 'nope' });
   });
 
-  it('prefers the engine code over the KimiError class name', () => {
+  it('prefers the engine code over the WowError class name', () => {
     const error = Object.assign(new Error('Session "x" was not found'), {
-      name: 'KimiError',
+      name: 'WowError',
       code: 'session_not_found',
     });
 
@@ -74,8 +74,8 @@ describe('toRpcError', () => {
     });
   });
 
-  it('falls back to internal when a KimiError carries no code', () => {
-    const error = Object.assign(new Error('weird'), { name: 'KimiError' });
+  it('falls back to internal when a WowError carries no code', () => {
+    const error = Object.assign(new Error('weird'), { name: 'WowError' });
 
     expect(toRpcError(error)).toEqual({ code: 'internal', message: 'weird' });
   });

@@ -1,5 +1,5 @@
 {
-  "name": "@moonshot-ai/minidb",
+  "name": "@wow/minidb",
   "version": "0.2.0",
   "private": true,
   "description": "A pure-Node.js embedded key-value database mixing Redis-style in-memory KV with SQLite-style durable persistence (WAL + snapshot).",
@@ -15,7 +15,7 @@
     "url": "https://github.com/qhy99997/WoW-Agent/issues"
   },
   "keywords": [
-    "kimi",
+    "wow",
     "database",
     "key-value",
     "embedded",

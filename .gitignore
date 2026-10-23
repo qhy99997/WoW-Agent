@@ -12,11 +12,8 @@ coverage/
 .playwright-mcp/
 .claude
 .conductor
-.kimi-stash-dir
-plugins/cdn/
 .worktrees/
-.kimi-code/local.toml
-.kimi-sandbox/
+.wow/local.toml
 .vscode/
 !apps/vscode/.vscode/
 !apps/vscode/.vscode/*.json

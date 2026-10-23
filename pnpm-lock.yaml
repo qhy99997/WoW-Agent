@@ -41,7 +41,7 @@ importers:
 
   apps/desktop:
     dependencies:
-      '@moonshot-ai/kimi-code-sdk':
+      '@wow/sdk':
         specifier: workspace:^
         version: link:../../packages/node-sdk
       react-markdown:
@@ -111,18 +111,18 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
         version: 1.29.0(zod@4.3.6)
-      '@moonshot-ai/kimi-code-oauth':
-        specifier: workspace:^
-        version: link:../oauth
-      '@moonshot-ai/minidb':
-        specifier: workspace:^
-        version: link:../minidb
-      '@moonshot-ai/tree-sitter-bash':
-        specifier: workspace:^
-        version: link:../tree-sitter-bash
       '@mozilla/readability':
         specifier: ^0.6.0
         version: 0.6.0
+      '@wow/minidb':
+        specifier: workspace:^
+        version: link:../minidb
+      '@wow/oauth':
+        specifier: workspace:^
+        version: link:../oauth
+      '@wow/tree-sitter-bash':
+        specifier: workspace:^
+        version: link:../tree-sitter-bash
       ajv:
         specifier: ^8.18.0
         version: 8.18.0
@@ -235,10 +235,10 @@ importers:
         specifier: ^4.3.6
         version: 4.3.6
     devDependencies:
-      '@moonshot-ai/agent-core-v2':
+      '@wow/agent-core-v2':
         specifier: workspace:^
         version: link:../agent-core-v2
-      '@moonshot-ai/kimi-code-oauth':
+      '@wow/oauth':
         specifier: workspace:^
         version: link:../oauth
 

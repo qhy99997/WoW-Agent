@@ -11,10 +11,10 @@ import { registerConfigSection } from '#/app/config/configSectionContributions';
 
 export const DATABASE_SECTION = 'database';
 
-export const PERSISTENCE_MINIDB_READMODEL_ENV = 'KIMI_CODE_PERSISTENCE_MINIDB_READMODEL';
-export const SEARCH_WORKER_ENV = 'KIMI_CODE_SEARCH_WORKER';
-export const SEARCH_SYNC_SESSION_CAP_ENV = 'KIMI_CODE_SEARCH_SYNC_SESSION_CAP';
-export const SEARCH_SYNC_DEBOUNCE_MS_ENV = 'KIMI_CODE_SEARCH_SYNC_DEBOUNCE_MS';
+export const PERSISTENCE_MINIDB_READMODEL_ENV = 'WOW_PERSISTENCE_MINIDB_READMODEL';
+export const SEARCH_WORKER_ENV = 'WOW_SEARCH_WORKER';
+export const SEARCH_SYNC_SESSION_CAP_ENV = 'WOW_SEARCH_SYNC_SESSION_CAP';
+export const SEARCH_SYNC_DEBOUNCE_MS_ENV = 'WOW_SEARCH_SYNC_DEBOUNCE_MS';
 
 export const DatabaseConfigSchema = z.object({
   base: z.boolean().optional(),

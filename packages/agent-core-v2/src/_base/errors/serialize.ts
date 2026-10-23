@@ -11,7 +11,7 @@ export interface ErrorPayload {
   readonly cause?: ErrorPayload;
 }
 
-export type KimiErrorPayload = ErrorPayload;
+export type WowErrorPayload = ErrorPayload;
 
 export interface CodedErrorShape {
   readonly code: ErrorCode;
@@ -86,7 +86,7 @@ function readErrorCause(error: unknown): unknown {
   return (error as { readonly cause?: unknown }).cause;
 }
 
-export const toKimiErrorPayload = toErrorPayload;
+export const toWowErrorPayload = toErrorPayload;
 
 export function fromErrorPayload(payload: ErrorPayload): Error2 {
   return new Error2(payload.code, payload.message, {

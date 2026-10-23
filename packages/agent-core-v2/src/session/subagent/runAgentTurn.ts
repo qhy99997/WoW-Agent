@@ -4,7 +4,7 @@ import { linkAbortSignal, userCancellationReason } from '#/_base/utils/abort';
 import type { IAgentScopeHandle } from '#/_base/di/scope';
 import { IAgentContextMemoryService } from '#/agent/contextMemory/contextMemory';
 import type { ContextMessage, PromptOrigin } from '#/agent/contextMemory/types';
-import { Error2, ErrorCodes, toKimiErrorPayload, type KimiErrorPayload } from '#/errors';
+import { Error2, ErrorCodes, toWowErrorPayload, type WowErrorPayload } from '#/errors';
 import {
   IAgentLoopService,
   isMaxStepsExceededError,
@@ -120,7 +120,7 @@ function classifyTurnResult(result: TurnResult): CompletedTurnResult {
     case 'failed': {
       const error = result.error;
       if (isProviderRateLimitError(error)) throw error;
-      const payload = toKimiErrorPayload(error);
+      const payload = toWowErrorPayload(error);
       if (payload.code === ErrorCodes.PROVIDER_RATE_LIMIT) {
         throw providerRateLimitErrorFromPayload(payload);
       }
@@ -139,7 +139,7 @@ function noFinalMessageError(stopReason: string | undefined): string {
   return stopReason === undefined ? `${base}.` : `${base} (stop reason: ${stopReason}).`;
 }
 
-function maxStepsErrorFromPayload(payload: KimiErrorPayload): Error2 {
+function maxStepsErrorFromPayload(payload: WowErrorPayload): Error2 {
   const maxSteps = payload.details?.['maxSteps'];
   const cap = typeof maxSteps === 'number' ? ` (maxSteps=${String(maxSteps)})` : '';
   return new Error2(
@@ -160,7 +160,7 @@ function stringifyRunError(value: unknown): string {
   return String(value);
 }
 
-function providerRateLimitErrorFromPayload(error: KimiErrorPayload): APIProviderRateLimitError {
+function providerRateLimitErrorFromPayload(error: WowErrorPayload): APIProviderRateLimitError {
   const requestId =
     typeof error.details?.['requestId'] === 'string' ? error.details['requestId'] : null;
   return new APIProviderRateLimitError(error.message, requestId);

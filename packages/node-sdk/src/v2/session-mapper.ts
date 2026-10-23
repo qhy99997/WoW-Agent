@@ -4,7 +4,7 @@
  * `sessionDir` come in as pre-resolved `SessionSummaryFacts` (the caller
  * derives them from the workspace catalog and `IBootstrapService`).
  */
-import type { SessionSummary as V2SessionSummary } from '@moonshot-ai/agent-core-v2';
+import type { SessionSummary as V2SessionSummary } from '@wow/agent-core-v2';
 
 import { resolve, win32 } from 'node:path';
 

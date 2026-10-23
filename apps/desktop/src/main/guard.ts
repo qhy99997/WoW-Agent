@@ -27,7 +27,7 @@ export function toRpcError(error: unknown): { code: string; message: string; hin
     const code =
       typeof explicit === 'string' && explicit !== ''
         ? explicit
-        : typeof record.name === 'string' && record.name !== 'Error' && record.name !== 'KimiError'
+        : typeof record.name === 'string' && record.name !== 'Error' && record.name !== 'WowError'
           ? record.name
           : 'internal';
     return typeof record.hint === 'string'

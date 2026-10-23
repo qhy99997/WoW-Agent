@@ -1,11 +1,11 @@
 /**
  * v2 config shape mapping — pure functions that project the agent-core-v2
  * engine's per-domain config view (`IConfigService.getAll()` /
- * `inspect().userValue`) onto the v1 `KimiConfig` shape the SDK contract
+ * `inspect().userValue`) onto the v1 `WowConfig` shape the SDK contract
  * returns.
  *
  * Why a mapping layer exists: v1 loads config.toml as ONE zod-validated
- * document (`KimiConfigSchema`), while v2 registers one config section per
+ * document (`WowConfigSchema`), while v2 registers one config section per
  * owning domain and resolves each independently. The v1 top-level field
  * names line up 1:1 with the v2 camelCase domain names (both derive from
  * the same snake_case TOML keys), so the read mapping is a field pick, not
@@ -13,14 +13,14 @@
  * passthrough document, v2's materialized section defaults) are pinned in
  * the parity test's `KNOWN_DIFFS`, not papered over here.
  */
-import type { KimiConfig } from '#/types';
+import type { WowConfig } from '#/types';
 
 /**
- * Every top-level `KimiConfig` field except `raw` (a v1 write-path
+ * Every top-level `WowConfig` field except `raw` (a v1 write-path
  * implementation detail with no v2 counterpart). Each entry is both the v1
  * field name and the v2 config domain name.
  */
-const KIMI_CONFIG_DOMAINS = [
+const WOW_CONFIG_DOMAINS = [
   'providers',
   'defaultProvider',
   'defaultModel',
@@ -54,18 +54,18 @@ const KIMI_CONFIG_DOMAINS = [
  * (`cron`, `tools`, `extraAgentDirs`, ...) are dropped,
  * mirroring how v1's schema strips unknown top-level keys.
  */
-export function resolvedConfigToKimiConfig(resolved: Record<string, unknown>): KimiConfig {
+export function resolvedConfigToWowConfig(resolved: Record<string, unknown>): WowConfig {
   const config: Record<string, unknown> = {};
-  for (const domain of KIMI_CONFIG_DOMAINS) {
+  for (const domain of WOW_CONFIG_DOMAINS) {
     const value = resolved[domain];
     if (value !== undefined) {
       config[domain] = value;
     }
   }
-  return config as KimiConfig;
+  return config as WowConfig;
 }
 
-/** The writes needed to reproduce v1 `removeKimiProvider` semantics. */
+/** The writes needed to reproduce v1 provider removal semantics. */
 export interface ProviderRemovalPlan {
   readonly providers: Record<string, unknown>;
   readonly models: Record<string, unknown>;

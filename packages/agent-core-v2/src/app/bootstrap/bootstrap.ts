@@ -3,7 +3,7 @@ import { homedir } from 'node:os';
 
 import { join } from 'pathe';
 
-import type { KimiHostIdentity } from '@moonshot-ai/kimi-code-oauth';
+import type { HostIdentity } from '@wow/oauth';
 
 import { SyncDescriptor } from '#/_base/di/descriptors';
 import { createDecorator, type ServiceIdentifier } from '#/_base/di/instantiation';
@@ -48,7 +48,7 @@ export interface IBootstrapOptions {
   readonly arch: string;
   readonly cwd: string;
   readonly env: NodeJS.ProcessEnv;
-  readonly clientIdentity: KimiHostIdentity;
+  readonly clientIdentity: HostIdentity;
   readonly args: HostArgs;
 }
 
@@ -73,7 +73,7 @@ export interface IBootstrapService {
   readonly osHomeDir: string;
   readonly homeDir: string;
   readonly configPath: string;
-  readonly clientIdentity: KimiHostIdentity;
+  readonly clientIdentity: HostIdentity;
   readonly args: HostArgs;
   readonly sessionsDir: string;
   readonly blobsDir: string;
@@ -96,14 +96,14 @@ export interface BootstrapInput {
   readonly platform?: NodeJS.Platform;
   readonly arch?: string;
   readonly cwd?: string;
-  readonly clientIdentity: KimiHostIdentity;
+  readonly clientIdentity: HostIdentity;
   readonly args?: HostArgsInput;
 }
 
 export function resolveBootstrapOptions(input: BootstrapInput): IBootstrapOptions {
   const env = input.env ?? process.env;
   const osHomeDir = input.osHomeDir ?? homedir();
-  const homeDir = resolveKimiHome(input.homeDir, env, osHomeDir);
+  const homeDir = resolveWowHome(input.homeDir, env, osHomeDir);
   const configPath = input.configPath ?? join(homeDir, 'config.toml');
   return {
     homeDir,
@@ -156,7 +156,7 @@ function skillSeed(): ScopeSeed {
   ];
 }
 
-export function resolveKimiHome(
+export function resolveWowHome(
   homeDir?: string,
   env: NodeJS.ProcessEnv = process.env,
   osHomeDir: string = homedir(),
@@ -168,9 +168,9 @@ export function resolveConfigPath(input: {
   readonly homeDir?: string;
   readonly configPath?: string;
 }): string {
-  return input.configPath ?? join(resolveKimiHome(input.homeDir), 'config.toml');
+  return input.configPath ?? join(resolveWowHome(input.homeDir), 'config.toml');
 }
 
-export function ensureKimiHome(homeDir: string): void {
+export function ensureWowHome(homeDir: string): void {
   mkdirSync(homeDir, { recursive: true, mode: 0o700 });
 }

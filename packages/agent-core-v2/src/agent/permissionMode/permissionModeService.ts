@@ -23,7 +23,7 @@ import {
   PermissionSetMode,
 } from './permissionModeOps';
 
-export const PERMISSION_MODE_REMINDER_ENV = 'KIMI_CODE_PERMISSION_MODE_REMINDER';
+export const PERMISSION_MODE_REMINDER_ENV = 'WOW_PERMISSION_MODE_REMINDER';
 
 export class AgentPermissionModeService extends Service implements IAgentPermissionModeService {
   declare readonly _serviceBrand: undefined;

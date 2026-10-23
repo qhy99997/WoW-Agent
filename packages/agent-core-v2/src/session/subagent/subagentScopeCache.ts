@@ -1,9 +1,9 @@
 import { createDecorator, type ServiceIdentifier } from '#/_base/di/instantiation';
 import { Error2, ErrorCodes } from '#/errors';
 
-export const SUBAGENT_SCOPE_CACHE_SIZE_ENV = 'KIMI_CODE_SUBAGENT_SCOPE_CACHE_SIZE';
+export const SUBAGENT_SCOPE_CACHE_SIZE_ENV = 'WOW_SUBAGENT_SCOPE_CACHE_SIZE';
 
-export const SUBAGENT_SCOPE_EVICT_TIMEOUT_ENV = 'KIMI_CODE_SUBAGENT_SCOPE_EVICT_TIMEOUT_MS';
+export const SUBAGENT_SCOPE_EVICT_TIMEOUT_ENV = 'WOW_SUBAGENT_SCOPE_EVICT_TIMEOUT_MS';
 
 export const DEFAULT_SUBAGENT_SCOPE_CACHE_SIZE = 32;
 

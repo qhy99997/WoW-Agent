@@ -42,7 +42,7 @@ import { inputTotal, type TokenUsage } from '#human/llm/usage';
 import { IEventBus } from '#/app/event/eventBus';
 import type { CompactionFailedEvent, CompactionFinishedEvent } from '#/app/telemetry/events';
 import { ITelemetryService } from '#/app/telemetry/telemetry';
-import { ErrorCodes, Error2, isCodedError, isError2, toKimiErrorPayload, unwrapErrorCause } from "#/errors";
+import { ErrorCodes, Error2, isCodedError, isError2, toWowErrorPayload, unwrapErrorCause } from "#/errors";
 import { AgentErrorEvent } from '#/agent/mcp/mcpEvents';
 import { IEventDispatcher } from '#/state/eventDispatcher';
 import { renderCompactionInstruction } from './compactionInstruction';
@@ -602,7 +602,7 @@ export class AgentFullCompactionService extends Service implements IAgentFullCom
         throw error;
       }
       void this.dispatcher.dispatch(
-        new AgentErrorEvent({ ...toKimiErrorPayload(error), agentId: this.agent.agentId }),
+        new AgentErrorEvent({ ...toWowErrorPayload(error), agentId: this.agent.agentId }),
       );
       throw error;
     } finally {

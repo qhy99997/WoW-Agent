@@ -8,7 +8,7 @@ import { rawTextPlugin } from '../../build/raw-text-plugin.mjs';
 
 export default defineConfig({
   main: {
-    plugins: [externalizeDepsPlugin({ exclude: ['@moonshot-ai/kimi-code-sdk'] }), rawTextPlugin()],
+    plugins: [externalizeDepsPlugin({ exclude: ['@wow/sdk'] }), rawTextPlugin()],
     resolve: {
       alias: { '@shared': resolve('src/shared') },
     },

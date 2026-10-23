@@ -1,7 +1,7 @@
 import { join } from 'pathe';
 
-import { classifyStorageError, type QueryOptions } from '@moonshot-ai/minidb';
-import { ClusterDb, wipeCluster } from '@moonshot-ai/minidb/cluster';
+import { classifyStorageError, type QueryOptions } from '@wow/minidb';
+import { ClusterDb, wipeCluster } from '@wow/minidb/cluster';
 
 import { Disposable, toDisposable } from '#/_base/di/lifecycle';
 import { LifecycleScope } from '#/app/scopes';

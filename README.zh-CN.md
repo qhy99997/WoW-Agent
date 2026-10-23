@@ -73,7 +73,6 @@ WoW 把全部数据放在同一个主目录下：
 
 - `WOW_HOME`——改用其他数据目录，默认 `~/.wow`。
 - `WOW_SHELL_PATH`——`bash.exe` 的绝对路径，启动时的环境检查与 agent 引擎启动 shell 命令时都会读取它。Git Bash 装在非标准路径时请设置它。
-- `KIMI_SHELL_PATH`——同一个设置改名前的名字，未设置 `WOW_SHELL_PATH` 时仍会作为回退被接受。
 
 ## 本地开发
 

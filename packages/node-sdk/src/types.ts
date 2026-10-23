@@ -1,5 +1,5 @@
-import type { ContentPart } from '@moonshot-ai/agent-core-v2';
-import type { KimiHostIdentity } from '@moonshot-ai/kimi-code-oauth';
+import type { ContentPart } from '@wow/agent-core-v2';
+import type { HostIdentity } from '@wow/oauth';
 
 export type JsonPrimitive = string | number | boolean | null;
 export type JsonValue = JsonPrimitive | JsonValue[] | { readonly [key: string]: JsonValue };
@@ -14,23 +14,23 @@ export type {
   McpTestResult,
 } from '#/mcp';
 export type {
-  KimiConfig,
-  KimiConfigPatch,
+  WowConfig,
+  WowConfigPatch,
   ModelAlias,
   ProviderConfig,
   ProviderType,
 } from '#/config/schema';
 export type { AgentContextData, ContextMessage, PromptOrigin } from '#/context';
 
-export type { KimiHostIdentity };
+export type { HostIdentity };
 
 export type TextPromptPart = Extract<ContentPart, { type: 'text' }>;
 export type PromptPart = Extract<ContentPart, { type: 'text' | 'image_url' | 'video_url' }>;
 
 export type PromptInput = readonly PromptPart[];
 
-export interface KimiHarnessOptions {
-  readonly identity: KimiHostIdentity;
+export interface WowHarnessOptions {
+  readonly identity: HostIdentity;
   readonly homeDir?: string | undefined;
 }
 

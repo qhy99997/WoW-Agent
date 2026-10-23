@@ -1,11 +1,11 @@
 import type {
   GlobalMcpServerConfig,
   McpServerTestResult,
-} from '@moonshot-ai/agent-core-v2/app/mcpManagement/mcpManagement';
+} from '@wow/agent-core-v2/app/mcpManagement/mcpManagement';
 import type {
   McpRegistryPluginOrigin,
   McpServerSource,
-} from '@moonshot-ai/agent-core-v2/app/mcpRegistry/mcpRegistry';
+} from '@wow/agent-core-v2/app/mcpRegistry/mcpRegistry';
 
 export type { McpServerSource };
 export type McpTestResult = McpServerTestResult;

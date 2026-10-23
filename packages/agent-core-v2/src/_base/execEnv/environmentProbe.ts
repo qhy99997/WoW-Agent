@@ -116,7 +116,7 @@ export async function probeHostEnvironment(
   };
 }
 
-const SHELL_PATH_ENV_VARS = ['WOW_SHELL_PATH', 'KIMI_SHELL_PATH'] as const;
+const SHELL_PATH_ENV_VARS = ['WOW_SHELL_PATH'] as const;
 
 export function resolveShellPathOverride(
   env: Readonly<Record<string, string | undefined>>,

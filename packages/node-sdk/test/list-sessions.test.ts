@@ -11,9 +11,9 @@ import {
   drainSessionIndexMirror,
   ISessionIndex,
   ISessionIndexMirror,
-} from '@moonshot-ai/agent-core-v2';
+} from '@wow/agent-core-v2';
 
-import { createKimiHarness, SDKRpcClientV2 } from '#/index';
+import { createWowHarness, SDKRpcClientV2 } from '#/index';
 import { normalizeWorkDir } from '#/v2/session-mapper';
 
 import { TEST_IDENTITY } from './test-identity';
@@ -44,17 +44,17 @@ async function removeTempDir(dir: string): Promise<void> {
 }
 
 async function makeTempDir(): Promise<string> {
-  const dir = await mkdtemp(join(tmpdir(), 'kimi-sdk-list-'));
+  const dir = await mkdtemp(join(tmpdir(), 'wow-sdk-list-'));
   tempDirs.push(dir);
   return dir;
 }
 
-describe('KimiHarness.listSessions', () => {
+describe('WowHarness.listSessions', () => {
   it('lists the sessions of every workDir', async () => {
     const homeDir = await makeTempDir();
     const workDir = await makeTempDir();
     const otherWorkDir = await makeTempDir();
-    const harness = createKimiHarness({ identity: TEST_IDENTITY, homeDir });
+    const harness = createWowHarness({ identity: TEST_IDENTITY, homeDir });
 
     try {
       const first = await harness.createSession({ workDir });
@@ -80,7 +80,7 @@ describe('KimiHarness.listSessions', () => {
     const root = await makeTempDir();
     const workDir = join(root, 'Workspace With Spaces', '项目');
     await mkdir(workDir, { recursive: true });
-    const harness = createKimiHarness({ identity: TEST_IDENTITY, homeDir });
+    const harness = createWowHarness({ identity: TEST_IDENTITY, homeDir });
 
     try {
       const session = await harness.createSession({ workDir });
@@ -97,7 +97,7 @@ describe('KimiHarness.listSessions', () => {
   it('resolves a relative workDir on create', async () => {
     const homeDir = await makeTempDir();
     const workDir = await makeTempDir();
-    const harness = createKimiHarness({ identity: TEST_IDENTITY, homeDir });
+    const harness = createWowHarness({ identity: TEST_IDENTITY, homeDir });
     const originalCwd = process.cwd();
 
     try {
@@ -117,11 +117,11 @@ describe('KimiHarness.listSessions', () => {
 
   it('rejects a whitespace-only workDir on create', async () => {
     const homeDir = await makeTempDir();
-    const harness = createKimiHarness({ identity: TEST_IDENTITY, homeDir });
+    const harness = createWowHarness({ identity: TEST_IDENTITY, homeDir });
 
     try {
       await expect(harness.createSession({ workDir: '   ' })).rejects.toMatchObject({
-        name: 'KimiError',
+        name: 'WowError',
         code: 'request.work_dir_required',
       });
     } finally {
@@ -132,7 +132,7 @@ describe('KimiHarness.listSessions', () => {
   it('lists persisted sessions after the active Session has been closed', async () => {
     const homeDir = await makeTempDir();
     const workDir = await makeTempDir();
-    const harness = createKimiHarness({ identity: TEST_IDENTITY, homeDir });
+    const harness = createWowHarness({ identity: TEST_IDENTITY, homeDir });
 
     try {
       const session = await harness.createSession({ workDir });
@@ -146,8 +146,8 @@ describe('KimiHarness.listSessions', () => {
   });
 
   it('leaves out sessions whose workDir cannot be resolved (read model on)', async () => {
-    vi.stubEnv('KIMI_CODE_EXPERIMENTAL_FLAG', '0');
-    vi.stubEnv('KIMI_CODE_PERSISTENCE_MINIDB_READMODEL', '1');
+    vi.stubEnv('WOW_EXPERIMENTAL_FLAG', '0');
+    vi.stubEnv('WOW_PERSISTENCE_MINIDB_READMODEL', '1');
     const homeDir = await makeTempDir();
     const workDir = await makeTempDir();
     const client = new SDKRpcClientV2({ homeDir, identity: TEST_IDENTITY });
@@ -192,8 +192,8 @@ describe('SDKRpcClientV2 search-index separation', () => {
   // still preparing.
 
   it('listSessions / resumeSession never open the global search index (read model off)', async () => {
-    vi.stubEnv('KIMI_CODE_EXPERIMENTAL_FLAG', '0');
-    vi.stubEnv('KIMI_CODE_PERSISTENCE_MINIDB_READMODEL', '0');
+    vi.stubEnv('WOW_EXPERIMENTAL_FLAG', '0');
+    vi.stubEnv('WOW_PERSISTENCE_MINIDB_READMODEL', '0');
     const homeDir = await makeTempDir();
     const workDir = await makeTempDir();
     const client = new SDKRpcClientV2({ homeDir, identity: TEST_IDENTITY });
@@ -217,8 +217,8 @@ describe('SDKRpcClientV2 search-index separation', () => {
   });
 
   it('listSessions / resumeSession never open the global search index (read model on)', async () => {
-    vi.stubEnv('KIMI_CODE_EXPERIMENTAL_FLAG', '0');
-    vi.stubEnv('KIMI_CODE_PERSISTENCE_MINIDB_READMODEL', '1');
+    vi.stubEnv('WOW_EXPERIMENTAL_FLAG', '0');
+    vi.stubEnv('WOW_PERSISTENCE_MINIDB_READMODEL', '1');
     const homeDir = await makeTempDir();
     const workDir = await makeTempDir();
     const client = new SDKRpcClientV2({ homeDir, identity: TEST_IDENTITY });

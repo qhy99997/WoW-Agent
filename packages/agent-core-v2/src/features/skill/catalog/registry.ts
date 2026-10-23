@@ -103,7 +103,7 @@ export class InMemorySkillCatalog implements SkillCatalog {
     return [...this.skipped];
   }
 
-  getKimiSkillsDescription(): string {
+  getSkillsDescription(): string {
     const rendered = renderGroupedSkills(this.listSkills(), formatFullSkill);
     return rendered.length === 0 ? 'No skills' : rendered;
   }
@@ -176,8 +176,8 @@ function expandSkillParameters(
 
   const hasArgumentPlaceholder = content !== body;
   content = content
-    .replaceAll('${KIMI_SKILL_DIR}', context.skillDir)
-    .replaceAll('${KIMI_SESSION_ID}', context.sessionId ?? '');
+    .replaceAll('${WOW_SKILL_DIR}', context.skillDir)
+    .replaceAll('${WOW_SESSION_ID}', context.sessionId ?? '');
 
   if (!hasArgumentPlaceholder && rawArgs.length > 0) {
     return `${content}\n\nARGUMENTS: ${escapeXmlTags(rawArgs)}`;

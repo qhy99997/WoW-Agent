@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { ContextMessage } from '@moonshot-ai/kimi-code-sdk';
+import type { ContextMessage } from '@wow/sdk';
 
 import { projectHistory } from '../src/main/history';
 

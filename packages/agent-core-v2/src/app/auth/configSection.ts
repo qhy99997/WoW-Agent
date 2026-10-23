@@ -37,8 +37,8 @@ export const ServicesConfigSchema = z
 
 export type ServicesConfig = z.infer<typeof ServicesConfigSchema>;
 
-export const WEB_FETCH_BASE_URL_ENV = 'KIMI_WEB_FETCH_BASE_URL';
-export const WEB_FETCH_API_KEY_ENV = 'KIMI_WEB_FETCH_API_KEY';
+export const WEB_FETCH_BASE_URL_ENV = 'WOW_WEB_FETCH_BASE_URL';
+export const WEB_FETCH_API_KEY_ENV = 'WOW_WEB_FETCH_API_KEY';
 
 const nonBlankEnv = (raw: string): string | undefined => {
   const trimmed = raw.trim();

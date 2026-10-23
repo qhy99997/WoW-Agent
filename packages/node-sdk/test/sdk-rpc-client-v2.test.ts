@@ -15,11 +15,11 @@ import {
   drainSessionIndexMirror,
   IHostRequestHeaders,
   IMcpOAuthService,
-} from '@moonshot-ai/agent-core-v2';
-import { McpOAuthService } from '@moonshot-ai/agent-core-v2/mcpCore/oauth/service';
+} from '@wow/agent-core-v2';
+import { McpOAuthService } from '@wow/agent-core-v2/mcpCore/oauth/service';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { createKimiHarness, ErrorCodes, SDKRpcClientV2, type KimiHarness } from '#/index';
+import { createWowHarness, ErrorCodes, SDKRpcClientV2, type WowHarness } from '#/index';
 
 import { TEST_IDENTITY } from './test-identity';
 
@@ -42,13 +42,13 @@ async function makeTempDir(prefix: string): Promise<string> {
 }
 
 async function makeHarness(): Promise<{
-  harness: KimiHarness;
+  harness: WowHarness;
   homeDir: string;
   workDir: string;
 }> {
-  const homeDir = await makeTempDir('kimi-sdk-v2-');
-  const workDir = await makeTempDir('kimi-sdk-v2-work-');
-  return { harness: createKimiHarness({ homeDir, identity: TEST_IDENTITY }), homeDir, workDir };
+  const homeDir = await makeTempDir('wow-sdk-v2-');
+  const workDir = await makeTempDir('wow-sdk-v2-work-');
+  return { harness: createWowHarness({ homeDir, identity: TEST_IDENTITY }), homeDir, workDir };
 }
 
 /** Whether the persisted session directory exists under `<home>/sessions/<bucket>/<id>`. */
@@ -77,7 +77,7 @@ const PROVIDERS = {
 
 describe('SDKRpcClientV2 lifecycle', () => {
   it('close() awaits the MCP OAuth service shutdown', async () => {
-    const homeDir = await makeTempDir('kimi-sdk-v2-');
+    const homeDir = await makeTempDir('wow-sdk-v2-');
     const client = new SDKRpcClientV2({ homeDir, identity: TEST_IDENTITY });
     // Activate the OnDemand OAuth service, then gate its shutdown behind a
     // manual release: close() alone must trigger and await that shutdown, so
@@ -113,18 +113,18 @@ describe('SDKRpcClientV2 lifecycle', () => {
   });
 
   it('close() resolves promptly when the MCP OAuth service was never used', async () => {
-    const homeDir = await makeTempDir('kimi-sdk-v2-');
+    const homeDir = await makeTempDir('wow-sdk-v2-');
     const client = new SDKRpcClientV2({ homeDir, identity: TEST_IDENTITY });
     await expect(client.close()).resolves.toBeUndefined();
   });
 
   it('seeds the host request headers (User-Agent + X-Msh-*) into the engine', async () => {
-    const homeDir = await makeTempDir('kimi-sdk-v2-');
+    const homeDir = await makeTempDir('wow-sdk-v2-');
     const client = new SDKRpcClientV2({ homeDir, identity: TEST_IDENTITY });
     try {
       const headers = client.engineAccessor.get(IHostRequestHeaders).headers;
-      expect(headers['User-Agent']).toBe(`kimi-code-cli/${TEST_IDENTITY.version}`);
-      expect(headers['X-Msh-Platform']).toBe('kimi_code_cli');
+      expect(headers['User-Agent']).toBe(`wow-desktop/${TEST_IDENTITY.version}`);
+      expect(headers['X-Msh-Platform']).toBe('wow_desktop');
       expect(headers['X-Msh-Version']).toBe(TEST_IDENTITY.version);
       expect(headers['X-Msh-Device-Id']).toBeTruthy();
     } finally {
@@ -133,7 +133,7 @@ describe('SDKRpcClientV2 lifecycle', () => {
   });
 });
 
-describe('KimiHarness sessions', () => {
+describe('WowHarness sessions', () => {
   it('re-resumes a fresh session facade while the public close is in flight', async () => {
     const { harness, workDir } = await makeHarness();
     try {
@@ -216,7 +216,7 @@ describe('KimiHarness sessions', () => {
   });
 });
 
-describe('KimiHarness config', () => {
+describe('WowHarness config', () => {
   it('persists removeProvider as one atomic cascade (providers, models, defaults)', async () => {
     const { harness } = await makeHarness();
     try {
@@ -276,7 +276,7 @@ describe('KimiHarness config', () => {
   });
 });
 
-describe('KimiHarness MCP management', () => {
+describe('WowHarness MCP management', () => {
   it('adds, lists, probes and removes a user MCP server', async () => {
     const { harness, homeDir, workDir } = await makeHarness();
     try {

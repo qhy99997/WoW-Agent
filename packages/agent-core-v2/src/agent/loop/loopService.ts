@@ -26,7 +26,7 @@ import { type FinishReason } from '#human/llm/finish-reason';
 import { mergeInPlace } from '#/llm-adapter/contract/message';
 import type { ContentPart, UserMessage } from '#human/llm/message';
 import { emptyUsage, type TokenUsage } from '#human/llm/usage';
-import { BugIndicatingError, ErrorCodes, Error2, isError2, toKimiErrorPayload } from '#/errors';
+import { BugIndicatingError, ErrorCodes, Error2, isError2, toWowErrorPayload } from '#/errors';
 import { OrderedHookSlot } from '#/hooks';
 
 import { IAgentContextMemoryService } from '#/agent/contextMemory/contextMemory';
@@ -2061,7 +2061,7 @@ export class AgentLoopService extends Disposable implements IAgentLoopService {
     const durationMs = Date.now() - turn.startedAt;
     const traceId =
       result.type === 'completed' ? this.lastRequestTraceId : this.activeRequestTrace?.traceId;
-    const error = result.type === 'failed' ? toKimiErrorPayload(result.error) : undefined;
+    const error = result.type === 'failed' ? toWowErrorPayload(result.error) : undefined;
     const interruptReason = result.type === 'completed' ? undefined : interruptReasonFor(result);
     void this.dispatcher.dispatch(
       new TurnEnded({

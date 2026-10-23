@@ -18,7 +18,7 @@ export type SwarmConfig = z.infer<typeof SwarmConfigSchema>;
 
 export const DEFAULT_SWARM_TIMEOUT_MS = 2 * 60 * 60 * 1000;
 
-export const SWARM_TIMEOUT_ENV = 'KIMI_CODE_SWARM_TIMEOUT_MS';
+export const SWARM_TIMEOUT_ENV = 'WOW_SWARM_TIMEOUT_MS';
 
 function parseTimeoutMsEnv(raw: string): number | undefined {
   const parsed = Number(raw);

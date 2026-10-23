@@ -1,8 +1,8 @@
-import { parseKimiCodeCustomHeaders } from '@moonshot-ai/kimi-code-oauth';
+import { parseCustomHeaders } from '@wow/oauth';
 import {
   apiKeyEnvMissingMessage,
   declaredProviderCredential,
-} from '@moonshot-ai/kimi-code-oauth/provider-credential';
+} from '@wow/oauth/provider-credential';
 
 import { Disposable } from '#/_base/di/lifecycle';
 import { LifecycleScope } from '#/app/scopes';
@@ -478,7 +478,7 @@ export function resolveOutboundHeaders(
     providerType !== undefined &&
     getProviderDefinition(providerType)?.hostHeaders === 'full';
   const hostLayer = forwardsAll ? host.headers : host.thirdPartyHeaders;
-  return { ...parseKimiCodeCustomHeaders(), ...hostLayer, ...customHeaders };
+  return { ...parseCustomHeaders(), ...hostLayer, ...customHeaders };
 }
 
 function resolveModelCapabilities(
