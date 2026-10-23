@@ -97,7 +97,6 @@ pnpm run dist        # 构建全部内容并打包 Windows 安装包
 - `packages/agent-core-v2`——agent 引擎。
 - `packages/node-sdk`——桌面应用用来驱动引擎的 SDK。
 - `packages/minidb`、`packages/oauth`、`packages/tree-sitter-bash`——配套包。
-- `plugins/`——kimi-code 插件市场源码的上游快照。本仓库运行时不会读取它，安装包也不包含它。
 
 仓库约定见 [AGENTS.md](AGENTS.md)。
 
@@ -107,7 +106,7 @@ pnpm run dist        # 构建全部内容并打包 Windows 安装包
 
 ## 致谢
 
-WoW 派生自 [MoonshotAI/kimi-code](https://github.com/MoonshotAI/kimi-code)，即 MIT 协议下的 Kimi Code CLI。agent 引擎、SDK 及配套包均来自该项目，`plugins/` 下的插件源码同样源自该项目。
+WoW 派生自 [MoonshotAI/kimi-code](https://github.com/MoonshotAI/kimi-code)，即 MIT 协议下的 Kimi Code CLI。agent 引擎、SDK 及配套包均来自该项目。
 
 ## 许可证
 

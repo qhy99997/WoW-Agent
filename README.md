@@ -97,7 +97,6 @@ Additional scripts: `pnpm build:packages`, `pnpm dev:packages`, `pnpm test:watch
 - `packages/agent-core-v2` — the agent engine.
 - `packages/node-sdk` — the SDK the desktop app drives the engine through.
 - `packages/minidb`, `packages/oauth`, `packages/tree-sitter-bash` — supporting packages.
-- `plugins/` — an upstream snapshot of the kimi-code plugin marketplace sources. Nothing in this repository reads it at runtime, and it is not included in the installer.
 
 See [AGENTS.md](AGENTS.md) for repository conventions.
 
@@ -107,7 +106,7 @@ For security vulnerabilities, see [SECURITY.md](SECURITY.md).
 
 ## Acknowledgements
 
-WoW is derived from [MoonshotAI/kimi-code](https://github.com/MoonshotAI/kimi-code), the MIT-licensed Kimi Code CLI. The agent engine, the SDK, and the supporting packages come from that project, and the plugin sources under `plugins/` originate there as well.
+WoW is derived from [MoonshotAI/kimi-code](https://github.com/MoonshotAI/kimi-code), the MIT-licensed Kimi Code CLI. The agent engine, the SDK, and the supporting packages come from that project.
 
 ## License
 

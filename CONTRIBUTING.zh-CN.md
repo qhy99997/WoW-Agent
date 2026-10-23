@@ -29,7 +29,6 @@ WoW 对桌面端交互、agent 工作流和公开 API 已有自己的主张。�
 - `packages/agent-core-v2` — agent 引擎
 - `packages/node-sdk` — 桌面应用驱动引擎所用的 SDK
 - `packages/minidb`、`packages/oauth`、`packages/tree-sitter-bash` — 配套包
-- `plugins/` — 上游插件市场源码的快照；本仓库运行时不读取它，安装包也不包含它
 
 完整项目地图见 [README.md](README.md)，仓库约定见 [AGENTS.md](AGENTS.md)。
 

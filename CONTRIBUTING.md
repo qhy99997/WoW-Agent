@@ -29,7 +29,6 @@ This is a pnpm monorepo whose product is a desktop application:
 - `packages/agent-core-v2` — the agent engine
 - `packages/node-sdk` — the SDK the desktop app drives the engine through
 - `packages/minidb`, `packages/oauth`, `packages/tree-sitter-bash` — supporting packages
-- `plugins/` — a snapshot of upstream plugin marketplace sources; nothing reads it at runtime and it is not included in the installer
 
 See [README.md](README.md) for the full project map and [AGENTS.md](AGENTS.md) for repository conventions.
 
