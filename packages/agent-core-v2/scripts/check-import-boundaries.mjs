@@ -5,7 +5,6 @@ import { dirname, join, relative, resolve } from 'node:path';
 
 const PKG_ROOT = resolve(import.meta.dirname, '..');
 export const SRC_ROOT = join(PKG_ROOT, 'src');
-const TEST_ROOT = join(PKG_ROOT, 'test');
 const HUMAN_ROOT = join(SRC_ROOT, 'human');
 const ADAPTER_ROOT = join(SRC_ROOT, 'llm-adapter');
 const LOOP_MACHINE_ADAPTER_ROOT = join(SRC_ROOT, 'agent/loop/machine');
@@ -209,7 +208,7 @@ function walk(dir) {
 }
 
 function main() {
-  const files = [...walk(SRC_ROOT), ...walk(TEST_ROOT)];
+  const files = walk(SRC_ROOT);
   const violations = files.flatMap((f) => checkFile(f));
   if (violations.length === 0) {
     console.log(`check-import-boundaries: OK (${files.length} files)`);

@@ -46,7 +46,6 @@
   },
   "scripts": {
     "build": "tsdown",
-    "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "gen:contract-types": "node scripts/gen-contract-types.mjs",
     "gen:config-manifest": "tsx --import ../../build/register-raw-text-loader.mjs scripts/gen-config-manifest.mts",

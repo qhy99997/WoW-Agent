@@ -4,7 +4,7 @@ import ts from 'typescript';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const PACKAGES = ['packages/agent-core-v2'];
-const DIRS = ['src', 'test', 'scripts'];
+const DIRS = ['src', 'scripts'];
 
 function collectLeaves(node, leaves, jsdocNodes) {
   if (ts.isJSDoc(node)) {

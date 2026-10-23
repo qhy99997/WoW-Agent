@@ -46,7 +46,7 @@ pnpm install
 Useful scripts:
 
 - `pnpm dev` — run the desktop app in dev mode
-- `pnpm test` — run tests (vitest)
+- `pnpm test` — run desktop, SDK, and smoke tests (vitest)
 - `pnpm typecheck` — TypeScript check (note: builds packages first)
 - `pnpm lint` — repo lint rules plus oxlint
 - `pnpm lint:fix` — same, with auto-fix
@@ -64,7 +64,7 @@ All commits and PR titles must follow [Conventional Commits](https://www.convent
 | docs     | Documentation only                          | docs: clarify install instructions        |
 | chore    | Tooling / housekeeping                      | chore: bump dependencies                  |
 | refactor | Internal refactor without behavior change   | refactor(minidb): extract retry helper    |
-| test     | Adding or improving tests                   | test(agent-core-v2): cover skill resolver |
+| test     | Adding or improving tests                   | test(desktop): cover workDir spelling     |
 | ci       | CI / build pipeline changes                 | ci: cache pnpm store                      |
 | build    | Build system / artifact changes             | build(native): add win32-arm64 target     |
 | perf     | Performance improvement                     | perf(session): batch event flushes        |

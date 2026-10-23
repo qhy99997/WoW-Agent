@@ -46,7 +46,7 @@ pnpm install
 常用脚本：
 
 - `pnpm dev` — 开发模式运行桌面应用
-- `pnpm test` — 运行测试（vitest）
+- `pnpm test` — 运行桌面端、SDK 与冒烟测试（vitest）
 - `pnpm typecheck` — TypeScript 检查（注意：会先构建各包）
 - `pnpm lint` — 仓库 lint 规则 + oxlint
 - `pnpm lint:fix` — 同上，带自动修复
@@ -64,7 +64,7 @@ pnpm install
 | docs     | 仅文档                                   | docs: clarify install instructions     |
 | chore    | 工具 / 杂务                              | chore: bump dependencies               |
 | refactor | 无行为变更的内部重构                     | refactor(minidb): extract retry helper |
-| test     | 新增或改进测试                           | test(agent-core-v2): cover skill resolver |
+| test     | 新增或改进测试                           | test(desktop): cover workDir spelling     |
 | ci       | CI / 构建流水线变更                      | ci: cache pnpm store                   |
 | build    | 构建系统 / 产物变更                      | build(native): add win32-arm64 target  |
 | perf     | 性能优化                                 | perf(session): batch event flushes     |
